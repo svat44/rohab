@@ -1,22 +1,24 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../app/glove_scope.dart';
-import '../../glove/glove_service.dart';
-import '../theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../app/providers.dart';
+import '../glove/glove_service.dart';
+import '../theme/app_theme.dart';
 
 /// Shown at the top of every screen: connection status and the STOP button.
 ///
 /// STOP calls [GloveService.emergencyVent] directly, in every state,
 /// with no confirmation step.
-class SafetyBanner extends StatelessWidget {
+class SafetyBanner extends ConsumerWidget {
   const SafetyBanner({super.key});
 
   static const stopKey = Key('safety-stop');
 
   @override
-  Widget build(BuildContext context) {
-    final glove = GloveScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glove = ref.watch(gloveServiceProvider);
     final c = context.colors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -26,7 +28,7 @@ class SafetyBanner extends StatelessWidget {
         border: Border(bottom: BorderSide(color: c.divider)),
       ),
       padding: const EdgeInsets.fromLTRB(
-          Space.s2, Space.s1, Space.s1, Space.s1),
+          RohabSpace.s16, RohabSpace.s8, RohabSpace.s8, RohabSpace.s8),
       child: Row(
         children: [
           Expanded(
@@ -43,10 +45,10 @@ class SafetyBanner extends StatelessWidget {
                         s.isConnected
                             ? Icons.bluetooth_connected
                             : Icons.bluetooth_disabled,
-                        size: 28,
-                        color: s.isConnected ? c.accent : c.gray,
+                        size: RohabSize.icon,
+                        color: s.isConnected ? c.accent : c.secondary,
                       ),
-                      const SizedBox(width: Space.s1),
+                      const SizedBox(width: RohabSpace.s8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +62,7 @@ class SafetyBanner extends StatelessWidget {
                               Text(
                                 detail,
                                 style: textTheme.labelMedium?.copyWith(
-                                  color: hasFault ? c.danger : c.gray,
+                                  color: hasFault ? c.danger : c.secondary,
                                   fontWeight: hasFault
                                       ? FontWeight.w600
                                       : FontWeight.w500,
@@ -77,7 +79,7 @@ class SafetyBanner extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: Space.s1),
+          const SizedBox(width: RohabSpace.s8),
           _StopButton(onPressed: () {
             HapticFeedback.heavyImpact();
             glove.emergencyVent();
@@ -112,21 +114,22 @@ class _StopButton extends StatelessWidget {
       label: 'Stop. Vents the glove now.',
       excludeSemantics: true,
       child: SizedBox(
-        width: 112,
-        height: Sizes.stopButton,
+        width: RohabSize.stopButtonWidth,
+        height: RohabSize.stopButtonHeight,
         child: FilledButton(
           key: SafetyBanner.stopKey,
           onPressed: onPressed,
           style: FilledButton.styleFrom(
             backgroundColor: c.danger,
             foregroundColor: c.onDanger,
-            minimumSize: const Size(112, Sizes.stopButton),
+            minimumSize: const Size(
+                RohabSize.stopButtonWidth, RohabSize.stopButtonHeight),
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(RohabShape.radius)),
             textStyle: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 24,
+              fontFamily: RohabTokens.fontFamily,
+              fontSize: RohabType.title,
               fontWeight: FontWeight.w700,
               letterSpacing: 1,
             ),

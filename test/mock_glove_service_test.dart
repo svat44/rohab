@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rohab/glove/glove_service.dart';
@@ -6,7 +8,7 @@ import 'package:rohab/glove/mock_glove_service.dart';
 void main() {
   late MockGloveService glove;
 
-  setUp(() => glove = MockGloveService());
+  setUp(() => glove = MockGloveService(random: Random(3)));
 
   void connect(FakeAsync async) {
     glove.connect();
@@ -111,6 +113,62 @@ void main() {
         async.elapse(MockGloveService.tick);
         expect(glove.snapshot.value.emg, inInclusiveRange(0, 1023));
       }
+      glove.dispose();
+    });
+  });
+
+  group('simulated EMG', () {
+    double meanOver(FakeAsync async, Duration d) {
+      final samples = <int>[];
+      final sub = glove.emgSamples.listen(samples.add);
+      async.elapse(d);
+      sub.cancel();
+      return samples.reduce((a, b) => a + b) / samples.length;
+    }
+
+    test('streams at 50 Hz', () {
+      fakeAsync((async) {
+        connect(async);
+        final samples = <int>[];
+        final sub = glove.emgSamples.listen(samples.add);
+        async.elapse(const Duration(seconds: 1));
+        sub.cancel();
+        expect(samples.length, 50);
+        glove.dispose();
+      });
+    });
+
+    for (final preset in MockEmgPreset.values) {
+      test('rest about 60, grip about ${preset.gripMean} (${preset.label})',
+          () {
+        fakeAsync((async) {
+          glove.preset = preset;
+          connect(async);
+          expect(meanOver(async, const Duration(seconds: 4)),
+              closeTo(60, 3));
+          glove.setPatientCue(PatientCue.grip);
+          async.elapse(MockGloveService.effortRamp);
+          expect(meanOver(async, const Duration(seconds: 4)),
+              closeTo(preset.gripMean, preset.gripSd / 2));
+          glove.dispose();
+        });
+      });
+    }
+
+    test('grip ramps over 300 ms', () {
+      fakeAsync((async) {
+        glove.preset = MockEmgPreset.strong;
+        connect(async);
+        glove.setPatientCue(PatientCue.grip);
+        final early = meanOver(async, const Duration(milliseconds: 100));
+        expect(early, lessThan(250));
+        glove.dispose();
+      });
+    });
+
+    test('stores the threshold the app sends', () {
+      glove.setEmgThreshold(188);
+      expect(glove.emgThreshold, 188);
       glove.dispose();
     });
   });

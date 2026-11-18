@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../theme.dart';
+import '../theme/app_theme.dart';
 
 class NavDestination {
   const NavDestination(this.label, this.icon);
@@ -35,7 +35,7 @@ class BottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 80,
+          height: RohabSize.touchTarget + RohabSpace.s16,
           child: Row(
             children: [
               for (var i = 0; i < destinations.length; i++)
@@ -50,17 +50,17 @@ class BottomNav extends StatelessWidget {
                         children: [
                           Icon(
                             destinations[i].icon,
-                            size: 28,
-                            color: i == selectedIndex ? c.accent : c.gray,
+                            size: RohabSize.icon,
+                            color: i == selectedIndex ? c.accent : c.secondary,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: RohabSpace.s8 / 2),
                           Text(
                             destinations[i].label,
                             maxLines: 1,
                             overflow: TextOverflow.visible,
                             softWrap: false,
                             style: label.copyWith(
-                              color: i == selectedIndex ? c.accent : c.gray,
+                              color: i == selectedIndex ? c.accent : c.secondary,
                               fontWeight: i == selectedIndex
                                   ? FontWeight.w600
                                   : FontWeight.w500,

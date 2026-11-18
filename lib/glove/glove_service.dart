@@ -7,11 +7,15 @@ export 'glove_models.dart';
 /// The only way the UI talks to the glove.
 ///
 /// Implementations: [MockGloveService] today, a BLE implementation later.
-/// The UI never imports an implementation directly; it gets one from
-/// lib/app/glove_service_factory.dart.
+/// The UI never constructs an implementation; it gets one from
+/// lib/app/glove_service_factory.dart through gloveServiceProvider.
 abstract class GloveService {
-  /// Current glove state. Updates whenever telemetry arrives.
+  /// Current glove state. Updates whenever telemetry arrives (about 20 Hz).
   ValueListenable<GloveSnapshot> get snapshot;
+
+  /// EMG envelope samples, 0-1023, one event per sample at 50 Hz.
+  /// The BLE implementation unpacks 5 samples per notification.
+  Stream<int> get emgSamples;
 
   Future<void> connect();
 
@@ -20,6 +24,9 @@ abstract class GloveService {
   Future<void> setMode(GloveMode mode);
 
   Future<void> setTargetPressure(double kPa);
+
+  /// EMG level (0-1023) at which the glove starts an assisted grip.
+  Future<void> setEmgThreshold(int threshold);
 
   /// Begin repeating grip cycles in the current mode.
   Future<void> start();
@@ -32,4 +39,13 @@ abstract class GloveService {
   Future<void> emergencyVent();
 
   void dispose();
+}
+
+/// What the screen is asking the patient to do.
+enum PatientCue { rest, grip }
+
+/// Implemented only by simulated gloves, so a fake patient can follow the
+/// on-screen cue. Real hardware has a real patient and does not implement it.
+abstract class PatientCueSink {
+  void setPatientCue(PatientCue cue);
 }

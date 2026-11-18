@@ -3,16 +3,15 @@ import 'package:material_ui/material_ui.dart';
 import '../widgets/placeholder_body.dart';
 
 /// Placeholder. Built in a later session.
-class ExercisesScreen extends StatelessWidget {
-  const ExercisesScreen({super.key});
+class ProgressScreen extends StatelessWidget {
+  const ProgressScreen({super.key});
 
-  static const title = 'Exercises';
 
   @override
   Widget build(BuildContext context) {
     return const PlaceholderBody(
       description:
-          'Choose assisted grip, passive range of motion, or mirror mode, and follow the steps for each.',
+          'See your reps, session minutes, and muscle signal over the past week, month, or 3 months.',
     );
   }
 }

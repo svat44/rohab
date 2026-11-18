@@ -1,22 +1,25 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../app/glove_scope.dart';
-import '../../glove/glove_service.dart';
-import '../theme.dart';
+import '../app/providers.dart';
+import '../app/router.dart';
+import '../glove/glove_service.dart';
+import '../theme/app_theme.dart';
 
 /// Connect to the glove, watch live pressure, start and end a session.
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
-  static const title = 'Home';
   static const primaryButtonKey = Key('home-primary');
   static const pressureKey = Key('home-pressure');
+  static const calibrationNeededKey = Key('home-calibration-needed');
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   GloveService? _glove;
   bool _wasActive = false;
   bool _endRequested = false;
@@ -26,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final glove = GloveScope.of(context);
+    final glove = ref.read(gloveServiceProvider);
     if (glove != _glove) {
       _glove?.snapshot.removeListener(_onSnapshot);
       _glove = glove..snapshot.addListener(_onSnapshot);
@@ -72,7 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final glove = GloveScope.of(context);
+    final glove = ref.watch(gloveServiceProvider);
+    final calibrationNeeded = ref.watch(calibrationNeededProvider);
     return ValueListenableBuilder<GloveSnapshot>(
       valueListenable: glove.snapshot,
       builder: (context, s, _) {
@@ -81,21 +85,29 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: Space.s3),
+                padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
                 children: [
-                  const SizedBox(height: Space.s1),
+                  const SizedBox(height: RohabSpace.s8),
                   // Outcome first: it's what the user looks for after a stop.
                   if (s.faults.isNotEmpty) _FaultNotice(faults: s.faults),
                   if (_summary != null)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: Space.s3),
+                      padding: const EdgeInsets.only(bottom: RohabSpace.s24),
                       child: Text(
                         _summary!,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ),
+                  // Shown above the readout so it's never below the fold.
+                  if (calibrationNeeded) ...[
+                    _CalibrationNeededRow(
+                      onCalibrate: () => context.go(Routes.calibration),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: RohabSpace.s16),
+                  ],
                   _PressureReadout(snapshot: s),
-                  const SizedBox(height: Space.s4),
+                  const SizedBox(height: RohabSpace.s32),
                   const Divider(),
                   _Row(
                     label: 'Glove',
@@ -111,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Divider(),
                   _Row(label: 'Mode', value: s.mode.label),
                   const Divider(),
-                  const SizedBox(height: Space.s3),
+                  const SizedBox(height: RohabSpace.s24),
                 ],
               ),
             ),
@@ -150,7 +162,7 @@ class _PressureReadout extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Pressure', style: t.labelMedium),
-          const SizedBox(height: Space.s1),
+          const SizedBox(height: RohabSpace.s8),
           // Scales down instead of overflowing at large system text sizes.
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -166,19 +178,19 @@ class _PressureReadout extends StatelessWidget {
                   style: s.isConnected
                       ? t.displayLarge
                       : t.displayLarge?.copyWith(
-                          color: c.gray, fontWeight: FontWeight.w400),
+                          color: c.secondary, fontWeight: FontWeight.w400),
                 ),
-                const SizedBox(width: Space.s1),
+                const SizedBox(width: RohabSpace.s8),
                 Text('kPa',
                     style:
-                        t.titleMedium?.copyWith(fontWeight: FontWeight.w500)),
+                        t.bodyLarge?.copyWith(fontWeight: FontWeight.w500)),
               ],
             ),
           ),
-          const SizedBox(height: Space.s1),
+          const SizedBox(height: RohabSpace.s8),
           Text(
             'Target ${s.targetKpa.toStringAsFixed(0)} kPa',
-            style: t.bodyLarge?.copyWith(color: c.gray),
+            style: t.bodyLarge?.copyWith(color: c.secondary),
           ),
         ],
       ),
@@ -196,11 +208,11 @@ class _Row extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: Sizes.touchTarget),
+      constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
       child: Row(
         children: [
           Expanded(child: Text(label, style: t.bodyLarge)),
-          const SizedBox(width: Space.s2),
+          const SizedBox(width: RohabSpace.s16),
           ConstrainedBox(
             constraints: BoxConstraints(
                 maxWidth: MediaQuery.sizeOf(context).width * 0.55),
@@ -210,6 +222,27 @@ class _Row extends StatelessWidget {
               style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalibrationNeededRow extends StatelessWidget {
+  const _CalibrationNeededRow({required this.onCalibrate});
+
+  final VoidCallback onCalibrate;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return ConstrainedBox(
+      key: HomeScreen.calibrationNeededKey,
+      constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+      child: Row(
+        children: [
+          Expanded(child: Text('Calibration needed', style: t.bodyLarge)),
+          TextButton(onPressed: onCalibrate, child: const Text('Calibrate')),
         ],
       ),
     );
@@ -226,20 +259,20 @@ class _FaultNotice extends StatelessWidget {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
     return Container(
-      margin: const EdgeInsets.only(bottom: Space.s3),
-      padding: const EdgeInsets.all(Space.s2),
+      margin: const EdgeInsets.only(bottom: RohabSpace.s24),
+      padding: const EdgeInsets.all(RohabSpace.s16),
       decoration: BoxDecoration(
         border: Border.all(color: c.danger),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(RohabShape.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             faults.map((f) => f.label).join('. '),
-            style: t.titleMedium?.copyWith(color: c.danger),
+            style: t.labelLarge?.copyWith(color: c.danger),
           ),
-          const SizedBox(height: Space.s1),
+          const SizedBox(height: RohabSpace.s8),
           Text(
             'The glove has vented. Check the fit, then start again.',
             style: t.bodyLarge,
@@ -278,7 +311,7 @@ class _Actions extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          Space.s3, Space.s2, Space.s3, Space.s2),
+          RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, RohabSpace.s16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -287,13 +320,13 @@ class _Actions extends StatelessWidget {
         // a different action.
         children: [
           SizedBox(
-            height: Sizes.touchTarget,
+            height: RohabSize.touchTarget,
             child: canDisconnect
                 ? TextButton(
                     onPressed: onDisconnect, child: const Text('Disconnect'))
                 : null,
           ),
-          const SizedBox(height: Space.s1),
+          const SizedBox(height: RohabSpace.s8),
           FilledButton(
             key: HomeScreen.primaryButtonKey,
             onPressed: action,

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../theme.dart';
+import '../theme/app_theme.dart';
 
 /// Body for screens not built yet: one plain sentence under the title.
 class PlaceholderBody extends StatelessWidget {
@@ -11,7 +11,7 @@ class PlaceholderBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.s3, 0, Space.s3, Space.s3),
+      padding: const EdgeInsets.fromLTRB(RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
       children: [
         Text(description, style: Theme.of(context).textTheme.bodyLarge),
       ],
