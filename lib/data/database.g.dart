@@ -85,6 +85,66 @@ class $ExerciseSessionsTable extends ExerciseSessions
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _metricUnitMeta = const VerificationMeta(
+    'metricUnit',
+  );
+  @override
+  late final GeneratedColumn<String> metricUnit = GeneratedColumn<String>(
+    'metric_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('%'),
+  );
+  static const VerificationMeta _avgAmplitudeMeta = const VerificationMeta(
+    'avgAmplitude',
+  );
+  @override
+  late final GeneratedColumn<double> avgAmplitude = GeneratedColumn<double>(
+    'avg_amplitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avgPeakSpeedMeta = const VerificationMeta(
+    'avgPeakSpeed',
+  );
+  @override
+  late final GeneratedColumn<double> avgPeakSpeed = GeneratedColumn<double>(
+    'avg_peak_speed',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avgSmoothnessMeta = const VerificationMeta(
+    'avgSmoothness',
+  );
+  @override
+  late final GeneratedColumn<double> avgSmoothness = GeneratedColumn<double>(
+    'avg_smoothness',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fatiguedMeta = const VerificationMeta(
+    'fatigued',
+  );
+  @override
+  late final GeneratedColumn<bool> fatigued = GeneratedColumn<bool>(
+    'fatigued',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("fatigued" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _durationSecMeta = const VerificationMeta(
     'durationSec',
   );
@@ -116,6 +176,11 @@ class $ExerciseSessionsTable extends ExerciseSessions
     targetReps,
     rangeMin,
     rangeMax,
+    metricUnit,
+    avgAmplitude,
+    avgPeakSpeed,
+    avgSmoothness,
+    fatigued,
     durationSec,
     startedAt,
   ];
@@ -176,6 +241,45 @@ class $ExerciseSessionsTable extends ExerciseSessions
         rangeMax.isAcceptableOrUnknown(data['range_max']!, _rangeMaxMeta),
       );
     }
+    if (data.containsKey('metric_unit')) {
+      context.handle(
+        _metricUnitMeta,
+        metricUnit.isAcceptableOrUnknown(data['metric_unit']!, _metricUnitMeta),
+      );
+    }
+    if (data.containsKey('avg_amplitude')) {
+      context.handle(
+        _avgAmplitudeMeta,
+        avgAmplitude.isAcceptableOrUnknown(
+          data['avg_amplitude']!,
+          _avgAmplitudeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('avg_peak_speed')) {
+      context.handle(
+        _avgPeakSpeedMeta,
+        avgPeakSpeed.isAcceptableOrUnknown(
+          data['avg_peak_speed']!,
+          _avgPeakSpeedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('avg_smoothness')) {
+      context.handle(
+        _avgSmoothnessMeta,
+        avgSmoothness.isAcceptableOrUnknown(
+          data['avg_smoothness']!,
+          _avgSmoothnessMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fatigued')) {
+      context.handle(
+        _fatiguedMeta,
+        fatigued.isAcceptableOrUnknown(data['fatigued']!, _fatiguedMeta),
+      );
+    }
     if (data.containsKey('duration_sec')) {
       context.handle(
         _durationSecMeta,
@@ -232,6 +336,26 @@ class $ExerciseSessionsTable extends ExerciseSessions
         DriftSqlType.double,
         data['${effectivePrefix}range_max'],
       ),
+      metricUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metric_unit'],
+      )!,
+      avgAmplitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_amplitude'],
+      ),
+      avgPeakSpeed: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_peak_speed'],
+      ),
+      avgSmoothness: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_smoothness'],
+      ),
+      fatigued: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}fatigued'],
+      )!,
       durationSec: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}duration_sec'],
@@ -261,10 +385,23 @@ class ExerciseSessionRow extends DataClass
   final int reps;
   final int targetReps;
 
-  /// Smallest and largest openness (or spread) %, 0-100. Null if the hand
-  /// was never measured.
+  /// Smallest and largest value reached, in [metricUnit]: finger bend in
+  /// degrees (mean MCP + PIP + DIP) or spread %. Null if never measured.
   final double? rangeMin;
   final double? rangeMax;
+
+  /// "deg" or "%". Added in schema 2; older rows were openness %.
+  final String metricUnit;
+
+  /// Per-rep averages (schema 2): movement size in [metricUnit], peak
+  /// speed in [metricUnit] per second, SPARC smoothness (closer to 0 is
+  /// smoother).
+  final double? avgAmplitude;
+  final double? avgPeakSpeed;
+  final double? avgSmoothness;
+
+  /// Later reps were clearly smaller than the first (schema 2).
+  final bool fatigued;
   final int durationSec;
   final DateTime startedAt;
   const ExerciseSessionRow({
@@ -275,6 +412,11 @@ class ExerciseSessionRow extends DataClass
     required this.targetReps,
     this.rangeMin,
     this.rangeMax,
+    required this.metricUnit,
+    this.avgAmplitude,
+    this.avgPeakSpeed,
+    this.avgSmoothness,
+    required this.fatigued,
     required this.durationSec,
     required this.startedAt,
   });
@@ -292,6 +434,17 @@ class ExerciseSessionRow extends DataClass
     if (!nullToAbsent || rangeMax != null) {
       map['range_max'] = Variable<double>(rangeMax);
     }
+    map['metric_unit'] = Variable<String>(metricUnit);
+    if (!nullToAbsent || avgAmplitude != null) {
+      map['avg_amplitude'] = Variable<double>(avgAmplitude);
+    }
+    if (!nullToAbsent || avgPeakSpeed != null) {
+      map['avg_peak_speed'] = Variable<double>(avgPeakSpeed);
+    }
+    if (!nullToAbsent || avgSmoothness != null) {
+      map['avg_smoothness'] = Variable<double>(avgSmoothness);
+    }
+    map['fatigued'] = Variable<bool>(fatigued);
     map['duration_sec'] = Variable<int>(durationSec);
     map['started_at'] = Variable<DateTime>(startedAt);
     return map;
@@ -310,6 +463,17 @@ class ExerciseSessionRow extends DataClass
       rangeMax: rangeMax == null && nullToAbsent
           ? const Value.absent()
           : Value(rangeMax),
+      metricUnit: Value(metricUnit),
+      avgAmplitude: avgAmplitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgAmplitude),
+      avgPeakSpeed: avgPeakSpeed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgPeakSpeed),
+      avgSmoothness: avgSmoothness == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgSmoothness),
+      fatigued: Value(fatigued),
       durationSec: Value(durationSec),
       startedAt: Value(startedAt),
     );
@@ -328,6 +492,11 @@ class ExerciseSessionRow extends DataClass
       targetReps: serializer.fromJson<int>(json['targetReps']),
       rangeMin: serializer.fromJson<double?>(json['rangeMin']),
       rangeMax: serializer.fromJson<double?>(json['rangeMax']),
+      metricUnit: serializer.fromJson<String>(json['metricUnit']),
+      avgAmplitude: serializer.fromJson<double?>(json['avgAmplitude']),
+      avgPeakSpeed: serializer.fromJson<double?>(json['avgPeakSpeed']),
+      avgSmoothness: serializer.fromJson<double?>(json['avgSmoothness']),
+      fatigued: serializer.fromJson<bool>(json['fatigued']),
       durationSec: serializer.fromJson<int>(json['durationSec']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
     );
@@ -343,6 +512,11 @@ class ExerciseSessionRow extends DataClass
       'targetReps': serializer.toJson<int>(targetReps),
       'rangeMin': serializer.toJson<double?>(rangeMin),
       'rangeMax': serializer.toJson<double?>(rangeMax),
+      'metricUnit': serializer.toJson<String>(metricUnit),
+      'avgAmplitude': serializer.toJson<double?>(avgAmplitude),
+      'avgPeakSpeed': serializer.toJson<double?>(avgPeakSpeed),
+      'avgSmoothness': serializer.toJson<double?>(avgSmoothness),
+      'fatigued': serializer.toJson<bool>(fatigued),
       'durationSec': serializer.toJson<int>(durationSec),
       'startedAt': serializer.toJson<DateTime>(startedAt),
     };
@@ -356,6 +530,11 @@ class ExerciseSessionRow extends DataClass
     int? targetReps,
     Value<double?> rangeMin = const Value.absent(),
     Value<double?> rangeMax = const Value.absent(),
+    String? metricUnit,
+    Value<double?> avgAmplitude = const Value.absent(),
+    Value<double?> avgPeakSpeed = const Value.absent(),
+    Value<double?> avgSmoothness = const Value.absent(),
+    bool? fatigued,
     int? durationSec,
     DateTime? startedAt,
   }) => ExerciseSessionRow(
@@ -366,6 +545,13 @@ class ExerciseSessionRow extends DataClass
     targetReps: targetReps ?? this.targetReps,
     rangeMin: rangeMin.present ? rangeMin.value : this.rangeMin,
     rangeMax: rangeMax.present ? rangeMax.value : this.rangeMax,
+    metricUnit: metricUnit ?? this.metricUnit,
+    avgAmplitude: avgAmplitude.present ? avgAmplitude.value : this.avgAmplitude,
+    avgPeakSpeed: avgPeakSpeed.present ? avgPeakSpeed.value : this.avgPeakSpeed,
+    avgSmoothness: avgSmoothness.present
+        ? avgSmoothness.value
+        : this.avgSmoothness,
+    fatigued: fatigued ?? this.fatigued,
     durationSec: durationSec ?? this.durationSec,
     startedAt: startedAt ?? this.startedAt,
   );
@@ -382,6 +568,19 @@ class ExerciseSessionRow extends DataClass
           : this.targetReps,
       rangeMin: data.rangeMin.present ? data.rangeMin.value : this.rangeMin,
       rangeMax: data.rangeMax.present ? data.rangeMax.value : this.rangeMax,
+      metricUnit: data.metricUnit.present
+          ? data.metricUnit.value
+          : this.metricUnit,
+      avgAmplitude: data.avgAmplitude.present
+          ? data.avgAmplitude.value
+          : this.avgAmplitude,
+      avgPeakSpeed: data.avgPeakSpeed.present
+          ? data.avgPeakSpeed.value
+          : this.avgPeakSpeed,
+      avgSmoothness: data.avgSmoothness.present
+          ? data.avgSmoothness.value
+          : this.avgSmoothness,
+      fatigued: data.fatigued.present ? data.fatigued.value : this.fatigued,
       durationSec: data.durationSec.present
           ? data.durationSec.value
           : this.durationSec,
@@ -399,6 +598,11 @@ class ExerciseSessionRow extends DataClass
           ..write('targetReps: $targetReps, ')
           ..write('rangeMin: $rangeMin, ')
           ..write('rangeMax: $rangeMax, ')
+          ..write('metricUnit: $metricUnit, ')
+          ..write('avgAmplitude: $avgAmplitude, ')
+          ..write('avgPeakSpeed: $avgPeakSpeed, ')
+          ..write('avgSmoothness: $avgSmoothness, ')
+          ..write('fatigued: $fatigued, ')
           ..write('durationSec: $durationSec, ')
           ..write('startedAt: $startedAt')
           ..write(')'))
@@ -414,6 +618,11 @@ class ExerciseSessionRow extends DataClass
     targetReps,
     rangeMin,
     rangeMax,
+    metricUnit,
+    avgAmplitude,
+    avgPeakSpeed,
+    avgSmoothness,
+    fatigued,
     durationSec,
     startedAt,
   );
@@ -428,6 +637,11 @@ class ExerciseSessionRow extends DataClass
           other.targetReps == this.targetReps &&
           other.rangeMin == this.rangeMin &&
           other.rangeMax == this.rangeMax &&
+          other.metricUnit == this.metricUnit &&
+          other.avgAmplitude == this.avgAmplitude &&
+          other.avgPeakSpeed == this.avgPeakSpeed &&
+          other.avgSmoothness == this.avgSmoothness &&
+          other.fatigued == this.fatigued &&
           other.durationSec == this.durationSec &&
           other.startedAt == this.startedAt);
 }
@@ -440,6 +654,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
   final Value<int> targetReps;
   final Value<double?> rangeMin;
   final Value<double?> rangeMax;
+  final Value<String> metricUnit;
+  final Value<double?> avgAmplitude;
+  final Value<double?> avgPeakSpeed;
+  final Value<double?> avgSmoothness;
+  final Value<bool> fatigued;
   final Value<int> durationSec;
   final Value<DateTime> startedAt;
   const ExerciseSessionsCompanion({
@@ -450,6 +669,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     this.targetReps = const Value.absent(),
     this.rangeMin = const Value.absent(),
     this.rangeMax = const Value.absent(),
+    this.metricUnit = const Value.absent(),
+    this.avgAmplitude = const Value.absent(),
+    this.avgPeakSpeed = const Value.absent(),
+    this.avgSmoothness = const Value.absent(),
+    this.fatigued = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.startedAt = const Value.absent(),
   });
@@ -461,6 +685,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     required int targetReps,
     this.rangeMin = const Value.absent(),
     this.rangeMax = const Value.absent(),
+    this.metricUnit = const Value.absent(),
+    this.avgAmplitude = const Value.absent(),
+    this.avgPeakSpeed = const Value.absent(),
+    this.avgSmoothness = const Value.absent(),
+    this.fatigued = const Value.absent(),
     required int durationSec,
     required DateTime startedAt,
   }) : exerciseId = Value(exerciseId),
@@ -476,6 +705,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     Expression<int>? targetReps,
     Expression<double>? rangeMin,
     Expression<double>? rangeMax,
+    Expression<String>? metricUnit,
+    Expression<double>? avgAmplitude,
+    Expression<double>? avgPeakSpeed,
+    Expression<double>? avgSmoothness,
+    Expression<bool>? fatigued,
     Expression<int>? durationSec,
     Expression<DateTime>? startedAt,
   }) {
@@ -487,6 +721,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
       if (targetReps != null) 'target_reps': targetReps,
       if (rangeMin != null) 'range_min': rangeMin,
       if (rangeMax != null) 'range_max': rangeMax,
+      if (metricUnit != null) 'metric_unit': metricUnit,
+      if (avgAmplitude != null) 'avg_amplitude': avgAmplitude,
+      if (avgPeakSpeed != null) 'avg_peak_speed': avgPeakSpeed,
+      if (avgSmoothness != null) 'avg_smoothness': avgSmoothness,
+      if (fatigued != null) 'fatigued': fatigued,
       if (durationSec != null) 'duration_sec': durationSec,
       if (startedAt != null) 'started_at': startedAt,
     });
@@ -500,6 +739,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     Value<int>? targetReps,
     Value<double?>? rangeMin,
     Value<double?>? rangeMax,
+    Value<String>? metricUnit,
+    Value<double?>? avgAmplitude,
+    Value<double?>? avgPeakSpeed,
+    Value<double?>? avgSmoothness,
+    Value<bool>? fatigued,
     Value<int>? durationSec,
     Value<DateTime>? startedAt,
   }) {
@@ -511,6 +755,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
       targetReps: targetReps ?? this.targetReps,
       rangeMin: rangeMin ?? this.rangeMin,
       rangeMax: rangeMax ?? this.rangeMax,
+      metricUnit: metricUnit ?? this.metricUnit,
+      avgAmplitude: avgAmplitude ?? this.avgAmplitude,
+      avgPeakSpeed: avgPeakSpeed ?? this.avgPeakSpeed,
+      avgSmoothness: avgSmoothness ?? this.avgSmoothness,
+      fatigued: fatigued ?? this.fatigued,
       durationSec: durationSec ?? this.durationSec,
       startedAt: startedAt ?? this.startedAt,
     );
@@ -540,6 +789,21 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     if (rangeMax.present) {
       map['range_max'] = Variable<double>(rangeMax.value);
     }
+    if (metricUnit.present) {
+      map['metric_unit'] = Variable<String>(metricUnit.value);
+    }
+    if (avgAmplitude.present) {
+      map['avg_amplitude'] = Variable<double>(avgAmplitude.value);
+    }
+    if (avgPeakSpeed.present) {
+      map['avg_peak_speed'] = Variable<double>(avgPeakSpeed.value);
+    }
+    if (avgSmoothness.present) {
+      map['avg_smoothness'] = Variable<double>(avgSmoothness.value);
+    }
+    if (fatigued.present) {
+      map['fatigued'] = Variable<bool>(fatigued.value);
+    }
     if (durationSec.present) {
       map['duration_sec'] = Variable<int>(durationSec.value);
     }
@@ -559,6 +823,11 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
           ..write('targetReps: $targetReps, ')
           ..write('rangeMin: $rangeMin, ')
           ..write('rangeMax: $rangeMax, ')
+          ..write('metricUnit: $metricUnit, ')
+          ..write('avgAmplitude: $avgAmplitude, ')
+          ..write('avgPeakSpeed: $avgPeakSpeed, ')
+          ..write('avgSmoothness: $avgSmoothness, ')
+          ..write('fatigued: $fatigued, ')
           ..write('durationSec: $durationSec, ')
           ..write('startedAt: $startedAt')
           ..write(')'))
@@ -588,6 +857,11 @@ typedef $$ExerciseSessionsTableCreateCompanionBuilder =
       required int targetReps,
       Value<double?> rangeMin,
       Value<double?> rangeMax,
+      Value<String> metricUnit,
+      Value<double?> avgAmplitude,
+      Value<double?> avgPeakSpeed,
+      Value<double?> avgSmoothness,
+      Value<bool> fatigued,
       required int durationSec,
       required DateTime startedAt,
     });
@@ -600,6 +874,11 @@ typedef $$ExerciseSessionsTableUpdateCompanionBuilder =
       Value<int> targetReps,
       Value<double?> rangeMin,
       Value<double?> rangeMax,
+      Value<String> metricUnit,
+      Value<double?> avgAmplitude,
+      Value<double?> avgPeakSpeed,
+      Value<double?> avgSmoothness,
+      Value<bool> fatigued,
       Value<int> durationSec,
       Value<DateTime> startedAt,
     });
@@ -645,6 +924,31 @@ class $$ExerciseSessionsTableFilterComposer
 
   ColumnFilters<double> get rangeMax => $composableBuilder(
     column: $table.rangeMax,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metricUnit => $composableBuilder(
+    column: $table.metricUnit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgAmplitude => $composableBuilder(
+    column: $table.avgAmplitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgPeakSpeed => $composableBuilder(
+    column: $table.avgPeakSpeed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgSmoothness => $composableBuilder(
+    column: $table.avgSmoothness,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get fatigued => $composableBuilder(
+    column: $table.fatigued,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -703,6 +1007,31 @@ class $$ExerciseSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get metricUnit => $composableBuilder(
+    column: $table.metricUnit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgAmplitude => $composableBuilder(
+    column: $table.avgAmplitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgPeakSpeed => $composableBuilder(
+    column: $table.avgPeakSpeed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgSmoothness => $composableBuilder(
+    column: $table.avgSmoothness,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get fatigued => $composableBuilder(
+    column: $table.fatigued,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get durationSec => $composableBuilder(
     column: $table.durationSec,
     builder: (column) => ColumnOrderings(column),
@@ -747,6 +1076,29 @@ class $$ExerciseSessionsTableAnnotationComposer
 
   GeneratedColumn<double> get rangeMax =>
       $composableBuilder(column: $table.rangeMax, builder: (column) => column);
+
+  GeneratedColumn<String> get metricUnit => $composableBuilder(
+    column: $table.metricUnit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get avgAmplitude => $composableBuilder(
+    column: $table.avgAmplitude,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get avgPeakSpeed => $composableBuilder(
+    column: $table.avgPeakSpeed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get avgSmoothness => $composableBuilder(
+    column: $table.avgSmoothness,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get fatigued =>
+      $composableBuilder(column: $table.fatigued, builder: (column) => column);
 
   GeneratedColumn<int> get durationSec => $composableBuilder(
     column: $table.durationSec,
@@ -801,6 +1153,11 @@ class $$ExerciseSessionsTableTableManager
                 Value<int> targetReps = const Value.absent(),
                 Value<double?> rangeMin = const Value.absent(),
                 Value<double?> rangeMax = const Value.absent(),
+                Value<String> metricUnit = const Value.absent(),
+                Value<double?> avgAmplitude = const Value.absent(),
+                Value<double?> avgPeakSpeed = const Value.absent(),
+                Value<double?> avgSmoothness = const Value.absent(),
+                Value<bool> fatigued = const Value.absent(),
                 Value<int> durationSec = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
               }) => ExerciseSessionsCompanion(
@@ -811,6 +1168,11 @@ class $$ExerciseSessionsTableTableManager
                 targetReps: targetReps,
                 rangeMin: rangeMin,
                 rangeMax: rangeMax,
+                metricUnit: metricUnit,
+                avgAmplitude: avgAmplitude,
+                avgPeakSpeed: avgPeakSpeed,
+                avgSmoothness: avgSmoothness,
+                fatigued: fatigued,
                 durationSec: durationSec,
                 startedAt: startedAt,
               ),
@@ -823,6 +1185,11 @@ class $$ExerciseSessionsTableTableManager
                 required int targetReps,
                 Value<double?> rangeMin = const Value.absent(),
                 Value<double?> rangeMax = const Value.absent(),
+                Value<String> metricUnit = const Value.absent(),
+                Value<double?> avgAmplitude = const Value.absent(),
+                Value<double?> avgPeakSpeed = const Value.absent(),
+                Value<double?> avgSmoothness = const Value.absent(),
+                Value<bool> fatigued = const Value.absent(),
                 required int durationSec,
                 required DateTime startedAt,
               }) => ExerciseSessionsCompanion.insert(
@@ -833,6 +1200,11 @@ class $$ExerciseSessionsTableTableManager
                 targetReps: targetReps,
                 rangeMin: rangeMin,
                 rangeMax: rangeMax,
+                metricUnit: metricUnit,
+                avgAmplitude: avgAmplitude,
+                avgPeakSpeed: avgPeakSpeed,
+                avgSmoothness: avgSmoothness,
+                fatigued: fatigued,
                 durationSec: durationSec,
                 startedAt: startedAt,
               ),

@@ -27,7 +27,8 @@ void main() {
     // The table has only these columns: no media, no landmarks.
     expect(db.exerciseSessions.$columns.map((c) => c.name).toSet(), {
       'id', 'exercise_id', 'mode', 'reps', 'target_reps', 'range_min',
-      'range_max', 'duration_sec', 'started_at',
+      'range_max', 'duration_sec', 'started_at', 'metric_unit',
+      'avg_amplitude', 'avg_peak_speed', 'avg_smoothness', 'fatigued',
     });
   });
 }

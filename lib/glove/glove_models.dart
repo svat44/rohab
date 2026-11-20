@@ -53,7 +53,8 @@ class GloveSnapshot {
     state: GloveState.idle,
     mode: GloveMode.assist,
     pressureKpa: 0,
-    targetKpa: 40,
+    // Placeholder from the literature; see docs/rehab-science.md section 8.
+    targetKpa: 200,
     emg: 0,
     reps: 0,
     faults: {},

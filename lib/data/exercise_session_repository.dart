@@ -13,6 +13,11 @@ class ExerciseSessionRecord {
     required this.rangeMax,
     required this.durationSec,
     required this.startedAt,
+    this.metricUnit = 'deg',
+    this.avgAmplitude,
+    this.avgPeakSpeed,
+    this.avgSmoothness,
+    this.fatigued = false,
   });
 
   final String exerciseId;
@@ -23,6 +28,13 @@ class ExerciseSessionRecord {
   final double? rangeMax;
   final int durationSec;
   final DateTime startedAt;
+
+  /// "deg" or "%": the unit of the range and amplitude values.
+  final String metricUnit;
+  final double? avgAmplitude;
+  final double? avgPeakSpeed;
+  final double? avgSmoothness;
+  final bool fatigued;
 }
 
 /// Saves and reads exercise sessions. Progress (next session) reads it.
@@ -48,6 +60,11 @@ class DriftExerciseSessionRepository implements ExerciseSessionRepository {
             rangeMax: Value(r.rangeMax),
             durationSec: r.durationSec,
             startedAt: r.startedAt,
+            metricUnit: Value(r.metricUnit),
+            avgAmplitude: Value(r.avgAmplitude),
+            avgPeakSpeed: Value(r.avgPeakSpeed),
+            avgSmoothness: Value(r.avgSmoothness),
+            fatigued: Value(r.fatigued),
           ));
 
   @override
@@ -74,6 +91,11 @@ class InMemoryExerciseSessionRepository implements ExerciseSessionRepository {
       rangeMax: r.rangeMax,
       durationSec: r.durationSec,
       startedAt: r.startedAt,
+      metricUnit: r.metricUnit,
+      avgAmplitude: r.avgAmplitude,
+      avgPeakSpeed: r.avgPeakSpeed,
+      avgSmoothness: r.avgSmoothness,
+      fatigued: r.fatigued,
     ));
     return id;
   }

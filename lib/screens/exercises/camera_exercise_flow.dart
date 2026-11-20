@@ -238,15 +238,45 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
               liveRegion: true,
               child: Text(headline, style: t.headlineMedium),
             ),
-            const SizedBox(height: RohabSpace.s16),
-            if (s.rangeMin != null && s.rangeMax != null)
-              Text(
-                'Range: ${s.rangeMin!.round()}%–${s.rangeMax!.round()}%',
-                style: t.bodyLarge,
-              ),
             if (s.reps == 0) ...[
               const SizedBox(height: RohabSpace.s8),
               Text('Nothing was saved.', style: t.labelMedium),
+            ],
+            const SizedBox(height: RohabSpace.s16),
+            if (s.rangeMin != null && s.rangeMax != null) ...[
+              if (s.inDegrees) ...[
+                Text(
+                  'Range of motion: '
+                  '${(s.rangeMax! - s.rangeMin!).round()}°',
+                  style: t.bodyLarge,
+                ),
+                const SizedBox(height: RohabSpace.s8),
+                Text(
+                  'Finger bend from ${s.rangeMin!.round()}° (most open) '
+                  'to ${s.rangeMax!.round()}° (most closed).',
+                  style: t.labelMedium?.copyWith(color: context.colors.text),
+                ),
+              ] else
+                Text(
+                  'Range: ${s.rangeMin!.round()}%–${s.rangeMax!.round()}%',
+                  style: t.bodyLarge,
+                ),
+            ],
+            if (s.fatigued) ...[
+              const SizedBox(height: RohabSpace.s16),
+              Text(
+                'Your later movements were smaller. '
+                'Rest before the next exercise.',
+                style: t.bodyLarge,
+              ),
+            ],
+            if (s.inDegrees && s.rangeMin != null) ...[
+              const SizedBox(height: RohabSpace.s16),
+              Text(
+                'Camera measurements are approximate, '
+                'about 10° either way per joint.',
+                style: t.labelMedium,
+              ),
             ],
           ],
         );
@@ -449,9 +479,14 @@ class _ExerciseReadout extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      exercise.kind == ExerciseKind.fingerTouches
-                          ? 'Next: ${fingerNames[c.expectedFinger]} finger'
-                          : '$measure ${c.percent.round()}%',
+                      c.suggestRest
+                          ? 'Movements are getting smaller. A rest may help.'
+                          : exercise.kind == ExerciseKind.fingerTouches
+                              ? 'Next: ${fingerNames[c.expectedFinger]} finger'
+                              : '$measure ${c.percent.round()}%'
+                                  '${c.closureDegrees == null ? '' : ' · bend ${c.closureDegrees!.round()}°'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: t.labelMedium
                           ?.copyWith(color: context.colors.text),
                     ),

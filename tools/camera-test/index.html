@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rohab Hand Tracking Test</title>
+<meta name="description" content="Live camera test of the hand tracking and joint-angle math Rohab uses. Video stays in this browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Rohab tokens (lib/theme/tokens.dart). One accent; red only for errors. */
+  :root {
+    --bg: #FAFAF9; --surface: #FFFFFF; --text: #1C1C1E; --secondary: #6B7280;
+    --divider: #E5E7EB; --accent: #0F766E; --on-accent: #FFFFFF; --danger: #DC2626;
+    --radius: 12px;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111312; --surface: #1A1D1C; --text: #F3F4F3; --secondary: #9CA3AF;
+      --divider: #2A2E2D; --accent: #2DD4BF; --on-accent: #0B1F1D; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 20px/1.4 var(--font); }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 24px;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  header { grid-column: 1 / -1; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.3px; }
+  .lede { margin: 0; color: var(--secondary); font-size: 16px; }
+  .stage { position: relative; background: var(--surface); border: 1px solid var(--divider);
+    border-radius: var(--radius); overflow: hidden; aspect-ratio: 4 / 3; }
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .mirror { transform: scaleX(-1); }
+  .stage .empty { position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--secondary); font-size: 16px; padding: 24px; text-align: center; }
+  .panel { display: grid; gap: 16px; }
+  .status { font-weight: 600; min-height: 28px; }
+  .status.error { color: var(--danger); }
+  .big { font-size: 56px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+  .label { font-size: 16px; font-weight: 500; color: var(--secondary); }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0;
+    border-bottom: 1px solid var(--divider); font-variant-numeric: tabular-nums; }
+  .row b { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 4px; border-bottom: 1px solid var(--divider); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 500; color: var(--secondary); }
+  .bar { height: 32px; background: var(--divider); border-radius: var(--radius); overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); }
+  button { font: 600 20px var(--font); min-height: 64px; padding: 0 24px; border-radius: var(--radius);
+    border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; width: 100%; }
+  button.text { background: transparent; color: var(--accent); }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .notes { font-size: 16px; color: var(--secondary); display: grid; gap: 8px; }
+  .notes p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Rohab hand tracking test</h1>
+    <p class="lede">The same Google MediaPipe hand model and joint-angle math the Rohab app uses. Video stays in this browser; nothing is uploaded or saved.</p>
+  </header>
+
+  <section>
+    <div class="stage" id="stage">
+      <video id="video" class="mirror" playsinline muted></video>
+      <canvas id="overlay" class="mirror"></canvas>
+      <div class="empty" id="empty">Camera is off.</div>
+    </div>
+  </section>
+
+  <section class="panel" aria-live="polite">
+    <div class="status" id="status">Press Start camera.</div>
+    <div>
+      <div class="label">Finger bend (mean of MCP + PIP + DIP)</div>
+      <div class="big"><span id="closure">–</span>°</div>
+      <div class="label">0° is straight. A full fist is about 250°.</div>
+    </div>
+    <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
+    <div>
+      <div class="row"><span>Range of motion this session</span><b id="rom">–</b></div>
+      <div class="row"><span>Most open / most closed</span><b id="minmax">–</b></div>
+      <div class="row"><span>Hand</span><b id="hand">–</b></div>
+      <div class="row"><span>Tracking speed</span><b id="fps">–</b></div>
+    </div>
+    <table aria-label="Joint angles in degrees">
+      <thead><tr><th>Finger</th><th>MCP</th><th>PIP</th><th>DIP</th><th>Total</th></tr></thead>
+      <tbody id="fingers"></tbody>
+    </table>
+    <div class="row"><span>Thumb IP / MCP / abduction</span><b id="thumb">–</b></div>
+    <button id="start">Start camera</button>
+    <button id="reset" class="text">Reset range</button>
+    <div class="notes">
+      <p>Angles are approximate: studies of this model report errors from about 4° to over 20° per joint, worst at the middle (PIP) joint.</p>
+      <p>For bending, show the hand from the side, in good light, with the whole hand in view.</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+// Pinned versions. The page needs internet to load them.
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.2";
+const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+// ---- Math: a direct port of lib/exercises/joint_angles.dart and
+// movement_quality.dart (OneEuroFilter). Keep the two in step.
+const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+const cross = (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
+const len = (a) => Math.sqrt(dot(a, a));
+const norm = (a) => { const l = len(a); return l ? { x: a.x / l, y: a.y / l, z: a.z / l } : a; };
+const DEG = 180 / Math.PI;
+
+function signedAngle(a, b, axis) {
+  const y = dot(cross(a, b), axis), x = dot(a, b);
+  return x === 0 && y === 0 ? 0 : Math.atan2(y, x) * DEG;
+}
+function angleBetween(u, v) {
+  const d = len(u) * len(v);
+  return d ? Math.acos(Math.max(-1, Math.min(1, dot(u, v) / d))) * DEG : 0;
+}
+const flexion = (a, j, b) => angleBetween(sub(j, a), sub(b, j));
+
+/** hand: "Left" | "Right" | null (the person's real hand). */
+function computeAngles(w, hand) {
+  const across = norm(sub(w[17], w[5]));
+  const raw = [5, 9, 13, 17].map((m) => [
+    signedAngle(sub(w[m], w[0]), sub(w[m + 1], w[m]), across),
+    signedAngle(sub(w[m + 1], w[m]), sub(w[m + 2], w[m + 1]), across),
+    signedAngle(sub(w[m + 2], w[m + 1]), sub(w[m + 3], w[m + 2]), across),
+  ]);
+  let sign = hand === "Right" ? -1 : hand === "Left" ? 1 : 0;
+  if (sign === 0) sign = raw.flat().reduce((s, v) => s + v, 0) >= 0 ? 1 : -1;
+  const fingers = raw.map(([mcp, pip, dip]) => ({ mcp: sign * mcp, pip: sign * pip, dip: sign * dip }));
+  fingers.forEach((f) => (f.total = f.mcp + f.pip + f.dip));
+  return {
+    fingers,
+    closure: fingers.reduce((s, f) => s + f.total, 0) / 4,
+    thumbMcp: flexion(w[1], w[2], w[3]),
+    thumbIp: flexion(w[2], w[3], w[4]),
+    thumbAbduction: angleBetween(sub(w[2], w[1]), sub(w[5], w[0])),
+  };
+}
+
+class OneEuroFilter {
+  constructor(minCutoff = 1.0, beta = 0.004, dCutoff = 1.0) {
+    Object.assign(this, { minCutoff, beta, dCutoff, x: null, dx: 0, t: null });
+  }
+  static alpha(cutoff, dt) { const tau = 1 / (2 * Math.PI * cutoff); return 1 / (1 + tau / dt); }
+  filter(x, tMs) {
+    if (this.x === null) { this.x = x; this.t = tMs; return x; }
+    const dt = (tMs - this.t) / 1000; this.t = tMs;
+    if (dt <= 0) return this.x;
+    this.dx += OneEuroFilter.alpha(this.dCutoff, dt) * ((x - this.x) / dt - this.dx);
+    const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
+    return (this.x += OneEuroFilter.alpha(cutoff, dt) * (x - this.x));
+  }
+  reset() { this.x = null; this.t = null; this.dx = 0; }
+}
+
+// Exposed for automated checks and for anyone curious in the console.
+window.rohabMath = { computeAngles, OneEuroFilter };
+
+// ---- UI
+const $ = (id) => document.getElementById(id);
+const NAMES = ["Index", "Middle", "Ring", "Little"];
+const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const fmt = (v) => `${Math.round(v)}°`;
+
+let vision = null, landmarker = null, running = false, lastVideoTime = -1;
+let filters = new Map(), range = { min: Infinity, max: -Infinity };
+let frames = 0, windowStart = performance.now(), inferMs = 0;
+
+function setStatus(text, error = false) {
+  $("status").textContent = text;
+  $("status").classList.toggle("error", error);
+}
+
+async function loadModel() {
+  setStatus("Loading the hand model.");
+  vision ??= await import(`${MP}/vision_bundle.mjs`);
+  const files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+  const make = (delegate) => vision.HandLandmarker.createFromOptions(files, {
+    baseOptions: { modelAssetPath: MODEL, delegate },
+    runningMode: "VIDEO", numHands: 1,
+  });
+  try { landmarker = await make("GPU"); } catch { landmarker = await make("CPU"); }
+  window.rohabLandmarker = landmarker;
+  return vision;
+}
+
+/** For automated checks: run the model on a still image URL. */
+window.rohabAnalyzeImage = async (url) => {
+  if (!vision) await loadModel();
+  const still = await vision.HandLandmarker.createFromOptions(
+    await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`),
+    { baseOptions: { modelAssetPath: MODEL, delegate: "CPU" }, runningMode: "IMAGE", numHands: 2 });
+  const img = new Image(); img.crossOrigin = "anonymous"; img.src = url; await img.decode();
+  const r = still.detect(img);
+  still.close();
+  return r.worldLandmarks.map((w, i) => {
+    const label = r.handedness[i]?.[0]?.categoryName ?? null;
+    return { label, score: r.handedness[i]?.[0]?.score, labeled: computeAngles(w, label), unknown: computeAngles(w, null) };
+  });
+};
+
+async function start() {
+  $("start").disabled = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+    $("video").srcObject = stream;
+    await $("video").play();
+    $("empty").hidden = true;
+    if (!landmarker) await loadModel();
+    setStatus("Show one hand to the camera.");
+    running = true;
+    $("start").textContent = "Camera on";
+    requestAnimationFrame(loop);
+  } catch (e) {
+    $("start").disabled = false;
+    const denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+    setStatus(denied
+      ? "Camera access was refused. Allow the camera for this page in the browser's site settings, then try again."
+      : `Could not start: ${e && e.message ? e.message : e}`, true);
+  }
+}
+
+function smooth(key, value, t) {
+  if (!filters.has(key)) filters.set(key, new OneEuroFilter());
+  return filters.get(key).filter(value, t);
+}
+
+function loop() {
+  if (!running) return;
+  const video = $("video");
+  if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
+    lastVideoTime = video.currentTime;
+    const t = performance.now();
+    const r = landmarker.detectForVideo(video, t);
+    inferMs = performance.now() - t;
+    frames++;
+    draw(r, video);
+    show(r, t);
+  }
+  const now = performance.now();
+  if (now - windowStart >= 1000) {
+    $("fps").textContent = `${Math.round(frames * 1000 / (now - windowStart))} fps · ${inferMs.toFixed(0)} ms per frame`;
+    frames = 0; windowStart = now;
+  }
+  requestAnimationFrame(loop);
+}
+
+function draw(r, video) {
+  const c = $("overlay"), ctx = c.getContext("2d");
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  ctx.clearRect(0, 0, c.width, c.height);
+  const lm = r.landmarks[0];
+  if (!lm) return;
+  ctx.strokeStyle = css("--accent"); ctx.fillStyle = css("--accent"); ctx.lineWidth = 3;
+  for (const [a, b] of BONES) {
+    ctx.beginPath();
+    ctx.moveTo(lm[a].x * c.width, lm[a].y * c.height);
+    ctx.lineTo(lm[b].x * c.width, lm[b].y * c.height);
+    ctx.stroke();
+  }
+  for (const p of lm) { ctx.beginPath(); ctx.arc(p.x * c.width, p.y * c.height, 4, 0, 2 * Math.PI); ctx.fill(); }
+}
+
+function show(r, t) {
+  const w = r.worldLandmarks[0];
+  if (!w) {
+    setStatus("Show one hand to the camera.");
+    filters.forEach((f) => f.reset());
+    return;
+  }
+  const label = r.handedness[0]?.[0]?.categoryName ?? null;
+  const score = r.handedness[0]?.[0]?.score ?? 0;
+  if (score < 0.6) { setStatus("Hand unclear. Move it fully into view."); return; }
+  setStatus("Tracking.");
+  const a = computeAngles(w, label);
+  const closure = smooth("closure", a.closure, t);
+  range.min = Math.min(range.min, closure); range.max = Math.max(range.max, closure);
+  $("closure").textContent = Math.round(closure);
+  $("barFill").style.width = `${Math.max(0, Math.min(100, closure / 250 * 100))}%`;
+  $("rom").textContent = fmt(range.max - range.min);
+  $("minmax").textContent = `${fmt(range.min)} / ${fmt(range.max)}`;
+  $("hand").textContent = `${label === "Left" ? "Left" : label === "Right" ? "Right" : "Unknown"} (${Math.round(score * 100)}%)`;
+  $("fingers").innerHTML = a.fingers.map((f, i) => {
+    const s = (k) => Math.round(smooth(`${i}${k}`, f[k], t));
+    return `<tr><td>${NAMES[i]}</td><td>${s("mcp")}</td><td>${s("pip")}</td><td>${s("dip")}</td><td>${s("total")}</td></tr>`;
+  }).join("");
+  $("thumb").textContent = `${fmt(a.thumbIp)} / ${fmt(a.thumbMcp)} / ${fmt(a.thumbAbduction)}`;
+}
+
+$("start").addEventListener("click", start);
+$("reset").addEventListener("click", () => { range = { min: Infinity, max: -Infinity }; $("rom").textContent = "–"; $("minmax").textContent = "–"; });
+</script>
+</body>
+</html>

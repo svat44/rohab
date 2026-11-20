@@ -36,7 +36,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 2));
       expect(glove.snapshot.value.state, GloveState.holding);
-      expect(glove.snapshot.value.pressureKpa, closeTo(40, 0.5));
+      expect(glove.snapshot.value.pressureKpa, closeTo(200, 0.5));
 
       // Hold 2 s, vent 1 s.
       async.elapse(const Duration(seconds: 3, milliseconds: 200));
@@ -68,7 +68,7 @@ void main() {
       connect(async);
       glove.start();
       async.elapse(const Duration(seconds: 3));
-      expect(glove.snapshot.value.pressureKpa, closeTo(40, 0.5));
+      expect(glove.snapshot.value.pressureKpa, closeTo(200, 0.5));
       glove.emergencyVent();
       async.elapse(const Duration(milliseconds: 300));
       expect(glove.snapshot.value.pressureKpa, 0);

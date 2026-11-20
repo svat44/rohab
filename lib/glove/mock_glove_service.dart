@@ -38,14 +38,18 @@ class MockGloveService implements GloveService, PatientCueSink {
   static const tick = Duration(milliseconds: 50);
   static const emgTick = Duration(milliseconds: 20); // 50 Hz
   static const connectDelay = Duration(milliseconds: 600);
-  static const inflateRateKpaPerSec = 20.0;
-  static const ventRateKpaPerSec = 40.0;
-  static const emergencyVentRateKpaPerSec = 200.0;
+  // PLACEHOLDERS from the soft-actuator literature (fiber-reinforced
+  // pneumatic actuators assist at about 200 kPa and are run up to 300-500
+  // kPa; see docs/rehab-science.md section 8). Replace with the real
+  // glove's measured values.
+  static const inflateRateKpaPerSec = 100.0;
+  static const ventRateKpaPerSec = 200.0;
+  static const emergencyVentRateKpaPerSec = 1000.0;
   static const holdTime = Duration(seconds: 2);
   static const restTime = Duration(seconds: 1);
   static const inflateTimeout = Duration(seconds: 8);
   static const effortRamp = Duration(milliseconds: 300);
-  static const hardLimitKpa = 80.0;
+  static const hardLimitKpa = 300.0;
 
   final Random _random;
   final ValueNotifier<GloveSnapshot> _snapshot =

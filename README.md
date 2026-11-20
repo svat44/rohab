@@ -53,7 +53,9 @@ lib/
     mock_hand_tracker.dart        Scripted hand for tests and the web preview
     camera_permission.dart        Camera permission behind an interface
   exercises/
-    hand_metrics.dart             Pure Dart: PIP angles, openness, spread, ranges
+    joint_angles.dart             Pure Dart: MCP/PIP/DIP and thumb angles from 3D world landmarks
+    movement_quality.dart         One Euro filter, SPARC smoothness, per-rep stats, fatigue
+    hand_metrics.dart             Pure Dart: palm-normalized distances, spread, ranges
     rep_counter.dart              Hysteresis reps and finger-touch rounds
     exercise_catalog.dart         The three camera exercises
     camera_exercise_controller.dart  Steps, timing, counting, saving
@@ -81,6 +83,8 @@ test/
   calibration_flow_test.dart      Full flow, Cancel/Redo, presets, expiry, controller with mocktail
   safety_stop_test.dart           STOP from every screen and state
   mock_glove_service_test.dart    Simulated pressure and EMG
+  joint_angles_test.dart          Joint angles for both hands, sign, size independence
+  movement_quality_test.dart      Filter, SPARC, rep stats, swings, fatigue
   hand_metrics_test.dart          Angles, normalization, clamping, calibration
   rep_counter_test.dart           Reps, jitter, short reps, dropout, finger touches
   camera_flow_test.dart           Full camera flows with the mock hand
@@ -97,6 +101,18 @@ test/
 
 No screen or widget changes. Add the Bluetooth permissions (Info.plist,
 AndroidManifest) at the same time.
+
+## Hand tracking test page
+
+`tools/camera-test/index.html` runs the same MediaPipe hand model and the
+same joint-angle math (ported from `lib/exercises/joint_angles.dart`) in a
+desktop browser. Open the file in Chrome, press Start camera and allow the
+camera. It shows the 21 hand points, MCP/PIP/DIP angles per finger, finger
+bend, range of motion and tracking speed. It needs internet to load the
+model; video never leaves the browser. Keep its math in step with the Dart
+code.
+
+Background research behind the measurements: `docs/rehab-science.md`.
 
 ## Testing camera exercises on a phone
 

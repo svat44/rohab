@@ -157,6 +157,11 @@ class RangeCalibration {
   static const minOpennessSpan = 25.0;
   static const minSpreadSpan = 0.08;
 
+  /// Smallest usable range of finger bend (mean MCP + PIP + DIP), degrees.
+  /// Below this, movement is too close to camera tracking error (about
+  /// 10 degrees per joint) to count reliably.
+  static const minClosureSpan = 30.0;
+
   static double percentile(List<double> values, double p) {
     if (values.isEmpty) throw ArgumentError('no values');
     final s = [...values]..sort();

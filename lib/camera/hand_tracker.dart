@@ -1,8 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../exercises/hand_metrics.dart';
+import 'handedness.dart';
 
-enum Handedness { left, right, unknown }
+export 'handedness.dart';
 
 /// One processed camera frame with a hand in it.
 class HandFrame {
@@ -12,6 +13,7 @@ class HandFrame {
     required this.confidence,
     required this.timestamp,
     this.aspectRatio = 1,
+    this.worldLandmarks,
   });
 
   /// Frames below this confidence are ignored.
@@ -35,7 +37,17 @@ class HandFrame {
   /// normalized separately.
   final double aspectRatio;
 
+  /// 21 landmarks in metres, origin near the middle of the hand (MediaPipe
+  /// world landmarks). Joint angles come from these: unlike image
+  /// coordinates, they don't foreshorten when a finger bends toward the
+  /// camera. Null if the tracker doesn't provide them.
+  final List<Point3>? worldLandmarks;
+
   bool get isUsable => confidence >= minConfidence;
+
+  /// The best landmarks for angle math: world if available, else image
+  /// points with matching axis scales.
+  List<Point3> get measurePoints => worldLandmarks ?? points;
 
   /// Landmarks with x scaled so x and y share units, for angle and
   /// distance math.

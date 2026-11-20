@@ -193,7 +193,8 @@ void main() {
     await doReps(tester, h, 6);
 
     expect(find.text('Exercise complete. 10 reps.'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'^Range: \d+%–\d+%$')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^Range of motion: \d+°$')),
+        findsOneWidget);
     expect(find.text('Next exercise'), findsOneWidget);
     expect(find.text('Finish'), findsOneWidget);
     expect(h.tracker.started, isFalse, reason: 'camera off when done');
@@ -207,8 +208,14 @@ void main() {
     expect(row.mode, 'camera');
     expect(row.reps, 10);
     expect(row.targetReps, 10);
-    expect(row.rangeMin, lessThan(20));
-    expect(row.rangeMax, greaterThan(80));
+    // Finger bend in degrees: synthetic open hand about 0, fist about 217.
+    expect(row.metricUnit, 'deg');
+    expect(row.rangeMin, lessThan(30));
+    expect(row.rangeMax, greaterThan(180));
+    expect(row.avgAmplitude, greaterThan(150));
+    expect(row.avgPeakSpeed, greaterThan(0));
+    expect(row.avgSmoothness, lessThan(0));
+    expect(row.fatigued, isFalse);
     expect(row.durationSec, inInclusiveRange(10, 14));
     await close(tester, h);
   });
@@ -258,6 +265,38 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1100));
     expect(find.text('Open your hand as wide as you can.'), findsNothing);
     expect(repsText(tester), '0 of 8');
+    await close(tester, h);
+  });
+
+  testWidgets('shrinking movements suggest a rest and are saved as fatigued',
+      (tester) async {
+    final h = await launch(tester);
+    await openExercise(tester, 'open_close');
+    await tapPrimary(tester);
+    await passHandCheckAndCalibrate(tester, h);
+    await firstOpen(tester, h);
+    await doReps(tester, h, 5); // full fist to full open
+    expect(repsText(tester), '5 of 10');
+    // Tired: only half closing, too small to count.
+    for (var i = 0; i < 5; i++) {
+      h.tracker.pose = const HandPose(curl: 0.45);
+      await tester.pump(const Duration(milliseconds: 600));
+      h.tracker.pose = HandPose.open;
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+    expect(repsText(tester), '5 of 10');
+    expect(find.text('Movements are getting smaller. A rest may help.'),
+        findsOneWidget);
+    await tester.tap(find.text('End exercise'));
+    await tester.pump();
+    expect(find.text('Exercise ended. 5 reps.'), findsOneWidget);
+    expect(find.textContaining('Your later movements were smaller.'),
+        findsOneWidget);
+    await settleDb(tester);
+    final rows = (await tester.runAsync(
+        () => DriftExerciseSessionRepository(h.db).all()))!;
+    expect(rows.single.fatigued, isTrue);
+    expect(rows.single.reps, 5);
     await close(tester, h);
   });
 

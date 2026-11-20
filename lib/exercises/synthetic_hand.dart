@@ -81,6 +81,31 @@ class SyntheticHand {
     ];
   }
 
+  /// World landmarks in metres, like MediaPipe's handWorldLandmarks:
+  /// origin near the middle of the hand, palm about 8 cm wide.
+  ///
+  /// The image-space pose above is a left hand with its palm toward the
+  /// camera; [rightHand] mirrors it. Bend angles: MCP 30 x [curl], PIP
+  /// 110 x [curl], DIP 77 x [curl] degrees.
+  static List<Point3> world({
+    double curl = 0,
+    double spread = 0.3,
+    int? thumbOn,
+    bool rightHand = false,
+  }) {
+    const metresPerUnit = 0.45; // palm 0.18 units -> about 8 cm
+    final img = pose(curl: curl, spread: spread, thumbOn: thumbOn);
+    final c = img[9]; // middle MCP
+    return [
+      for (final p in img)
+        Point3(
+          (rightHand ? -1 : 1) * (p.x - c.x) * metresPerUnit,
+          (p.y - c.y) * metresPerUnit,
+          p.z * metresPerUnit,
+        ),
+    ];
+  }
+
   static Point3 _add(Point3 p, Point3 d, double len) =>
       Point3(p.x + d.x * len, p.y + d.y * len, p.z + d.z * len);
 }

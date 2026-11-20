@@ -78,10 +78,22 @@ class MockHandTracker implements HandTracker {
             Point3(q.x + _jitter(), q.y + _jitter(), q.z + _jitter()),
         ];
       }
+      var world = SyntheticHand.world(
+          curl: p.curl, spread: p.spread, thumbOn: p.thumbOn);
+      if (noise > 0) {
+        // Same jitter in metres (image unit is about 0.45 m here).
+        world = [
+          for (final q in world)
+            Point3(q.x + _jitter() * 0.45, q.y + _jitter() * 0.45,
+                q.z + _jitter() * 0.45),
+        ];
+      }
       final low = lowConfidenceEvery > 0 && _frameCount % lowConfidenceEvery == 0;
       _frames.add(HandFrame(
         landmarks: lm,
-        handedness: Handedness.right,
+        worldLandmarks: world,
+        // The synthetic hand is a left hand, palm to the camera.
+        handedness: Handedness.left,
         confidence: low ? 0.3 : 0.95,
         timestamp: t,
       ));

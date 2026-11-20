@@ -145,6 +145,9 @@ class MediaPipeHandTracker implements HandTracker {
     }
     if (result.handLandmarks.isEmpty) return;
     final hand = result.handLandmarks.first;
+    final world = result.handWorldLandmarks.isEmpty
+        ? null
+        : result.handWorldLandmarks.first;
     final category =
         result.handedness.isEmpty ? null : result.handedness.first.firstOrNull;
     _frames.add(HandFrame(
@@ -153,14 +156,18 @@ class MediaPipeHandTracker implements HandTracker {
       confidence: category?.score ?? 0,
       timestamp: Duration(milliseconds: result.timestampMilliseconds ?? now),
       aspectRatio: _aspect,
+      worldLandmarks:
+          world == null ? null : [for (final p in world) Point3(p.x, p.y, p.z)],
     ));
   }
 
-  /// MediaPipe labels hands as if the image were mirrored (a selfie). Front
-  /// camera frames arrive unmirrored, so the label is the other hand.
+  /// MediaPipe Tasks labels the subject's own hand when the image is not
+  /// mirrored, which camera frames are not (only the preview is). Checked
+  /// on MediaPipe's sample photos with tools/camera-test: with these labels
+  /// both hands read a fist as positive flexion.
   static Handedness _userHand(String? label) => switch (label) {
-        'Left' => Handedness.right,
-        'Right' => Handedness.left,
+        'Left' => Handedness.left,
+        'Right' => Handedness.right,
         _ => Handedness.unknown,
       };
 
