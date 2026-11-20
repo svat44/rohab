@@ -92,8 +92,13 @@ class JointAngles {
       Handedness.left => 1.0,
       Handedness.unknown => 0.0,
     };
-    if (sign == 0) {
-      final sum = raw.expand((f) => f).reduce((a, b) => a + b);
+    final sum = raw.expand((f) => f).reduce((a, b) => a + b);
+    // A real hand can't average more than about 40 degrees past straight
+    // (sum of three joints, four fingers). Beyond that the hand label is
+    // wrong (the other hand is in view, or the model mislabelled it), so
+    // the sign is flipped.
+    const impossible = -40.0 * 4;
+    if (sign == 0 || sign * sum < impossible) {
       sign = sum >= 0 ? 1.0 : -1.0;
     }
 

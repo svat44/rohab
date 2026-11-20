@@ -131,9 +131,9 @@ class CameraExerciseListScreen extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => context.go(Routes.exercises),
+            onPressed: () => context.go(Routes.cameraExercises),
             icon: const Icon(Icons.arrow_back, size: RohabSize.icon),
-            label: const Text('All exercises'),
+            label: const Text("Today's plan"),
           ),
         ),
         Padding(
@@ -142,7 +142,10 @@ class CameraExerciseListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: RohabSpace.s8),
-              Text('With the camera', style: t.labelLarge),
+              Text('Practise any exercise', style: t.labelLarge),
+              const SizedBox(height: RohabSpace.s8),
+              Text("Sets of exercises in today's plan count toward it.",
+                  style: t.labelMedium),
               const SizedBox(height: RohabSpace.s16),
               const Divider(),
               for (final e in ExerciseCatalog.all) ...[
@@ -170,8 +173,7 @@ class CameraExerciseListScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: RohabSpace.s16),
-                          Text('${e.targetReps} ${e.repUnit}',
-                              style: t.bodyLarge),
+                          Text('Level ${e.level}', style: t.bodyLarge),
                         ],
                       ),
                     ),

@@ -18,6 +18,8 @@ class ExerciseSessionRecord {
     this.avgPeakSpeed,
     this.avgSmoothness,
     this.fatigued = false,
+    this.compensatedReps = 0,
+    this.level,
   });
 
   final String exerciseId;
@@ -35,6 +37,8 @@ class ExerciseSessionRecord {
   final double? avgPeakSpeed;
   final double? avgSmoothness;
   final bool fatigued;
+  final int compensatedReps;
+  final int? level;
 }
 
 /// Saves and reads exercise sessions. Progress (next session) reads it.
@@ -42,9 +46,32 @@ abstract class ExerciseSessionRepository {
   Future<int> save(ExerciseSessionRecord record);
 
   Future<List<ExerciseSessionRow>> all();
+
+  /// Sessions started on the local day of [day].
+  Future<List<ExerciseSessionRow>> on(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day);
+    final end = start.add(const Duration(days: 1));
+    return [
+      for (final r in await all())
+        if (!r.startedAt.isBefore(start) && r.startedAt.isBefore(end)) r,
+    ];
+  }
+
+  /// The most recent day before [day] with any session, if any.
+  Future<DateTime?> lastDayBefore(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day);
+    DateTime? last;
+    for (final r in await all()) {
+      if (r.startedAt.isBefore(start) &&
+          (last == null || r.startedAt.isAfter(last))) {
+        last = r.startedAt;
+      }
+    }
+    return last == null ? null : DateTime(last.year, last.month, last.day);
+  }
 }
 
-class DriftExerciseSessionRepository implements ExerciseSessionRepository {
+class DriftExerciseSessionRepository extends ExerciseSessionRepository {
   DriftExerciseSessionRepository(this._db);
 
   final AppDatabase _db;
@@ -65,6 +92,8 @@ class DriftExerciseSessionRepository implements ExerciseSessionRepository {
             avgPeakSpeed: Value(r.avgPeakSpeed),
             avgSmoothness: Value(r.avgSmoothness),
             fatigued: Value(r.fatigued),
+            compensatedReps: Value(r.compensatedReps),
+            level: Value(r.level),
           ));
 
   @override
@@ -75,7 +104,7 @@ class DriftExerciseSessionRepository implements ExerciseSessionRepository {
 
 /// Keeps sessions in memory only. Used where there is no SQLite (the web
 /// preview).
-class InMemoryExerciseSessionRepository implements ExerciseSessionRepository {
+class InMemoryExerciseSessionRepository extends ExerciseSessionRepository {
   final List<ExerciseSessionRow> _rows = [];
 
   @override
@@ -96,6 +125,8 @@ class InMemoryExerciseSessionRepository implements ExerciseSessionRepository {
       avgPeakSpeed: r.avgPeakSpeed,
       avgSmoothness: r.avgSmoothness,
       fatigued: r.fatigued,
+      compensatedReps: r.compensatedReps,
+      level: r.level,
     ));
     return id;
   }

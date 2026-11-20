@@ -29,6 +29,7 @@ void main() {
       'id', 'exercise_id', 'mode', 'reps', 'target_reps', 'range_min',
       'range_max', 'duration_sec', 'started_at', 'metric_unit',
       'avg_amplitude', 'avg_peak_speed', 'avg_smoothness', 'fatigued',
+      'compensated_reps', 'level',
     });
   });
 }

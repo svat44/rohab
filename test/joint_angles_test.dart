@@ -46,11 +46,11 @@ void main() {
         final a = JointAngles.compute(
             SyntheticHand.world(curl: 1, rightHand: right), hand);
         for (final f in a.fingers) {
-          expect(f.mcp, closeTo(30, 3));
+          expect(f.mcp, closeTo(80, 3));
           expect(f.pip, closeTo(110, 2));
           expect(f.dip, closeTo(77, 2));
         }
-        expect(a.closure, closeTo(217, 6));
+        expect(a.closure, closeTo(267, 6));
       });
 
       test('$name hand: half curl is about half', () {
@@ -60,10 +60,16 @@ void main() {
       });
     }
 
-    test('the wrong hand label flips the sign', () {
+    test('a wrong hand label on a bent hand is corrected', () {
       final a = JointAngles.compute(
           SyntheticHand.world(curl: 1), Handedness.right);
-      expect(a.fingers[0].pip, lessThan(0));
+      expect(a.fingers[0].pip, closeTo(110, 2));
+    });
+
+    test('a wrong label on a nearly straight hand stays near 0', () {
+      final a = JointAngles.compute(
+          SyntheticHand.world(curl: 0.05), Handedness.right);
+      expect(a.closure.abs(), lessThan(20));
     });
 
     test('unknown hand picks the sign that reads a fist as flexed', () {

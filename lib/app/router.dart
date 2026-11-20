@@ -6,7 +6,11 @@ import '../screens/exercises/camera_exercise_flow.dart';
 import '../screens/exercises/exercises_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/progress_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/exercises/baseline_screen.dart';
+import '../screens/exercises/pain_check_screen.dart';
+import '../screens/exercises/program_screen.dart';
+import '../screens/settings/settings_screen.dart';
+import '../screens/settings/therapist_screen.dart';
 import '../widgets/app_shell.dart';
 
 class Routes {
@@ -15,7 +19,12 @@ class Routes {
   static const calibration = '/calibration';
   static const exercises = '/exercises';
   static const cameraExercises = '/exercises/camera';
+  static const allCameraExercises = '/exercises/camera/all';
+  static const baseline = '/exercises/camera/baseline';
   static String cameraExercise(String id) => '/exercises/camera/$id';
+  static String painCheck(String phase, {String? next}) =>
+      '/exercises/camera/pain?phase=$phase${next == null ? '' : '&next=$next'}';
+  static const therapist = '/settings/therapist';
   static const progress = '/progress';
   static const settings = '/settings';
 }
@@ -40,9 +49,29 @@ GoRouter buildRouter() => GoRouter(
                   routes: [
                     GoRoute(
                       path: 'camera',
-                      pageBuilder: (context, state) => const NoTransitionPage(
-                          child: CameraExerciseListScreen()),
+                      pageBuilder: (context, state) =>
+                          const NoTransitionPage(child: ProgramScreen()),
                       routes: [
+                        GoRoute(
+                          path: 'all',
+                          pageBuilder: (context, state) => const NoTransitionPage(
+                              child: CameraExerciseListScreen()),
+                        ),
+                        GoRoute(
+                          path: 'baseline',
+                          pageBuilder: (context, state) => NoTransitionPage(
+                              key: state.pageKey, child: const BaselineScreen()),
+                        ),
+                        GoRoute(
+                          path: 'pain',
+                          pageBuilder: (context, state) => NoTransitionPage(
+                            key: state.pageKey,
+                            child: PainCheckScreen(
+                              after: state.uri.queryParameters['phase'] == 'after',
+                              next: state.uri.queryParameters['next'],
+                            ),
+                          ),
+                        ),
                         GoRoute(
                           path: ':exerciseId',
                           pageBuilder: (context, state) => NoTransitionPage(
@@ -60,7 +89,22 @@ GoRouter buildRouter() => GoRouter(
               ],
             ),
             _branch(Routes.progress, const ProgressScreen()),
-            _branch(Routes.settings, const SettingsScreen()),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.settings,
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: SettingsScreen()),
+                  routes: [
+                    GoRoute(
+                      path: 'therapist',
+                      pageBuilder: (context, state) => NoTransitionPage(
+                          key: state.pageKey, child: const TherapistScreen()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ],

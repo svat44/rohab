@@ -13,11 +13,38 @@ import 'hand_tracker.dart';
 typedef HandScript = HandPose? Function(Duration t);
 
 class HandPose {
-  const HandPose({this.curl = 0, this.spread = 0.3, this.thumbOn});
+  const HandPose({
+    this.curl = 0,
+    this.spread = 0.3,
+    this.thumbOn,
+    this.rightHand = false,
+    this.wristPitch = 0,
+    this.hook = false,
+    this.fingerCurls,
+  });
 
   final double curl;
   final double spread;
   final int? thumbOn;
+
+  /// Shows a right hand (mirrored geometry, labelled right).
+  final bool rightHand;
+
+  /// Tilts the hand at the wrist, degrees.
+  final double wristPitch;
+  final bool hook;
+  final List<double>? fingerCurls;
+
+  HandPose copyWith({double? curl, bool? rightHand, double? wristPitch}) =>
+      HandPose(
+        curl: curl ?? this.curl,
+        spread: spread,
+        thumbOn: thumbOn,
+        rightHand: rightHand ?? this.rightHand,
+        wristPitch: wristPitch ?? this.wristPitch,
+        hook: hook,
+        fingerCurls: fingerCurls,
+      );
 
   static const open = HandPose();
   static const fist = HandPose(curl: 1);
@@ -71,7 +98,12 @@ class MockHandTracker implements HandTracker {
       final p = script == null ? pose : script!(t);
       if (p == null) return;
       var lm = SyntheticHand.pose(
-          curl: p.curl, spread: p.spread, thumbOn: p.thumbOn);
+          curl: p.curl,
+          spread: p.spread,
+          thumbOn: p.thumbOn,
+          hook: p.hook,
+          fingerCurls: p.fingerCurls,
+          wristPitch: p.wristPitch);
       if (noise > 0) {
         lm = [
           for (final q in lm)
@@ -79,7 +111,13 @@ class MockHandTracker implements HandTracker {
         ];
       }
       var world = SyntheticHand.world(
-          curl: p.curl, spread: p.spread, thumbOn: p.thumbOn);
+          curl: p.curl,
+          spread: p.spread,
+          thumbOn: p.thumbOn,
+          rightHand: p.rightHand,
+          hook: p.hook,
+          fingerCurls: p.fingerCurls,
+          wristPitch: p.wristPitch);
       if (noise > 0) {
         // Same jitter in metres (image unit is about 0.45 m here).
         world = [
@@ -92,8 +130,7 @@ class MockHandTracker implements HandTracker {
       _frames.add(HandFrame(
         landmarks: lm,
         worldLandmarks: world,
-        // The synthetic hand is a left hand, palm to the camera.
-        handedness: Handedness.left,
+        handedness: p.rightHand ? Handedness.right : Handedness.left,
         confidence: low ? 0.3 : 0.95,
         timestamp: t,
       ));

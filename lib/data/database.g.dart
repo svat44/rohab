@@ -167,6 +167,27 @@ class $ExerciseSessionsTable extends ExerciseSessions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _compensatedRepsMeta = const VerificationMeta(
+    'compensatedReps',
+  );
+  @override
+  late final GeneratedColumn<int> compensatedReps = GeneratedColumn<int>(
+    'compensated_reps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -183,6 +204,8 @@ class $ExerciseSessionsTable extends ExerciseSessions
     fatigued,
     durationSec,
     startedAt,
+    compensatedReps,
+    level,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -299,6 +322,21 @@ class $ExerciseSessionsTable extends ExerciseSessions
     } else if (isInserting) {
       context.missing(_startedAtMeta);
     }
+    if (data.containsKey('compensated_reps')) {
+      context.handle(
+        _compensatedRepsMeta,
+        compensatedReps.isAcceptableOrUnknown(
+          data['compensated_reps']!,
+          _compensatedRepsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    }
     return context;
   }
 
@@ -364,6 +402,14 @@ class $ExerciseSessionsTable extends ExerciseSessions
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
       )!,
+      compensatedReps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}compensated_reps'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      ),
     );
   }
 
@@ -404,6 +450,12 @@ class ExerciseSessionRow extends DataClass
   final bool fatigued;
   final int durationSec;
   final DateTime startedAt;
+
+  /// Reps not counted because the wrist moved instead (schema 3).
+  final int compensatedReps;
+
+  /// Program level when done, 1-3 (schema 3). Null for free practice.
+  final int? level;
   const ExerciseSessionRow({
     required this.id,
     required this.exerciseId,
@@ -419,6 +471,8 @@ class ExerciseSessionRow extends DataClass
     required this.fatigued,
     required this.durationSec,
     required this.startedAt,
+    required this.compensatedReps,
+    this.level,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -447,6 +501,10 @@ class ExerciseSessionRow extends DataClass
     map['fatigued'] = Variable<bool>(fatigued);
     map['duration_sec'] = Variable<int>(durationSec);
     map['started_at'] = Variable<DateTime>(startedAt);
+    map['compensated_reps'] = Variable<int>(compensatedReps);
+    if (!nullToAbsent || level != null) {
+      map['level'] = Variable<int>(level);
+    }
     return map;
   }
 
@@ -476,6 +534,10 @@ class ExerciseSessionRow extends DataClass
       fatigued: Value(fatigued),
       durationSec: Value(durationSec),
       startedAt: Value(startedAt),
+      compensatedReps: Value(compensatedReps),
+      level: level == null && nullToAbsent
+          ? const Value.absent()
+          : Value(level),
     );
   }
 
@@ -499,6 +561,8 @@ class ExerciseSessionRow extends DataClass
       fatigued: serializer.fromJson<bool>(json['fatigued']),
       durationSec: serializer.fromJson<int>(json['durationSec']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      compensatedReps: serializer.fromJson<int>(json['compensatedReps']),
+      level: serializer.fromJson<int?>(json['level']),
     );
   }
   @override
@@ -519,6 +583,8 @@ class ExerciseSessionRow extends DataClass
       'fatigued': serializer.toJson<bool>(fatigued),
       'durationSec': serializer.toJson<int>(durationSec),
       'startedAt': serializer.toJson<DateTime>(startedAt),
+      'compensatedReps': serializer.toJson<int>(compensatedReps),
+      'level': serializer.toJson<int?>(level),
     };
   }
 
@@ -537,6 +603,8 @@ class ExerciseSessionRow extends DataClass
     bool? fatigued,
     int? durationSec,
     DateTime? startedAt,
+    int? compensatedReps,
+    Value<int?> level = const Value.absent(),
   }) => ExerciseSessionRow(
     id: id ?? this.id,
     exerciseId: exerciseId ?? this.exerciseId,
@@ -554,6 +622,8 @@ class ExerciseSessionRow extends DataClass
     fatigued: fatigued ?? this.fatigued,
     durationSec: durationSec ?? this.durationSec,
     startedAt: startedAt ?? this.startedAt,
+    compensatedReps: compensatedReps ?? this.compensatedReps,
+    level: level.present ? level.value : this.level,
   );
   ExerciseSessionRow copyWithCompanion(ExerciseSessionsCompanion data) {
     return ExerciseSessionRow(
@@ -585,6 +655,10 @@ class ExerciseSessionRow extends DataClass
           ? data.durationSec.value
           : this.durationSec,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      compensatedReps: data.compensatedReps.present
+          ? data.compensatedReps.value
+          : this.compensatedReps,
+      level: data.level.present ? data.level.value : this.level,
     );
   }
 
@@ -604,7 +678,9 @@ class ExerciseSessionRow extends DataClass
           ..write('avgSmoothness: $avgSmoothness, ')
           ..write('fatigued: $fatigued, ')
           ..write('durationSec: $durationSec, ')
-          ..write('startedAt: $startedAt')
+          ..write('startedAt: $startedAt, ')
+          ..write('compensatedReps: $compensatedReps, ')
+          ..write('level: $level')
           ..write(')'))
         .toString();
   }
@@ -625,6 +701,8 @@ class ExerciseSessionRow extends DataClass
     fatigued,
     durationSec,
     startedAt,
+    compensatedReps,
+    level,
   );
   @override
   bool operator ==(Object other) =>
@@ -643,7 +721,9 @@ class ExerciseSessionRow extends DataClass
           other.avgSmoothness == this.avgSmoothness &&
           other.fatigued == this.fatigued &&
           other.durationSec == this.durationSec &&
-          other.startedAt == this.startedAt);
+          other.startedAt == this.startedAt &&
+          other.compensatedReps == this.compensatedReps &&
+          other.level == this.level);
 }
 
 class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
@@ -661,6 +741,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
   final Value<bool> fatigued;
   final Value<int> durationSec;
   final Value<DateTime> startedAt;
+  final Value<int> compensatedReps;
+  final Value<int?> level;
   const ExerciseSessionsCompanion({
     this.id = const Value.absent(),
     this.exerciseId = const Value.absent(),
@@ -676,6 +758,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     this.fatigued = const Value.absent(),
     this.durationSec = const Value.absent(),
     this.startedAt = const Value.absent(),
+    this.compensatedReps = const Value.absent(),
+    this.level = const Value.absent(),
   });
   ExerciseSessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -692,6 +776,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     this.fatigued = const Value.absent(),
     required int durationSec,
     required DateTime startedAt,
+    this.compensatedReps = const Value.absent(),
+    this.level = const Value.absent(),
   }) : exerciseId = Value(exerciseId),
        reps = Value(reps),
        targetReps = Value(targetReps),
@@ -712,6 +798,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     Expression<bool>? fatigued,
     Expression<int>? durationSec,
     Expression<DateTime>? startedAt,
+    Expression<int>? compensatedReps,
+    Expression<int>? level,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -728,6 +816,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
       if (fatigued != null) 'fatigued': fatigued,
       if (durationSec != null) 'duration_sec': durationSec,
       if (startedAt != null) 'started_at': startedAt,
+      if (compensatedReps != null) 'compensated_reps': compensatedReps,
+      if (level != null) 'level': level,
     });
   }
 
@@ -746,6 +836,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     Value<bool>? fatigued,
     Value<int>? durationSec,
     Value<DateTime>? startedAt,
+    Value<int>? compensatedReps,
+    Value<int?>? level,
   }) {
     return ExerciseSessionsCompanion(
       id: id ?? this.id,
@@ -762,6 +854,8 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
       fatigued: fatigued ?? this.fatigued,
       durationSec: durationSec ?? this.durationSec,
       startedAt: startedAt ?? this.startedAt,
+      compensatedReps: compensatedReps ?? this.compensatedReps,
+      level: level ?? this.level,
     );
   }
 
@@ -810,6 +904,12 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
     }
+    if (compensatedReps.present) {
+      map['compensated_reps'] = Variable<int>(compensatedReps.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
     return map;
   }
 
@@ -829,7 +929,878 @@ class ExerciseSessionsCompanion extends UpdateCompanion<ExerciseSessionRow> {
           ..write('avgSmoothness: $avgSmoothness, ')
           ..write('fatigued: $fatigued, ')
           ..write('durationSec: $durationSec, ')
-          ..write('startedAt: $startedAt')
+          ..write('startedAt: $startedAt, ')
+          ..write('compensatedReps: $compensatedReps, ')
+          ..write('level: $level')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssessmentsTable extends Assessments
+    with TableInfo<$AssessmentsTable, AssessmentRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _takenAtMeta = const VerificationMeta(
+    'takenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> takenAt = GeneratedColumn<DateTime>(
+    'taken_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _affectedHandMeta = const VerificationMeta(
+    'affectedHand',
+  );
+  @override
+  late final GeneratedColumn<String> affectedHand = GeneratedColumn<String>(
+    'affected_hand',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _affectedOpenMeta = const VerificationMeta(
+    'affectedOpen',
+  );
+  @override
+  late final GeneratedColumn<double> affectedOpen = GeneratedColumn<double>(
+    'affected_open',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _affectedClosedMeta = const VerificationMeta(
+    'affectedClosed',
+  );
+  @override
+  late final GeneratedColumn<double> affectedClosed = GeneratedColumn<double>(
+    'affected_closed',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _otherOpenMeta = const VerificationMeta(
+    'otherOpen',
+  );
+  @override
+  late final GeneratedColumn<double> otherOpen = GeneratedColumn<double>(
+    'other_open',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _otherClosedMeta = const VerificationMeta(
+    'otherClosed',
+  );
+  @override
+  late final GeneratedColumn<double> otherClosed = GeneratedColumn<double>(
+    'other_closed',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cameraLimitedMeta = const VerificationMeta(
+    'cameraLimited',
+  );
+  @override
+  late final GeneratedColumn<bool> cameraLimited = GeneratedColumn<bool>(
+    'camera_limited',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("camera_limited" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    takenAt,
+    affectedHand,
+    affectedOpen,
+    affectedClosed,
+    otherOpen,
+    otherClosed,
+    level,
+    cameraLimited,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AssessmentRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('taken_at')) {
+      context.handle(
+        _takenAtMeta,
+        takenAt.isAcceptableOrUnknown(data['taken_at']!, _takenAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_takenAtMeta);
+    }
+    if (data.containsKey('affected_hand')) {
+      context.handle(
+        _affectedHandMeta,
+        affectedHand.isAcceptableOrUnknown(
+          data['affected_hand']!,
+          _affectedHandMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_affectedHandMeta);
+    }
+    if (data.containsKey('affected_open')) {
+      context.handle(
+        _affectedOpenMeta,
+        affectedOpen.isAcceptableOrUnknown(
+          data['affected_open']!,
+          _affectedOpenMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_affectedOpenMeta);
+    }
+    if (data.containsKey('affected_closed')) {
+      context.handle(
+        _affectedClosedMeta,
+        affectedClosed.isAcceptableOrUnknown(
+          data['affected_closed']!,
+          _affectedClosedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_affectedClosedMeta);
+    }
+    if (data.containsKey('other_open')) {
+      context.handle(
+        _otherOpenMeta,
+        otherOpen.isAcceptableOrUnknown(data['other_open']!, _otherOpenMeta),
+      );
+    }
+    if (data.containsKey('other_closed')) {
+      context.handle(
+        _otherClosedMeta,
+        otherClosed.isAcceptableOrUnknown(
+          data['other_closed']!,
+          _otherClosedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_levelMeta);
+    }
+    if (data.containsKey('camera_limited')) {
+      context.handle(
+        _cameraLimitedMeta,
+        cameraLimited.isAcceptableOrUnknown(
+          data['camera_limited']!,
+          _cameraLimitedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cameraLimitedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AssessmentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      takenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}taken_at'],
+      )!,
+      affectedHand: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}affected_hand'],
+      )!,
+      affectedOpen: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}affected_open'],
+      )!,
+      affectedClosed: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}affected_closed'],
+      )!,
+      otherOpen: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}other_open'],
+      ),
+      otherClosed: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}other_closed'],
+      ),
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      )!,
+      cameraLimited: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}camera_limited'],
+      )!,
+    );
+  }
+
+  @override
+  $AssessmentsTable createAlias(String alias) {
+    return $AssessmentsTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentRow extends DataClass implements Insertable<AssessmentRow> {
+  final int id;
+  final DateTime takenAt;
+
+  /// "left" or "right".
+  final String affectedHand;
+  final double affectedOpen;
+  final double affectedClosed;
+  final double? otherOpen;
+  final double? otherClosed;
+  final int level;
+  final bool cameraLimited;
+  const AssessmentRow({
+    required this.id,
+    required this.takenAt,
+    required this.affectedHand,
+    required this.affectedOpen,
+    required this.affectedClosed,
+    this.otherOpen,
+    this.otherClosed,
+    required this.level,
+    required this.cameraLimited,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['taken_at'] = Variable<DateTime>(takenAt);
+    map['affected_hand'] = Variable<String>(affectedHand);
+    map['affected_open'] = Variable<double>(affectedOpen);
+    map['affected_closed'] = Variable<double>(affectedClosed);
+    if (!nullToAbsent || otherOpen != null) {
+      map['other_open'] = Variable<double>(otherOpen);
+    }
+    if (!nullToAbsent || otherClosed != null) {
+      map['other_closed'] = Variable<double>(otherClosed);
+    }
+    map['level'] = Variable<int>(level);
+    map['camera_limited'] = Variable<bool>(cameraLimited);
+    return map;
+  }
+
+  AssessmentsCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentsCompanion(
+      id: Value(id),
+      takenAt: Value(takenAt),
+      affectedHand: Value(affectedHand),
+      affectedOpen: Value(affectedOpen),
+      affectedClosed: Value(affectedClosed),
+      otherOpen: otherOpen == null && nullToAbsent
+          ? const Value.absent()
+          : Value(otherOpen),
+      otherClosed: otherClosed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(otherClosed),
+      level: Value(level),
+      cameraLimited: Value(cameraLimited),
+    );
+  }
+
+  factory AssessmentRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentRow(
+      id: serializer.fromJson<int>(json['id']),
+      takenAt: serializer.fromJson<DateTime>(json['takenAt']),
+      affectedHand: serializer.fromJson<String>(json['affectedHand']),
+      affectedOpen: serializer.fromJson<double>(json['affectedOpen']),
+      affectedClosed: serializer.fromJson<double>(json['affectedClosed']),
+      otherOpen: serializer.fromJson<double?>(json['otherOpen']),
+      otherClosed: serializer.fromJson<double?>(json['otherClosed']),
+      level: serializer.fromJson<int>(json['level']),
+      cameraLimited: serializer.fromJson<bool>(json['cameraLimited']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'takenAt': serializer.toJson<DateTime>(takenAt),
+      'affectedHand': serializer.toJson<String>(affectedHand),
+      'affectedOpen': serializer.toJson<double>(affectedOpen),
+      'affectedClosed': serializer.toJson<double>(affectedClosed),
+      'otherOpen': serializer.toJson<double?>(otherOpen),
+      'otherClosed': serializer.toJson<double?>(otherClosed),
+      'level': serializer.toJson<int>(level),
+      'cameraLimited': serializer.toJson<bool>(cameraLimited),
+    };
+  }
+
+  AssessmentRow copyWith({
+    int? id,
+    DateTime? takenAt,
+    String? affectedHand,
+    double? affectedOpen,
+    double? affectedClosed,
+    Value<double?> otherOpen = const Value.absent(),
+    Value<double?> otherClosed = const Value.absent(),
+    int? level,
+    bool? cameraLimited,
+  }) => AssessmentRow(
+    id: id ?? this.id,
+    takenAt: takenAt ?? this.takenAt,
+    affectedHand: affectedHand ?? this.affectedHand,
+    affectedOpen: affectedOpen ?? this.affectedOpen,
+    affectedClosed: affectedClosed ?? this.affectedClosed,
+    otherOpen: otherOpen.present ? otherOpen.value : this.otherOpen,
+    otherClosed: otherClosed.present ? otherClosed.value : this.otherClosed,
+    level: level ?? this.level,
+    cameraLimited: cameraLimited ?? this.cameraLimited,
+  );
+  AssessmentRow copyWithCompanion(AssessmentsCompanion data) {
+    return AssessmentRow(
+      id: data.id.present ? data.id.value : this.id,
+      takenAt: data.takenAt.present ? data.takenAt.value : this.takenAt,
+      affectedHand: data.affectedHand.present
+          ? data.affectedHand.value
+          : this.affectedHand,
+      affectedOpen: data.affectedOpen.present
+          ? data.affectedOpen.value
+          : this.affectedOpen,
+      affectedClosed: data.affectedClosed.present
+          ? data.affectedClosed.value
+          : this.affectedClosed,
+      otherOpen: data.otherOpen.present ? data.otherOpen.value : this.otherOpen,
+      otherClosed: data.otherClosed.present
+          ? data.otherClosed.value
+          : this.otherClosed,
+      level: data.level.present ? data.level.value : this.level,
+      cameraLimited: data.cameraLimited.present
+          ? data.cameraLimited.value
+          : this.cameraLimited,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentRow(')
+          ..write('id: $id, ')
+          ..write('takenAt: $takenAt, ')
+          ..write('affectedHand: $affectedHand, ')
+          ..write('affectedOpen: $affectedOpen, ')
+          ..write('affectedClosed: $affectedClosed, ')
+          ..write('otherOpen: $otherOpen, ')
+          ..write('otherClosed: $otherClosed, ')
+          ..write('level: $level, ')
+          ..write('cameraLimited: $cameraLimited')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    takenAt,
+    affectedHand,
+    affectedOpen,
+    affectedClosed,
+    otherOpen,
+    otherClosed,
+    level,
+    cameraLimited,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentRow &&
+          other.id == this.id &&
+          other.takenAt == this.takenAt &&
+          other.affectedHand == this.affectedHand &&
+          other.affectedOpen == this.affectedOpen &&
+          other.affectedClosed == this.affectedClosed &&
+          other.otherOpen == this.otherOpen &&
+          other.otherClosed == this.otherClosed &&
+          other.level == this.level &&
+          other.cameraLimited == this.cameraLimited);
+}
+
+class AssessmentsCompanion extends UpdateCompanion<AssessmentRow> {
+  final Value<int> id;
+  final Value<DateTime> takenAt;
+  final Value<String> affectedHand;
+  final Value<double> affectedOpen;
+  final Value<double> affectedClosed;
+  final Value<double?> otherOpen;
+  final Value<double?> otherClosed;
+  final Value<int> level;
+  final Value<bool> cameraLimited;
+  const AssessmentsCompanion({
+    this.id = const Value.absent(),
+    this.takenAt = const Value.absent(),
+    this.affectedHand = const Value.absent(),
+    this.affectedOpen = const Value.absent(),
+    this.affectedClosed = const Value.absent(),
+    this.otherOpen = const Value.absent(),
+    this.otherClosed = const Value.absent(),
+    this.level = const Value.absent(),
+    this.cameraLimited = const Value.absent(),
+  });
+  AssessmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime takenAt,
+    required String affectedHand,
+    required double affectedOpen,
+    required double affectedClosed,
+    this.otherOpen = const Value.absent(),
+    this.otherClosed = const Value.absent(),
+    required int level,
+    required bool cameraLimited,
+  }) : takenAt = Value(takenAt),
+       affectedHand = Value(affectedHand),
+       affectedOpen = Value(affectedOpen),
+       affectedClosed = Value(affectedClosed),
+       level = Value(level),
+       cameraLimited = Value(cameraLimited);
+  static Insertable<AssessmentRow> custom({
+    Expression<int>? id,
+    Expression<DateTime>? takenAt,
+    Expression<String>? affectedHand,
+    Expression<double>? affectedOpen,
+    Expression<double>? affectedClosed,
+    Expression<double>? otherOpen,
+    Expression<double>? otherClosed,
+    Expression<int>? level,
+    Expression<bool>? cameraLimited,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (takenAt != null) 'taken_at': takenAt,
+      if (affectedHand != null) 'affected_hand': affectedHand,
+      if (affectedOpen != null) 'affected_open': affectedOpen,
+      if (affectedClosed != null) 'affected_closed': affectedClosed,
+      if (otherOpen != null) 'other_open': otherOpen,
+      if (otherClosed != null) 'other_closed': otherClosed,
+      if (level != null) 'level': level,
+      if (cameraLimited != null) 'camera_limited': cameraLimited,
+    });
+  }
+
+  AssessmentsCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? takenAt,
+    Value<String>? affectedHand,
+    Value<double>? affectedOpen,
+    Value<double>? affectedClosed,
+    Value<double?>? otherOpen,
+    Value<double?>? otherClosed,
+    Value<int>? level,
+    Value<bool>? cameraLimited,
+  }) {
+    return AssessmentsCompanion(
+      id: id ?? this.id,
+      takenAt: takenAt ?? this.takenAt,
+      affectedHand: affectedHand ?? this.affectedHand,
+      affectedOpen: affectedOpen ?? this.affectedOpen,
+      affectedClosed: affectedClosed ?? this.affectedClosed,
+      otherOpen: otherOpen ?? this.otherOpen,
+      otherClosed: otherClosed ?? this.otherClosed,
+      level: level ?? this.level,
+      cameraLimited: cameraLimited ?? this.cameraLimited,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (takenAt.present) {
+      map['taken_at'] = Variable<DateTime>(takenAt.value);
+    }
+    if (affectedHand.present) {
+      map['affected_hand'] = Variable<String>(affectedHand.value);
+    }
+    if (affectedOpen.present) {
+      map['affected_open'] = Variable<double>(affectedOpen.value);
+    }
+    if (affectedClosed.present) {
+      map['affected_closed'] = Variable<double>(affectedClosed.value);
+    }
+    if (otherOpen.present) {
+      map['other_open'] = Variable<double>(otherOpen.value);
+    }
+    if (otherClosed.present) {
+      map['other_closed'] = Variable<double>(otherClosed.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (cameraLimited.present) {
+      map['camera_limited'] = Variable<bool>(cameraLimited.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('takenAt: $takenAt, ')
+          ..write('affectedHand: $affectedHand, ')
+          ..write('affectedOpen: $affectedOpen, ')
+          ..write('affectedClosed: $affectedClosed, ')
+          ..write('otherOpen: $otherOpen, ')
+          ..write('otherClosed: $otherClosed, ')
+          ..write('level: $level, ')
+          ..write('cameraLimited: $cameraLimited')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PainChecksTable extends PainChecks
+    with TableInfo<$PainChecksTable, PainCheckRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PainChecksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _phaseMeta = const VerificationMeta('phase');
+  @override
+  late final GeneratedColumn<String> phase = GeneratedColumn<String>(
+    'phase',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+    'score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, at, phase, score];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pain_checks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PainCheckRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    } else if (isInserting) {
+      context.missing(_atMeta);
+    }
+    if (data.containsKey('phase')) {
+      context.handle(
+        _phaseMeta,
+        phase.isAcceptableOrUnknown(data['phase']!, _phaseMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_phaseMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+        _scoreMeta,
+        score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PainCheckRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PainCheckRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+      phase: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phase'],
+      )!,
+      score: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score'],
+      )!,
+    );
+  }
+
+  @override
+  $PainChecksTable createAlias(String alias) {
+    return $PainChecksTable(attachedDatabase, alias);
+  }
+}
+
+class PainCheckRow extends DataClass implements Insertable<PainCheckRow> {
+  final int id;
+  final DateTime at;
+
+  /// "before" or "after".
+  final String phase;
+  final int score;
+  const PainCheckRow({
+    required this.id,
+    required this.at,
+    required this.phase,
+    required this.score,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['at'] = Variable<DateTime>(at);
+    map['phase'] = Variable<String>(phase);
+    map['score'] = Variable<int>(score);
+    return map;
+  }
+
+  PainChecksCompanion toCompanion(bool nullToAbsent) {
+    return PainChecksCompanion(
+      id: Value(id),
+      at: Value(at),
+      phase: Value(phase),
+      score: Value(score),
+    );
+  }
+
+  factory PainCheckRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PainCheckRow(
+      id: serializer.fromJson<int>(json['id']),
+      at: serializer.fromJson<DateTime>(json['at']),
+      phase: serializer.fromJson<String>(json['phase']),
+      score: serializer.fromJson<int>(json['score']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'at': serializer.toJson<DateTime>(at),
+      'phase': serializer.toJson<String>(phase),
+      'score': serializer.toJson<int>(score),
+    };
+  }
+
+  PainCheckRow copyWith({int? id, DateTime? at, String? phase, int? score}) =>
+      PainCheckRow(
+        id: id ?? this.id,
+        at: at ?? this.at,
+        phase: phase ?? this.phase,
+        score: score ?? this.score,
+      );
+  PainCheckRow copyWithCompanion(PainChecksCompanion data) {
+    return PainCheckRow(
+      id: data.id.present ? data.id.value : this.id,
+      at: data.at.present ? data.at.value : this.at,
+      phase: data.phase.present ? data.phase.value : this.phase,
+      score: data.score.present ? data.score.value : this.score,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PainCheckRow(')
+          ..write('id: $id, ')
+          ..write('at: $at, ')
+          ..write('phase: $phase, ')
+          ..write('score: $score')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, at, phase, score);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PainCheckRow &&
+          other.id == this.id &&
+          other.at == this.at &&
+          other.phase == this.phase &&
+          other.score == this.score);
+}
+
+class PainChecksCompanion extends UpdateCompanion<PainCheckRow> {
+  final Value<int> id;
+  final Value<DateTime> at;
+  final Value<String> phase;
+  final Value<int> score;
+  const PainChecksCompanion({
+    this.id = const Value.absent(),
+    this.at = const Value.absent(),
+    this.phase = const Value.absent(),
+    this.score = const Value.absent(),
+  });
+  PainChecksCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime at,
+    required String phase,
+    required int score,
+  }) : at = Value(at),
+       phase = Value(phase),
+       score = Value(score);
+  static Insertable<PainCheckRow> custom({
+    Expression<int>? id,
+    Expression<DateTime>? at,
+    Expression<String>? phase,
+    Expression<int>? score,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (at != null) 'at': at,
+      if (phase != null) 'phase': phase,
+      if (score != null) 'score': score,
+    });
+  }
+
+  PainChecksCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? at,
+    Value<String>? phase,
+    Value<int>? score,
+  }) {
+    return PainChecksCompanion(
+      id: id ?? this.id,
+      at: at ?? this.at,
+      phase: phase ?? this.phase,
+      score: score ?? this.score,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    if (phase.present) {
+      map['phase'] = Variable<String>(phase.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PainChecksCompanion(')
+          ..write('id: $id, ')
+          ..write('at: $at, ')
+          ..write('phase: $phase, ')
+          ..write('score: $score')
           ..write(')'))
         .toString();
   }
@@ -841,11 +1812,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExerciseSessionsTable exerciseSessions = $ExerciseSessionsTable(
     this,
   );
+  late final $AssessmentsTable assessments = $AssessmentsTable(this);
+  late final $PainChecksTable painChecks = $PainChecksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [exerciseSessions];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    exerciseSessions,
+    assessments,
+    painChecks,
+  ];
 }
 
 typedef $$ExerciseSessionsTableCreateCompanionBuilder =
@@ -864,6 +1841,8 @@ typedef $$ExerciseSessionsTableCreateCompanionBuilder =
       Value<bool> fatigued,
       required int durationSec,
       required DateTime startedAt,
+      Value<int> compensatedReps,
+      Value<int?> level,
     });
 typedef $$ExerciseSessionsTableUpdateCompanionBuilder =
     ExerciseSessionsCompanion Function({
@@ -881,6 +1860,8 @@ typedef $$ExerciseSessionsTableUpdateCompanionBuilder =
       Value<bool> fatigued,
       Value<int> durationSec,
       Value<DateTime> startedAt,
+      Value<int> compensatedReps,
+      Value<int?> level,
     });
 
 class $$ExerciseSessionsTableFilterComposer
@@ -959,6 +1940,16 @@ class $$ExerciseSessionsTableFilterComposer
 
   ColumnFilters<DateTime> get startedAt => $composableBuilder(
     column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get compensatedReps => $composableBuilder(
+    column: $table.compensatedReps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1041,6 +2032,16 @@ class $$ExerciseSessionsTableOrderingComposer
     column: $table.startedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get compensatedReps => $composableBuilder(
+    column: $table.compensatedReps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExerciseSessionsTableAnnotationComposer
@@ -1107,6 +2108,14 @@ class $$ExerciseSessionsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get compensatedReps => $composableBuilder(
+    column: $table.compensatedReps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
 }
 
 class $$ExerciseSessionsTableTableManager
@@ -1160,6 +2169,8 @@ class $$ExerciseSessionsTableTableManager
                 Value<bool> fatigued = const Value.absent(),
                 Value<int> durationSec = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
+                Value<int> compensatedReps = const Value.absent(),
+                Value<int?> level = const Value.absent(),
               }) => ExerciseSessionsCompanion(
                 id: id,
                 exerciseId: exerciseId,
@@ -1175,6 +2186,8 @@ class $$ExerciseSessionsTableTableManager
                 fatigued: fatigued,
                 durationSec: durationSec,
                 startedAt: startedAt,
+                compensatedReps: compensatedReps,
+                level: level,
               ),
           createCompanionCallback:
               ({
@@ -1192,6 +2205,8 @@ class $$ExerciseSessionsTableTableManager
                 Value<bool> fatigued = const Value.absent(),
                 required int durationSec,
                 required DateTime startedAt,
+                Value<int> compensatedReps = const Value.absent(),
+                Value<int?> level = const Value.absent(),
               }) => ExerciseSessionsCompanion.insert(
                 id: id,
                 exerciseId: exerciseId,
@@ -1207,6 +2222,8 @@ class $$ExerciseSessionsTableTableManager
                 fatigued: fatigued,
                 durationSec: durationSec,
                 startedAt: startedAt,
+                compensatedReps: compensatedReps,
+                level: level,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -1248,10 +2265,479 @@ typedef $$ExerciseSessionsTableProcessedTableManager =
       ExerciseSessionRow,
       PrefetchHooks Function()
     >;
+typedef $$AssessmentsTableCreateCompanionBuilder =
+    AssessmentsCompanion Function({
+      Value<int> id,
+      required DateTime takenAt,
+      required String affectedHand,
+      required double affectedOpen,
+      required double affectedClosed,
+      Value<double?> otherOpen,
+      Value<double?> otherClosed,
+      required int level,
+      required bool cameraLimited,
+    });
+typedef $$AssessmentsTableUpdateCompanionBuilder =
+    AssessmentsCompanion Function({
+      Value<int> id,
+      Value<DateTime> takenAt,
+      Value<String> affectedHand,
+      Value<double> affectedOpen,
+      Value<double> affectedClosed,
+      Value<double?> otherOpen,
+      Value<double?> otherClosed,
+      Value<int> level,
+      Value<bool> cameraLimited,
+    });
+
+class $$AssessmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $AssessmentsTable> {
+  $$AssessmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get affectedHand => $composableBuilder(
+    column: $table.affectedHand,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get affectedOpen => $composableBuilder(
+    column: $table.affectedOpen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get affectedClosed => $composableBuilder(
+    column: $table.affectedClosed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get otherOpen => $composableBuilder(
+    column: $table.otherOpen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get otherClosed => $composableBuilder(
+    column: $table.otherClosed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get cameraLimited => $composableBuilder(
+    column: $table.cameraLimited,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AssessmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AssessmentsTable> {
+  $$AssessmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get affectedHand => $composableBuilder(
+    column: $table.affectedHand,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get affectedOpen => $composableBuilder(
+    column: $table.affectedOpen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get affectedClosed => $composableBuilder(
+    column: $table.affectedClosed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get otherOpen => $composableBuilder(
+    column: $table.otherOpen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get otherClosed => $composableBuilder(
+    column: $table.otherClosed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get cameraLimited => $composableBuilder(
+    column: $table.cameraLimited,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AssessmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AssessmentsTable> {
+  $$AssessmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get takenAt =>
+      $composableBuilder(column: $table.takenAt, builder: (column) => column);
+
+  GeneratedColumn<String> get affectedHand => $composableBuilder(
+    column: $table.affectedHand,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get affectedOpen => $composableBuilder(
+    column: $table.affectedOpen,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get affectedClosed => $composableBuilder(
+    column: $table.affectedClosed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get otherOpen =>
+      $composableBuilder(column: $table.otherOpen, builder: (column) => column);
+
+  GeneratedColumn<double> get otherClosed => $composableBuilder(
+    column: $table.otherClosed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<bool> get cameraLimited => $composableBuilder(
+    column: $table.cameraLimited,
+    builder: (column) => column,
+  );
+}
+
+class $$AssessmentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AssessmentsTable,
+          AssessmentRow,
+          $$AssessmentsTableFilterComposer,
+          $$AssessmentsTableOrderingComposer,
+          $$AssessmentsTableAnnotationComposer,
+          $$AssessmentsTableCreateCompanionBuilder,
+          $$AssessmentsTableUpdateCompanionBuilder,
+          (
+            AssessmentRow,
+            BaseReferences<_$AppDatabase, $AssessmentsTable, AssessmentRow>,
+          ),
+          AssessmentRow,
+          PrefetchHooks Function()
+        > {
+  $$AssessmentsTableTableManager(_$AppDatabase db, $AssessmentsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssessmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssessmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssessmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> takenAt = const Value.absent(),
+                Value<String> affectedHand = const Value.absent(),
+                Value<double> affectedOpen = const Value.absent(),
+                Value<double> affectedClosed = const Value.absent(),
+                Value<double?> otherOpen = const Value.absent(),
+                Value<double?> otherClosed = const Value.absent(),
+                Value<int> level = const Value.absent(),
+                Value<bool> cameraLimited = const Value.absent(),
+              }) => AssessmentsCompanion(
+                id: id,
+                takenAt: takenAt,
+                affectedHand: affectedHand,
+                affectedOpen: affectedOpen,
+                affectedClosed: affectedClosed,
+                otherOpen: otherOpen,
+                otherClosed: otherClosed,
+                level: level,
+                cameraLimited: cameraLimited,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime takenAt,
+                required String affectedHand,
+                required double affectedOpen,
+                required double affectedClosed,
+                Value<double?> otherOpen = const Value.absent(),
+                Value<double?> otherClosed = const Value.absent(),
+                required int level,
+                required bool cameraLimited,
+              }) => AssessmentsCompanion.insert(
+                id: id,
+                takenAt: takenAt,
+                affectedHand: affectedHand,
+                affectedOpen: affectedOpen,
+                affectedClosed: affectedClosed,
+                otherOpen: otherOpen,
+                otherClosed: otherClosed,
+                level: level,
+                cameraLimited: cameraLimited,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AssessmentsTable, AssessmentRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AssessmentsTable,
+                    AssessmentRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AssessmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AssessmentsTable,
+      AssessmentRow,
+      $$AssessmentsTableFilterComposer,
+      $$AssessmentsTableOrderingComposer,
+      $$AssessmentsTableAnnotationComposer,
+      $$AssessmentsTableCreateCompanionBuilder,
+      $$AssessmentsTableUpdateCompanionBuilder,
+      (
+        AssessmentRow,
+        BaseReferences<_$AppDatabase, $AssessmentsTable, AssessmentRow>,
+      ),
+      AssessmentRow,
+      PrefetchHooks Function()
+    >;
+typedef $$PainChecksTableCreateCompanionBuilder = PainChecksCompanion Function({
+  Value<int> id,
+  required DateTime at,
+  required String phase,
+  required int score,
+});
+typedef $$PainChecksTableUpdateCompanionBuilder = PainChecksCompanion Function({
+  Value<int> id,
+  Value<DateTime> at,
+  Value<String> phase,
+  Value<int> score,
+});
+
+class $$PainChecksTableFilterComposer
+    extends Composer<_$AppDatabase, $PainChecksTable> {
+  $$PainChecksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phase => $composableBuilder(
+    column: $table.phase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PainChecksTableOrderingComposer
+    extends Composer<_$AppDatabase, $PainChecksTable> {
+  $$PainChecksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get phase => $composableBuilder(
+    column: $table.phase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PainChecksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PainChecksTable> {
+  $$PainChecksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+
+  GeneratedColumn<String> get phase =>
+      $composableBuilder(column: $table.phase, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+}
+
+class $$PainChecksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PainChecksTable,
+          PainCheckRow,
+          $$PainChecksTableFilterComposer,
+          $$PainChecksTableOrderingComposer,
+          $$PainChecksTableAnnotationComposer,
+          $$PainChecksTableCreateCompanionBuilder,
+          $$PainChecksTableUpdateCompanionBuilder,
+          (
+            PainCheckRow,
+            BaseReferences<_$AppDatabase, $PainChecksTable, PainCheckRow>,
+          ),
+          PainCheckRow,
+          PrefetchHooks Function()
+        > {
+  $$PainChecksTableTableManager(_$AppDatabase db, $PainChecksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PainChecksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PainChecksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PainChecksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> at = const Value.absent(),
+            Value<String> phase = const Value.absent(),
+            Value<int> score = const Value.absent(),
+          }) => PainChecksCompanion(id: id, at: at, phase: phase, score: score),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime at,
+                required String phase,
+                required int score,
+              }) => PainChecksCompanion.insert(
+                id: id,
+                at: at,
+                phase: phase,
+                score: score,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PainChecksTable, PainCheckRow>(table),
+                  BaseReferences<_$AppDatabase, $PainChecksTable, PainCheckRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PainChecksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PainChecksTable,
+      PainCheckRow,
+      $$PainChecksTableFilterComposer,
+      $$PainChecksTableOrderingComposer,
+      $$PainChecksTableAnnotationComposer,
+      $$PainChecksTableCreateCompanionBuilder,
+      $$PainChecksTableUpdateCompanionBuilder,
+      (
+        PainCheckRow,
+        BaseReferences<_$AppDatabase, $PainChecksTable, PainCheckRow>,
+      ),
+      PainCheckRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$ExerciseSessionsTableTableManager get exerciseSessions =>
       $$ExerciseSessionsTableTableManager(_db, _db.exerciseSessions);
+  $$AssessmentsTableTableManager get assessments =>
+      $$AssessmentsTableTableManager(_db, _db.assessments);
+  $$PainChecksTableTableManager get painChecks =>
+      $$PainChecksTableTableManager(_db, _db.painChecks);
 }

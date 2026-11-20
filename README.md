@@ -61,8 +61,9 @@ lib/
     camera_exercise_controller.dart  Steps, timing, counting, saving
     exercise_providers.dart       Tracker, permission, database, session ranges
   data/
-    database.dart                 drift: exercise_sessions table
+    database.dart                 drift: exercise_sessions, assessments, pain_checks (schema 3)
     exercise_session_repository.dart  Save and read sessions
+    program_repository.dart       Hand measurements and pain checks
   calibration/
     emg_calibrator.dart           Pure Dart math: rest, grip, threshold, validity
     calibration_controller.dart   Step state and recording
@@ -70,7 +71,8 @@ lib/
   screens/
     home_screen.dart              Connect, live pressure, start/end session
     calibration/                  Start screen and the 4 steps
-    exercises/                    Path picker, camera list, camera exercise flow
+    exercises/                    Path picker, today's plan, hand measurement, pain check, exercise flow
+    settings/                     Settings and the therapist plan
     progress_screen.dart, settings_screen.dart   Placeholders
   widgets/
     app_shell.dart                STOP banner + wordmark + title + page + bottom nav
@@ -87,7 +89,9 @@ test/
   movement_quality_test.dart      Filter, SPARC, rep stats, swings, fatigue
   hand_metrics_test.dart          Angles, normalization, clamping, calibration
   rep_counter_test.dart           Reps, jitter, short reps, dropout, finger touches
-  camera_flow_test.dart           Full camera flows with the mock hand
+  camera_flow_test.dart           Measuring, plan, sets, wrist check, pain, therapist, counting
+  program_test.dart               Placement, plan, progression, pain rules, PIN
+  exercise_counters_test.dart     Every exercise's counter and the wrist monitor
   exercise_session_repository_test.dart  drift table and repository
 ```
 
@@ -101,6 +105,28 @@ test/
 
 No screen or widget changes. Add the Bluetooth permissions (Info.plist,
 AndroidManifest) at the same time.
+
+## Exercise program (camera)
+
+Built from `docs/rehab-science.md`:
+
+1. **Measure hands** (`lib/program/baseline*.dart`): open and close each
+   hand twice; finger bend in degrees, affected hand against the other.
+   Sets the level and is suggested again after 7 days.
+2. **Levels** (`lib/exercises/exercise_catalog.dart`): 1 opening the hand
+   (gentle open/close, hold open); 2 everyday grips (open/close, cup grip,
+   hook grip, pinch); 3 single fingers (finger touches, one finger at a
+   time, spread).
+3. **Daily plan** (`lib/program/daily_plan.dart`): a rep goal (starts at
+   100, max 300) split into sets with rest; exercises rotate by day. The
+   goal rises 10 % after a full day without fatigue or more pain, and drops
+   10 % when pain rose.
+4. **Wrist check** (`WristMonitor` in `exercise_counters.dart`): a rep made
+   by tilting the hand at the wrist more than 25 degrees does not count.
+5. **Pain** 0-10 before the first set and after the last: high pain advises
+   rest; a rise of 2 or more lowers the next goal.
+6. **Therapist plan** (Settings, 4-digit PIN): level override, goals, set
+   size, rest, pain limits, automatic progression.
 
 ## Hand tracking test page
 

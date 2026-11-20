@@ -132,7 +132,10 @@ function computeAngles(w, hand) {
     signedAngle(sub(w[m + 2], w[m + 1]), sub(w[m + 3], w[m + 2]), across),
   ]);
   let sign = hand === "Right" ? -1 : hand === "Left" ? 1 : 0;
-  if (sign === 0) sign = raw.flat().reduce((s, v) => s + v, 0) >= 0 ? 1 : -1;
+  const sum = raw.flat().reduce((s, v) => s + v, 0);
+  // A real hand can't average more than ~40 degrees past straight; beyond
+  // that the hand label is wrong, so the sign is flipped.
+  if (sign === 0 || sign * sum < -40 * 4) sign = sum >= 0 ? 1 : -1;
   const fingers = raw.map(([mcp, pip, dip]) => ({ mcp: sign * mcp, pip: sign * pip, dip: sign * dip }));
   fingers.forEach((f) => (f.total = f.mcp + f.pip + f.dip));
   return {

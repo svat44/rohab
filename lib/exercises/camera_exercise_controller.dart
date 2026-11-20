@@ -6,10 +6,10 @@ import '../camera/camera_permission.dart';
 import '../camera/hand_tracker.dart';
 import '../data/exercise_session_repository.dart';
 import 'exercise_catalog.dart';
+import 'exercise_counters.dart';
 import 'hand_metrics.dart';
 import 'joint_angles.dart';
 import 'movement_quality.dart';
-import 'rep_counter.dart';
 
 enum FlowStep {
   instructions,
@@ -38,6 +38,7 @@ class DoneSummary {
     this.avgPeakSpeed,
     this.avgSmoothness,
     this.fatigued = false,
+    this.compensatedReps = 0,
   });
 
   final int reps;
@@ -61,6 +62,9 @@ class DoneSummary {
   /// Later reps were clearly smaller than the first ones.
   final bool fatigued;
 
+  /// Reps not counted because the wrist moved instead of the fingers.
+  final int compensatedReps;
+
   bool get inDegrees => unit == 'deg';
 }
 
@@ -77,9 +81,17 @@ class CameraExerciseController extends ChangeNotifier {
     required this._repository,
     required this._loadRange,
     required this._saveRange,
+    required this.setSize,
+    this.level,
     DateTime Function()? wallClock,
     this.onRepCounted,
   }) : _wallClock = wallClock ?? DateTime.now;
+
+  /// Reps (or holds, or rounds) in this set.
+  final int setSize;
+
+  /// Program level, saved with the session. Null for free practice.
+  final int? level;
 
   static const tick = Duration(milliseconds: 50);
   static const handCheckTime = Duration(seconds: 1);
@@ -114,10 +126,23 @@ class CameraExerciseController extends ChangeNotifier {
   /// Recent reps are clearly smaller than the first: suggest a rest.
   bool suggestRest = false;
 
+  /// The last rep was made by moving the wrist and did not count.
+  bool wristCue = false;
+  int compensatedReps = 0;
+
+  /// Exercise-specific guidance ("Hold it open.", "Next: ring finger").
+  String? hint;
+
   /// The hand has been out of view for over 2 s; counting is paused.
   bool handLost = false;
   String? errorMessage;
   DoneSummary? summary;
+
+  final Completer<void> _saved = Completer<void>();
+
+  /// Completes once the finished set has been saved (or nothing needed
+  /// saving).
+  Future<void> get saved => _saved.future;
 
   HandTracker? _tracker;
   StreamSubscription<HandFrame>? _sub;
@@ -137,8 +162,8 @@ class CameraExerciseController extends ChangeNotifier {
   /// the spread range.
   final ExcursionTracker _swings = ExcursionTracker(deadband: 10);
   final List<RepStats> _repStats = [];
-  HysteresisRepCounter? _hysteresis;
-  FingerTouchCounter? _touches;
+  ExerciseCounter? _counter;
+  final WristMonitor _wrist = WristMonitor();
   double? _rangeMin;
   double? _rangeMax;
   Duration? _exerciseStart;
@@ -148,8 +173,6 @@ class CameraExerciseController extends ChangeNotifier {
   HandTracker? get tracker => _tracker;
   TrackerStats get stats => _tracker?.stats ?? const TrackerStats();
 
-  /// Next finger for finger touches: 0 index ... 3 little finger.
-  int get expectedFinger => _touches?.expectedFinger ?? 0;
 
   // ---- Steps ---------------------------------------------------------------
 
@@ -240,12 +263,11 @@ class CameraExerciseController extends ChangeNotifier {
     handLost = false;
     _rangeMin = null;
     _rangeMax = null;
-    _hysteresis = exercise.kind == ExerciseKind.fingerTouches
-        ? null
-        : HysteresisRepCounter();
-    _touches = exercise.kind == ExerciseKind.fingerTouches
-        ? FingerTouchCounter()
-        : null;
+    _counter = ExerciseCounter.forKind(exercise.kind);
+    _wrist.reset();
+    wristCue = false;
+    compensatedReps = 0;
+    hint = _counter!.hint;
     _exerciseStart = _now;
     _startedAt = _wallClock();
     _go(FlowStep.exercise);
@@ -262,7 +284,7 @@ class CameraExerciseController extends ChangeNotifier {
     final unit = exercise.usesSpread ? '%' : 'deg';
     summary = DoneSummary(
       reps: reps,
-      target: exercise.targetReps,
+      target: setSize,
       completed: completed,
       rangeMin: _rangeMin,
       rangeMax: _rangeMax,
@@ -271,6 +293,7 @@ class CameraExerciseController extends ChangeNotifier {
       avgPeakSpeed: avg((r) => r.peakSpeed),
       avgSmoothness: avg((r) => r.smoothness),
       fatigued: _fatigue.isFatigued,
+      compensatedReps: compensatedReps,
     );
     final s = summary!;
     _go(FlowStep.done);
@@ -280,7 +303,7 @@ class CameraExerciseController extends ChangeNotifier {
         exerciseId: exercise.id,
         mode: 'camera',
         reps: reps,
-        targetReps: exercise.targetReps,
+        targetReps: setSize,
         rangeMin: _rangeMin,
         rangeMax: _rangeMax,
         metricUnit: s.unit,
@@ -288,10 +311,13 @@ class CameraExerciseController extends ChangeNotifier {
         avgPeakSpeed: s.avgPeakSpeed,
         avgSmoothness: s.avgSmoothness,
         fatigued: s.fatigued,
+        compensatedReps: s.compensatedReps,
+        level: level,
         durationSec: duration.inSeconds,
         startedAt: _startedAt ?? _wallClock(),
       ));
     }
+    if (!_saved.isCompleted) _saved.complete();
   }
 
   // ---- Frames and time -----------------------------------------------------
@@ -311,9 +337,12 @@ class CameraExerciseController extends ChangeNotifier {
           handLost = false;
           _filter.reset();
           _recorder.reset();
+          _wrist.reset();
         }
         final range = _range!;
-        final filtered = _filter.filter(_raw(frame), frame.timestamp);
+        final angles = JointAngles.compute(lm, frame.handedness);
+        final raw = exercise.usesSpread ? HandMetrics.rawSpread(lm) : -angles.closure;
+        final filtered = _filter.filter(raw, frame.timestamp);
         final p = range.percent(filtered);
         percent = p;
         // Shown and stored: finger bend in degrees, or spread %.
@@ -327,15 +356,23 @@ class CameraExerciseController extends ChangeNotifier {
           _fatigue.add(swing);
           suggestRest = _fatigue.isFatigued;
         }
-        final counted = _touches != null
-            ? _touches!.update(lm, frame.timestamp)
-            : _hysteresis!.update(p, frame.timestamp);
-        if (counted) {
+        _wrist.update(lm);
+        final counted = _counter!.update(
+            HandSample(points: lm, angles: angles, percent: p),
+            frame.timestamp);
+        hint = _counter!.hint;
+        if (counted && _wrist.moved) {
+          // Made by bending the wrist (tenodesis), not the fingers.
+          _recorder.close();
+          compensatedReps++;
+          wristCue = true;
+        } else if (counted) {
+          wristCue = false;
           final stats = _recorder.close();
           if (stats != null) _repStats.add(stats);
           reps++;
           onRepCounted?.call(reps);
-          if (reps >= exercise.targetReps) {
+          if (reps >= setSize) {
             _finish(completed: true);
             return;
           }
@@ -409,8 +446,7 @@ class CameraExerciseController extends ChangeNotifier {
         final lost = _lastSeen == null || _now - _lastSeen! > lostAfter;
         if (lost && !handLost) {
           handLost = true;
-          _hysteresis?.resetCycle();
-          _touches?.resetCycle();
+          _counter?.resetCycle();
           _recorder.reset();
           _swings.reset();
           notifyListeners();

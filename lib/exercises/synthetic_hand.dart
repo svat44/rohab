@@ -26,21 +26,28 @@ class SyntheticHand {
   /// [spread]: 0 = fingers together, 1 = spread wide.
   /// [thumbOn]: fingertip index (8, 12, 16, 20) the thumb touches, or null.
   /// [scale] and [offsetX] move the whole hand (distance from camera).
+  /// [fingerCurls]: per-finger curl (index to little), overriding [curl].
+  /// [hook]: knuckles (MCP) straight while the finger joints bend.
+  /// [wristPitch]: tilts the whole hand at the wrist, in degrees (a stand-in
+  /// for wrist flexion with the forearm still).
   static List<Point3> pose({
     double curl = 0,
     double spread = 0.3,
     int? thumbOn,
     double scale = 1,
     double offsetX = 0,
+    List<double>? fingerCurls,
+    bool hook = false,
+    double wristPitch = 0,
   }) {
     final pts = List<Point3>.filled(21, _wrist);
     pts[0] = _wrist;
 
-    final pipBend = 110 * curl * math.pi / 180;
-    final mcpBend = 30 * curl * math.pi / 180;
-    final dipBend = 0.7 * pipBend;
-
     for (var f = 0; f < 4; f++) {
+      final c = fingerCurls?[f] ?? curl;
+      final pipBend = 110 * c * math.pi / 180;
+      final mcpBend = hook ? 0.0 : 80 * c * math.pi / 180;
+      final dipBend = 0.7 * pipBend;
       final fan = (f - 1.5) * (4 + 14 * spread) * math.pi / 180;
       final mcp = _mcps[f];
       // Direction in the image plane (fan), bending toward the camera (-z).
@@ -71,8 +78,19 @@ class SyntheticHand {
     pts[3] = Point3((tmcp.x + tip.x) / 2, (tmcp.y + tip.y) / 2, tip.z / 2);
     pts[4] = tip;
 
-    return [
+    // Wrist tilt: rotate everything about the wrist, in the y-z plane.
+    final a = wristPitch * math.pi / 180;
+    final tilted = [
       for (final p in pts)
+        Point3(
+          p.x,
+          _wrist.y + (p.y - _wrist.y) * math.cos(a) - p.z * math.sin(a),
+          (p.y - _wrist.y) * math.sin(a) + p.z * math.cos(a),
+        ),
+    ];
+
+    return [
+      for (final p in tilted)
         Point3(
           _wrist.x + (p.x - _wrist.x) * scale + offsetX,
           _wrist.y + (p.y - _wrist.y) * scale,
@@ -85,16 +103,26 @@ class SyntheticHand {
   /// origin near the middle of the hand, palm about 8 cm wide.
   ///
   /// The image-space pose above is a left hand with its palm toward the
-  /// camera; [rightHand] mirrors it. Bend angles: MCP 30 x [curl], PIP
+  /// camera; [rightHand] mirrors it. Bend angles: MCP 80 x [curl], PIP
   /// 110 x [curl], DIP 77 x [curl] degrees.
   static List<Point3> world({
     double curl = 0,
     double spread = 0.3,
     int? thumbOn,
     bool rightHand = false,
+    List<double>? fingerCurls,
+    bool hook = false,
+    double wristPitch = 0,
   }) {
     const metresPerUnit = 0.45; // palm 0.18 units -> about 8 cm
-    final img = pose(curl: curl, spread: spread, thumbOn: thumbOn);
+    final img = pose(
+      curl: curl,
+      spread: spread,
+      thumbOn: thumbOn,
+      fingerCurls: fingerCurls,
+      hook: hook,
+      wristPitch: wristPitch,
+    );
     final c = img[9]; // middle MCP
     return [
       for (final p in img)

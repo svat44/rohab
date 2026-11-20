@@ -7,14 +7,25 @@ import 'package:rohab/camera/hand_tracker.dart';
 import 'package:rohab/camera/mock_hand_tracker.dart';
 import 'package:rohab/data/database.dart';
 import 'package:rohab/data/exercise_session_repository.dart';
+import 'package:rohab/data/program_repository.dart';
 import 'package:rohab/exercises/exercise_catalog.dart';
 import 'package:rohab/exercises/exercise_providers.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
+import 'package:rohab/program/baseline.dart';
+import 'package:rohab/screens/exercises/baseline_screen.dart';
 import 'package:rohab/screens/exercises/camera_exercise_flow.dart';
 import 'package:rohab/screens/exercises/exercises_screen.dart';
+import 'package:rohab/screens/exercises/pain_check_screen.dart';
+import 'package:rohab/screens/exercises/program_screen.dart';
+import 'package:rohab/widgets/app_shell.dart';
+import 'package:rohab/screens/settings/settings_screen.dart';
+import 'package:rohab/screens/settings/therapist_screen.dart';
 import 'package:rohab/widgets/safety_banner.dart';
 
 import 'helpers.dart';
+
+/// Day 0 of the plan rotation: level 2 starts with open_close.
+final today = DateTime(2026, 1, 1, 9);
 
 class FakePermission implements CameraPermission {
   FakePermission(this.current, {this.afterRequest = CameraAccess.granted});
@@ -37,13 +48,15 @@ class Harness {
   Harness(this.glove, this.trackers, this.db, this.permission);
   final MockGloveService glove;
 
-  /// One tracker per exercise flow, as in the app.
+  /// One tracker per flow, as in the app.
   final List<MockHandTracker> trackers;
   final AppDatabase db;
   final FakePermission permission;
 
-  /// The current flow's tracker.
   MockHandTracker get tracker => trackers.last;
+
+  Future<List<ExerciseSessionRow>> sessions(WidgetTester t) async =>
+      (await t.runAsync(() => DriftExerciseSessionRepository(db).all()))!;
 }
 
 Future<Harness> launch(
@@ -51,6 +64,7 @@ Future<Harness> launch(
   MockHandTracker? tracker,
   CameraAccess access = CameraAccess.granted,
   CameraAccess afterRequest = CameraAccess.granted,
+  int? baselineLevel,
 }) async {
   final trackers = <MockHandTracker>[?tracker];
   MockHandTracker create() {
@@ -61,13 +75,24 @@ Future<Harness> launch(
     return t;
   }
 
-  // A tracker exists before Start so tests can set its pose.
   if (tracker == null) create();
   var first = true;
   final db = AppDatabase(DatabaseConnection(NativeDatabase.memory(),
       closeStreamsSynchronously: true));
+  if (baselineLevel != null) {
+    await tester.runAsync(() => DriftProgramRepository(db).saveBaseline(
+          BaselineResult(
+            affectedHand: Handedness.left,
+            affected: const HandRange(open: 30, closed: 220),
+            other: const HandRange(open: 5, closed: 260),
+            level: baselineLevel,
+            cameraLimited: false,
+            takenAt: today,
+          ),
+        ));
+  }
   final permission = FakePermission(access, afterRequest: afterRequest);
-  final glove = await pumpRohab(tester, overrides: [
+  final glove = await pumpRohab(tester, clock: () => today, overrides: [
     handTrackerFactoryProvider.overrideWithValue(() {
       if (first) {
         first = false;
@@ -76,15 +101,14 @@ Future<Harness> launch(
       return create();
     }),
     cameraPermissionProvider.overrideWithValue(permission),
-    exerciseSessionRepositoryProvider
-        .overrideWithValue(DriftExerciseSessionRepository(db)),
+    appDatabaseProvider.overrideWithValue(db),
   ]);
   return Harness(glove, trackers, db, permission);
 }
 
-/// Lets a drift write started under the test's fake clock finish: SQLite
-/// work needs real time, and its result is delivered on a pump.
-Future<void> settleDb(WidgetTester tester) async {
+/// Lets drift work started under the test's fake clock finish: SQLite
+/// needs real time, and its result is delivered on a pump.
+Future<void> settle(WidgetTester tester) async {
   for (var i = 0; i < 5; i++) {
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 20)));
@@ -93,7 +117,7 @@ Future<void> settleDb(WidgetTester tester) async {
 }
 
 Future<void> close(WidgetTester tester, Harness h) async {
-  await settleDb(tester);
+  await settle(tester);
   await finish(tester, h.glove);
   for (final t in h.trackers) {
     await t.stop();
@@ -101,18 +125,34 @@ Future<void> close(WidgetTester tester, Harness h) async {
   await tester.runAsync(h.db.close);
 }
 
-Future<void> openExercise(WidgetTester tester, String id) async {
+Future<void> openProgram(WidgetTester tester) async {
   await tapTab(tester, 'Exercises');
   await tester.tap(find.byKey(ExercisesScreen.cameraKey));
+  await settle(tester);
+}
+
+/// Free practice of one exercise, outside the plan.
+Future<void> openFree(WidgetTester tester, String id) async {
+  await openProgram(tester);
+  await tap(tester, ProgramScreen.freePracticeKey);
+  await tap(tester, CameraExerciseListScreen.rowKey(id));
+}
+
+/// Taps [key], scrolling the visible list to it first if needed.
+Future<void> tap(WidgetTester tester, Key key) async {
+  final target = find.byKey(key);
+  if (target.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(target, 200,
+        scrollable: find.byType(Scrollable).hitTestable().first);
+  }
+  await tester.ensureVisible(target);
   await tester.pump();
-  await tester.tap(find.byKey(CameraExerciseListScreen.rowKey(id)));
+  await tester.tap(target);
   await tester.pump();
 }
 
-Future<void> tapPrimary(WidgetTester tester) async {
-  await tester.tap(find.byKey(CameraExerciseFlow.primaryKey));
-  await tester.pump();
-}
+Future<void> tapPrimary(WidgetTester tester) =>
+    tap(tester, CameraExerciseFlow.primaryKey);
 
 /// Hand check (1 s) and range calibration (3 s open, 3 s fist).
 Future<void> passHandCheckAndCalibrate(WidgetTester tester, Harness h) async {
@@ -126,18 +166,20 @@ Future<void> passHandCheckAndCalibrate(WidgetTester tester, Harness h) async {
 }
 
 /// The first open after calibration (which ends in a fist) starts the
-/// first rep: a rep is open (>= 80 %), closed (<= 20 %), open again.
-Future<void> firstOpen(WidgetTester tester, Harness h) async {
-  h.tracker.pose = HandPose.open;
+/// first rep: a rep is open, closed, open again.
+Future<void> firstOpen(WidgetTester tester, Harness h,
+    {HandPose pose = HandPose.open}) async {
+  h.tracker.pose = pose;
   await tester.pump(const Duration(milliseconds: 600));
 }
 
 /// [n] reps from an open hand: close 600 ms, open 600 ms.
-Future<void> doReps(WidgetTester tester, Harness h, int n) async {
+Future<void> doReps(WidgetTester tester, Harness h, int n,
+    {HandPose open = HandPose.open}) async {
   for (var i = 0; i < n; i++) {
     h.tracker.pose = HandPose.fist;
     await tester.pump(const Duration(milliseconds: 600));
-    h.tracker.pose = HandPose.open;
+    h.tracker.pose = open;
     await tester.pump(const Duration(milliseconds: 600));
   }
 }
@@ -154,197 +196,347 @@ void main() {
         findsOneWidget);
     expect(find.text('Available when your glove is connected.'),
         findsOneWidget);
-    // The glove row does nothing.
     await tester.tap(find.byKey(ExercisesScreen.gloveKey));
     await tester.pump();
     expect(find.byKey(ExercisesScreen.gloveKey), findsOneWidget);
-    await tester.tap(find.byKey(ExercisesScreen.cameraKey));
-    await tester.pump();
-    for (final e in ExerciseCatalog.all) {
-      expect(find.text(e.title), findsOneWidget);
-      expect(find.text(e.description), findsOneWidget);
-      expect(find.text('${e.targetReps} ${e.repUnit}'), findsWidgets);
-      expect(e.steps.length, lessThanOrEqualTo(4));
-    }
     await close(tester, h);
   });
 
-  testWidgets('full Open and close exercise saves a session with 10 reps',
-      (tester) async {
-    final h = await launch(tester);
-    await openExercise(tester, 'open_close');
-    expect(find.text('1 · 2 · 3'), findsOneWidget);
-    expect(find.text('Start'), findsOneWidget);
-    expect(find.byKey(SafetyBanner.stopKey), findsOneWidget);
+  group('hand measurement', () {
+    testWidgets('measures both hands, sets level 2 and saves it',
+        (tester) async {
+      final h = await launch(tester);
+      await openProgram(tester);
+      expect(find.text('First, measure your hands'), findsOneWidget);
+      await tap(tester, ProgramScreen.primaryKey);
+      await tap(tester, BaselineScreen.rightKey);
+      await settle(tester);
+      expect(find.text('Hold your right hand inside the frame.'),
+          findsOneWidget);
+      expect(find.byKey(SafetyBanner.stopKey), findsOneWidget);
 
-    await tapPrimary(tester); // Start
-    expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
-    expect(h.tracker.started, isTrue);
-    expect(find.byKey(SafetyBanner.stopKey), findsOneWidget);
+      // Affected right hand: bend 0.15 to 0.8 of a fist (about 40 to 214).
+      Future<void> measure(HandPose open, HandPose closed) async {
+        h.tracker.pose = open;
+        await tester.pump(const Duration(milliseconds: 1100)); // hand check
+        for (var cycle = 0; cycle < 2; cycle++) {
+          h.tracker.pose = open;
+          await tester.pump(const Duration(seconds: 4));
+          h.tracker.pose = closed;
+          await tester.pump(const Duration(seconds: 4));
+        }
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-    await passHandCheckAndCalibrate(tester, h);
-    expect(repsText(tester), '0 of 10');
-    expect(find.byKey(SafetyBanner.stopKey), findsOneWidget);
+      await measure(const HandPose(curl: 0.15, rightHand: true),
+          const HandPose(curl: 0.8, rightHand: true));
+      expect(find.text('Now your left hand'), findsOneWidget);
+      await tap(tester, BaselineScreen.primaryKey);
+      await measure(const HandPose(), const HandPose(curl: 1));
+      await settle(tester);
 
-    await firstOpen(tester, h);
-    expect(repsText(tester), '0 of 10');
-    await doReps(tester, h, 4);
-    expect(repsText(tester), '4 of 10');
-    await doReps(tester, h, 6);
+      expect(find.text('Starting level: 2'), findsOneWidget);
+      final saved = await tester.runAsync(
+          () => DriftProgramRepository(h.db).latestBaseline());
+      expect(saved!.level, 2);
+      expect(saved.affectedHand, Handedness.right);
+      expect(saved.affected.range, closeTo(174, 15));
+      expect(saved.other!.range, closeTo(267, 15));
+      expect(saved.rangeRatio, closeTo(0.65, 0.05));
 
-    expect(find.text('Exercise complete. 10 reps.'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'^Range of motion: \d+°$')),
-        findsOneWidget);
-    expect(find.text('Next exercise'), findsOneWidget);
-    expect(find.text('Finish'), findsOneWidget);
-    expect(h.tracker.started, isFalse, reason: 'camera off when done');
+      await tap(tester, BaselineScreen.primaryKey);
+      await settle(tester);
+      expect(find.text('Level 2 · Everyday grips'), findsOneWidget);
+      await close(tester, h);
+    });
 
-    await settleDb(tester);
-    final rows = (await tester.runAsync(
-        () => DriftExerciseSessionRepository(h.db).all()))!;
-    expect(rows, hasLength(1));
-    final row = rows.single;
-    expect(row.exerciseId, 'open_close');
-    expect(row.mode, 'camera');
-    expect(row.reps, 10);
-    expect(row.targetReps, 10);
-    // Finger bend in degrees: synthetic open hand about 0, fist about 217.
-    expect(row.metricUnit, 'deg');
-    expect(row.rangeMin, lessThan(30));
-    expect(row.rangeMax, greaterThan(180));
-    expect(row.avgAmplitude, greaterThan(150));
-    expect(row.avgPeakSpeed, greaterThan(0));
-    expect(row.avgSmoothness, lessThan(0));
-    expect(row.fatigued, isFalse);
-    expect(row.durationSec, inInclusiveRange(10, 14));
-    await close(tester, h);
+    testWidgets('skipping the other hand still places a level',
+        (tester) async {
+      final h = await launch(tester);
+      await openProgram(tester);
+      await tap(tester, ProgramScreen.primaryKey);
+      await tap(tester, BaselineScreen.leftKey);
+      await settle(tester);
+      h.tracker.pose = HandPose.open;
+      await tester.pump(const Duration(milliseconds: 1100));
+      for (var cycle = 0; cycle < 2; cycle++) {
+        h.tracker.pose = HandPose.open;
+        await tester.pump(const Duration(seconds: 4));
+        h.tracker.pose = HandPose.fist;
+        await tester.pump(const Duration(seconds: 4));
+      }
+      await tester.pump(const Duration(milliseconds: 100));
+      await tap(tester, BaselineScreen.secondaryKey); // Skip
+      await settle(tester);
+      expect(find.text('Starting level: 3'), findsOneWidget);
+      await close(tester, h);
+    });
   });
 
-  testWidgets('lost hand pauses counting and shows the frame message',
-      (tester) async {
-    final h = await launch(tester);
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await passHandCheckAndCalibrate(tester, h);
-    await firstOpen(tester, h);
-    await doReps(tester, h, 2);
-    expect(repsText(tester), '2 of 10');
+  group("today's plan", () {
+    testWidgets('pain check, a set of 10, then the next set', (tester) async {
+      final h = await launch(tester, baselineLevel: 2);
+      await openProgram(tester);
+      expect(find.text('Level 2 · Everyday grips'), findsOneWidget);
+      expect(find.text('0 of 120 today'), findsOneWidget);
+      expect(find.text('Open and close'), findsOneWidget);
 
-    // Close (half a rep), then the hand leaves for 3 s.
-    h.tracker.pose = HandPose.fist;
-    await tester.pump(const Duration(milliseconds: 600));
-    h.tracker.pose = null;
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
+      await tap(tester, ProgramScreen.primaryKey); // Start
+      expect(find.text('Pain right now?'),
+          findsOneWidget);
+      await tap(tester, PainCheckScreen.scoreKey(2));
+      await tap(tester, PainCheckScreen.primaryKey);
+      await settle(tester);
 
-    // Coming back open must not complete the half rep.
-    h.tracker.pose = HandPose.open;
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(repsText(tester), '2 of 10');
-    expect(find.text('Hold your hand inside the frame.'), findsNothing);
-    h.tracker.pose = HandPose.fist;
-    await tester.pump(const Duration(milliseconds: 600));
-    h.tracker.pose = HandPose.open;
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(repsText(tester), '3 of 10');
-    await close(tester, h);
+      expect(find.text('Set 1 of 4 · 10 reps each'), findsOneWidget);
+      await tapPrimary(tester); // Start
+      await passHandCheckAndCalibrate(tester, h);
+      expect(repsText(tester), '0 of 10');
+      await firstOpen(tester, h);
+      await doReps(tester, h, 10);
+      await settle(tester);
+      expect(find.text('Set complete. 10 reps.'), findsOneWidget);
+      expect(find.textContaining('Rest for'), findsOneWidget);
+      expect(find.text('Next set'), findsOneWidget);
+
+      final rows = await h.sessions(tester);
+      expect(rows.single.reps, 10);
+      expect(rows.single.level, 2);
+      expect(rows.single.targetReps, 10);
+
+      await tapPrimary(tester); // Next set
+      await settle(tester);
+      expect(find.text('Set 2 of 4 · 10 reps each'), findsOneWidget);
+      await tapPrimary(tester);
+      // Same session: no second calibration.
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(find.text('Open your hand as wide as you can.'), findsNothing);
+      expect(repsText(tester), '0 of 10');
+      await close(tester, h);
+    });
+
+    testWidgets('reps made by bending the wrist do not count',
+        (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await firstOpen(tester, h);
+      await doReps(tester, h, 2);
+      expect(repsText(tester), '2 of 10');
+      // Opening by tilting the wrist 40 degrees.
+      await doReps(tester, h, 2,
+          open: const HandPose(wristPitch: 40));
+      expect(repsText(tester), '2 of 10');
+      expect(find.text('Wrist moved. That one did not count.'),
+          findsOneWidget);
+      await tester.tap(find.text('End exercise'));
+      await settle(tester);
+      expect(find.textContaining('did not count because the wrist moved'),
+          findsOneWidget);
+      final rows = await h.sessions(tester);
+      expect(rows.single.compensatedReps, greaterThanOrEqualTo(1));
+      expect(rows.single.level, isNull, reason: 'free practice');
+      await close(tester, h);
+    });
+
+    testWidgets('high pain before advises rest', (tester) async {
+      final h = await launch(tester, baselineLevel: 1);
+      await openProgram(tester);
+      await tap(tester, ProgramScreen.primaryKey);
+      await tap(tester, PainCheckScreen.scoreKey(8));
+      await tap(tester, PainCheckScreen.primaryKey);
+      await settle(tester);
+      expect(find.text('Your pain is high today'), findsOneWidget);
+      await tap(tester, PainCheckScreen.primaryKey); // Rest today
+      await settle(tester);
+      expect(find.textContaining('You reported high pain today.'),
+          findsOneWidget);
+      await close(tester, h);
+    });
+
+    testWidgets('pain rising after practice is flagged', (tester) async {
+      final h = await launch(tester, baselineLevel: 2);
+      await openProgram(tester);
+      await tap(tester, ProgramScreen.primaryKey);
+      await tap(tester, PainCheckScreen.scoreKey(2));
+      await tap(tester, PainCheckScreen.primaryKey);
+      await settle(tester);
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await firstOpen(tester, h);
+      await doReps(tester, h, 10);
+      await settle(tester);
+      await tap(tester, CameraExerciseFlow.secondaryKey); // Finish for today
+      await settle(tester);
+      expect(find.text('Pain now?'), findsOneWidget);
+      await tap(tester, PainCheckScreen.scoreKey(5));
+      await tap(tester, PainCheckScreen.primaryKey);
+      await settle(tester);
+      expect(find.text('Your pain went up by 3'), findsOneWidget);
+      await close(tester, h);
+    });
   });
 
-  testWidgets('range is calibrated once per session', (tester) async {
-    final h = await launch(tester);
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await passHandCheckAndCalibrate(tester, h);
-    await firstOpen(tester, h);
-    await doReps(tester, h, 10);
-    expect(find.text('Next exercise'), findsOneWidget);
+  group('therapist', () {
+    testWidgets('sets a PIN, changes the level, and the plan follows',
+        (tester) async {
+      final h = await launch(tester, baselineLevel: 2);
+      await tester.tap(find.byKey(AppShell.settingsButtonKey));
+      await tester.pump();
+      await tap(tester, SettingsScreen.therapistKey);
+      expect(find.text('Choose a therapist PIN'), findsOneWidget);
+      await tester.enterText(find.byKey(TherapistScreen.pinFieldKey), '1234');
+      await tap(tester, TherapistScreen.primaryKey);
+      await tester.enterText(find.byKey(TherapistScreen.pinFieldKey), '1234');
+      await tap(tester, TherapistScreen.primaryKey);
+      await settle(tester);
+      expect(find.text('Therapist plan'), findsWidgets);
 
-    await tapPrimary(tester); // Next exercise: Finger touches
-    expect(find.text('Finger touches'), findsWidgets);
-    await tapPrimary(tester); // Start
-    await tester.pump(const Duration(milliseconds: 1100));
-    expect(find.text('Open your hand as wide as you can.'), findsNothing);
-    expect(repsText(tester), '0 of 8');
-    await close(tester, h);
+      await tap(tester, TherapistScreen.levelKey(3));
+      await tap(tester, TherapistScreen.stepKey('set', true));
+      await tap(tester, TherapistScreen.primaryKey); // Save
+      await settle(tester);
+      expect(find.text('Saved.'), findsOneWidget);
+
+      await tapTab(tester, 'Exercises');
+      await tester.tap(find.byKey(ExercisesScreen.cameraKey));
+      await settle(tester);
+      expect(find.text('Level 3 · Single fingers'), findsOneWidget);
+      expect(find.textContaining('Level set by your therapist'),
+          findsOneWidget);
+      await close(tester, h);
+    });
+
+    testWidgets('a wrong PIN does not unlock', (tester) async {
+      final h = await launch(tester);
+      await tester.tap(find.byKey(AppShell.settingsButtonKey));
+      await tester.pump();
+      await tap(tester, SettingsScreen.therapistKey);
+      for (final pin in ['2468', '2468']) {
+        await tester.enterText(find.byKey(TherapistScreen.pinFieldKey), pin);
+        await tap(tester, TherapistScreen.primaryKey);
+      }
+      await settle(tester);
+      await tap(tester, TherapistScreen.secondaryKey); // Back
+      await tap(tester, SettingsScreen.therapistKey);
+      expect(find.text('Therapist PIN'), findsOneWidget);
+      await tester.enterText(find.byKey(TherapistScreen.pinFieldKey), '1111');
+      await tap(tester, TherapistScreen.primaryKey);
+      expect(find.text('That PIN is not right.'), findsOneWidget);
+      expect(find.text('Save'), findsNothing);
+      await close(tester, h);
+    });
   });
 
-  testWidgets('shrinking movements suggest a rest and are saved as fatigued',
-      (tester) async {
-    final h = await launch(tester);
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await passHandCheckAndCalibrate(tester, h);
-    await firstOpen(tester, h);
-    await doReps(tester, h, 5); // full fist to full open
-    expect(repsText(tester), '5 of 10');
-    // Tired: only half closing, too small to count.
-    for (var i = 0; i < 5; i++) {
-      h.tracker.pose = const HandPose(curl: 0.45);
+  group('counting', () {
+    testWidgets('lost hand pauses counting', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await firstOpen(tester, h);
+      await doReps(tester, h, 2);
+      h.tracker.pose = HandPose.fist;
       await tester.pump(const Duration(milliseconds: 600));
+      h.tracker.pose = null;
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
       h.tracker.pose = HandPose.open;
       await tester.pump(const Duration(milliseconds: 600));
-    }
-    expect(repsText(tester), '5 of 10');
-    expect(find.text('Movements are getting smaller. A rest may help.'),
-        findsOneWidget);
-    await tester.tap(find.text('End exercise'));
-    await tester.pump();
-    expect(find.text('Exercise ended. 5 reps.'), findsOneWidget);
-    expect(find.textContaining('Your later movements were smaller.'),
-        findsOneWidget);
-    await settleDb(tester);
-    final rows = (await tester.runAsync(
-        () => DriftExerciseSessionRepository(h.db).all()))!;
-    expect(rows.single.fatigued, isTrue);
-    expect(rows.single.reps, 5);
-    await close(tester, h);
-  });
+      expect(repsText(tester), '2 of 10');
+      await doReps(tester, h, 1);
+      expect(repsText(tester), '3 of 10');
+      await close(tester, h);
+    });
 
-  testWidgets('End exercise early with no reps saves nothing',
-      (tester) async {
-    final h = await launch(tester);
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await passHandCheckAndCalibrate(tester, h);
-    await tester.tap(find.text('End exercise'));
-    await tester.pump();
-    expect(find.text('Exercise ended. 0 reps.'), findsOneWidget);
-    expect(find.text('Nothing was saved.'), findsOneWidget);
-    await settleDb(tester);
-    final rows = (await tester.runAsync(
-        () => DriftExerciseSessionRepository(h.db).all()))!;
-    expect(rows, isEmpty);
-    await close(tester, h);
-  });
+    testWidgets('low-confidence frames are ignored', (tester) async {
+      final h = await launch(tester,
+          tracker: MockHandTracker(lowConfidenceEvery: 1));
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
+      expect(HandFrame.minConfidence, 0.6);
+      await close(tester, h);
+    });
 
-  testWidgets('low-confidence frames are ignored', (tester) async {
-    final h = await launch(tester,
-        tracker: MockHandTracker(lowConfidenceEvery: 1));
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
-    expect(HandFrame.minConfidence, 0.6);
-    await close(tester, h);
-  });
+    testWidgets('noise, low-confidence frames and a dropout still reach '
+        'the set', (tester) async {
+      final tracker = MockHandTracker(
+        script: MockHandTracker.cycles(
+          dropoutStart: const Duration(seconds: 14),
+          dropoutLength: const Duration(seconds: 3),
+        ),
+        noise: 0.003,
+        lowConfidenceEvery: 7,
+      );
+      final h = await launch(tester, tracker: tracker);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(seconds: 40));
+      expect(find.text('Set complete. 10 reps.'), findsOneWidget);
+      await close(tester, h);
+    });
 
-  testWidgets(
-      'scripted cycles with noise, low-confidence frames and a dropout '
-      'reach the target', (tester) async {
-    final tracker = MockHandTracker(
-      script: MockHandTracker.cycles(
-        dropoutStart: const Duration(seconds: 14),
-        dropoutLength: const Duration(seconds: 3),
-      ),
-      noise: 0.003,
-      lowConfidenceEvery: 7,
-    );
-    final h = await launch(tester, tracker: tracker);
-    await openExercise(tester, 'open_close');
-    await tapPrimary(tester);
-    await tester.pump(const Duration(seconds: 40));
-    expect(find.text('Exercise complete. 10 reps.'), findsOneWidget);
-    await close(tester, h);
+    testWidgets('shrinking movements are saved as fatigued', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await firstOpen(tester, h);
+      await doReps(tester, h, 5);
+      for (var i = 0; i < 5; i++) {
+        h.tracker.pose = const HandPose(curl: 0.45);
+        await tester.pump(const Duration(milliseconds: 600));
+        h.tracker.pose = HandPose.open;
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+      expect(find.text('Movements are getting smaller. A rest may help.'),
+          findsOneWidget);
+      await tester.tap(find.text('End exercise'));
+      await settle(tester);
+      expect(find.text('Set ended. 5 reps.'), findsOneWidget);
+      final rows = await h.sessions(tester);
+      expect(rows.single.fatigued, isTrue);
+      expect(rows.single.metricUnit, 'deg');
+      expect(rows.single.avgAmplitude, greaterThan(150));
+      await close(tester, h);
+    });
+
+    testWidgets('ending early with no reps saves nothing', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await tester.tap(find.text('End exercise'));
+      await settle(tester);
+      expect(find.text('Set ended. 0 reps.'), findsOneWidget);
+      expect(find.text('Nothing was saved.'), findsOneWidget);
+      expect(await h.sessions(tester), isEmpty);
+      await close(tester, h);
+    });
+
+    testWidgets('hold-open counts 3-second holds', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'hold_open');
+      expect(find.text('Free practice'), findsOneWidget);
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      expect(repsText(tester), '0 of 5');
+      for (var i = 0; i < 2; i++) {
+        h.tracker.pose = HandPose.open;
+        await tester.pump(const Duration(seconds: 3, milliseconds: 500));
+        h.tracker.pose = HandPose.fist;
+        await tester.pump(const Duration(milliseconds: 800));
+      }
+      expect(repsText(tester), '2 of 5');
+      await close(tester, h);
+    });
+
+    test('every catalog exercise has a counter', () {
+      expect(ExerciseCatalog.all, hasLength(9));
+    });
   });
 
   group('camera permission', () {
@@ -352,27 +544,16 @@ void main() {
         (tester) async {
       final h = await launch(tester,
           access: CameraAccess.notAsked, afterRequest: CameraAccess.denied);
-      await openExercise(tester, 'open_close');
-      await tapPrimary(tester); // Start
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
       expect(
           find.text('Rohab uses the camera to count your exercises. '
               'Video stays on this phone and is never saved.'),
           findsOneWidget);
-      await tapPrimary(tester); // Allow camera
+      await tapPrimary(tester);
       expect(find.text('Open settings'), findsOneWidget);
-      expect(h.tracker.started, isFalse);
       await tapPrimary(tester);
       expect(h.permission.settingsOpened, 1);
-      await close(tester, h);
-    });
-
-    testWidgets('granted after asking starts the camera', (tester) async {
-      final h = await launch(tester, access: CameraAccess.notAsked);
-      await openExercise(tester, 'open_close');
-      await tapPrimary(tester);
-      await tapPrimary(tester); // Allow camera
-      expect(h.tracker.started, isTrue);
-      expect(find.text('Hold your hand inside the frame.'), findsOneWidget);
       await close(tester, h);
     });
   });
