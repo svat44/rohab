@@ -93,6 +93,9 @@ class RohabShape {
   RohabShape._();
   static const double radius = 12;
   static const double border = 1;
+
+  /// Marker lines and the camera's hand frame.
+  static const double strongBorder = 2;
 }
 
 class RohabSize {

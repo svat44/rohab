@@ -32,7 +32,7 @@ void main() {
   testWidgets('Home: start raises live pressure shown on screen',
       (tester) async {
     final glove = await pumpRohab(tester);
-    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.text('Glove not connected'), findsOneWidget);
     expect(find.text('Rohab'), findsOneWidget);
 
     await _connectAndInflate(tester);

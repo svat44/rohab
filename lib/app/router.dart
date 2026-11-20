@@ -2,7 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' show Widget;
 
 import '../screens/calibration/calibration_screen.dart';
-import '../screens/exercises_screen.dart';
+import '../screens/exercises/camera_exercise_flow.dart';
+import '../screens/exercises/exercises_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/progress_screen.dart';
 import '../screens/settings_screen.dart';
@@ -13,6 +14,8 @@ class Routes {
   static const home = '/home';
   static const calibration = '/calibration';
   static const exercises = '/exercises';
+  static const cameraExercises = '/exercises/camera';
+  static String cameraExercise(String id) => '/exercises/camera/$id';
   static const progress = '/progress';
   static const settings = '/settings';
 }
@@ -28,7 +31,34 @@ GoRouter buildRouter() => GoRouter(
           branches: [
             _branch(Routes.home, const HomeScreen()),
             _branch(Routes.calibration, const CalibrationScreen()),
-            _branch(Routes.exercises, const ExercisesScreen()),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.exercises,
+                  pageBuilder: (context, state) =>
+                      const NoTransitionPage(child: ExercisesScreen()),
+                  routes: [
+                    GoRoute(
+                      path: 'camera',
+                      pageBuilder: (context, state) => const NoTransitionPage(
+                          child: CameraExerciseListScreen()),
+                      routes: [
+                        GoRoute(
+                          path: ':exerciseId',
+                          pageBuilder: (context, state) => NoTransitionPage(
+                            key: state.pageKey,
+                            child: CameraExerciseFlow(
+                              exerciseId:
+                                  state.pathParameters['exerciseId']!,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
             _branch(Routes.progress, const ProgressScreen()),
             _branch(Routes.settings, const SettingsScreen()),
           ],

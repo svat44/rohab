@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../theme/app_theme.dart';
+import '../../widgets/action_area.dart';
 
 /// Shared frame for the calibration steps: step indicator, one instruction,
 /// content, and a fixed action area.
@@ -58,20 +59,7 @@ class StepLayout extends StatelessWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, RohabSpace.s16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: RohabSize.touchTarget, child: secondary),
-              const SizedBox(height: RohabSpace.s8),
-              SizedBox(
-                  height: RohabSize.primaryButtonHeight, child: primary),
-            ],
-          ),
-        ),
+        ActionArea(secondary: secondary, primary: primary),
       ],
     );
   }

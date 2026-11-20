@@ -1,0 +1,367 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../camera/camera_permission.dart';
+import '../camera/hand_tracker.dart';
+import '../data/exercise_session_repository.dart';
+import 'exercise_catalog.dart';
+import 'hand_metrics.dart';
+import 'rep_counter.dart';
+
+enum FlowStep {
+  instructions,
+  permission, // explain, then ask
+  permissionDenied, // must go to Settings
+  starting,
+  cameraError,
+  handCheck,
+  calibrate,
+  calibrationFailed,
+  exercise,
+  done,
+}
+
+enum CalibratePhase { high, low }
+
+class DoneSummary {
+  const DoneSummary({
+    required this.reps,
+    required this.target,
+    required this.completed,
+    required this.rangeMin,
+    required this.rangeMax,
+  });
+
+  final int reps;
+  final int target;
+
+  /// Reached the target (vs ended early).
+  final bool completed;
+  final double? rangeMin;
+  final double? rangeMax;
+}
+
+/// Runs one camera exercise: instructions -> camera permission -> hand
+/// check -> range calibration (once per session) -> exercise -> done.
+///
+/// Time comes from a 50 ms ticker for presence and phase timing, and from
+/// frame timestamps for rep timing.
+class CameraExerciseController extends ChangeNotifier {
+  CameraExerciseController({
+    required this.exercise,
+    required this._trackerFactory,
+    required this._permission,
+    required this._repository,
+    required this._loadRange,
+    required this._saveRange,
+    DateTime Function()? wallClock,
+    this.onRepCounted,
+  }) : _wallClock = wallClock ?? DateTime.now;
+
+  static const tick = Duration(milliseconds: 50);
+  static const handCheckTime = Duration(seconds: 1);
+  static const presenceGap = Duration(milliseconds: 300);
+  static const lostAfter = Duration(seconds: 2);
+  static const calibratePhaseTime = Duration(seconds: 3);
+  static const calibrateSettle = Duration(milliseconds: 500);
+  static const smoothingFrames = 5;
+
+  final CameraExercise exercise;
+  final HandTracker Function() _trackerFactory;
+  final CameraPermission _permission;
+  final ExerciseSessionRepository _repository;
+  final RangeCalibration? Function() _loadRange;
+  final void Function(RangeCalibration) _saveRange;
+  final DateTime Function() _wallClock;
+
+  /// Called with the new count after each rep or round.
+  // TODO(audio): speak the count here (TTS) once audio cues are added.
+  final void Function(int reps)? onRepCounted;
+
+  FlowStep step = FlowStep.instructions;
+  CalibratePhase calibratePhase = CalibratePhase.high;
+  int secondsLeft = 0;
+  int reps = 0;
+
+  /// Smoothed openness or spread, 0-100.
+  double percent = 0;
+
+  /// The hand has been out of view for over 2 s; counting is paused.
+  bool handLost = false;
+  String? errorMessage;
+  DoneSummary? summary;
+
+  HandTracker? _tracker;
+  StreamSubscription<HandFrame>? _sub;
+  Timer? _ticker;
+  Duration _now = Duration.zero;
+  Duration? _lastSeen;
+  Duration? _presentSince;
+  Duration _phaseStart = Duration.zero;
+  final List<double> _high = [];
+  final List<double> _low = [];
+  RangeCalibration? _range;
+  final MovingAverage _smooth = MovingAverage(smoothingFrames);
+  HysteresisRepCounter? _hysteresis;
+  FingerTouchCounter? _touches;
+  double? _rangeMin;
+  double? _rangeMax;
+  Duration? _exerciseStart;
+  DateTime? _startedAt;
+  bool _disposed = false;
+
+  HandTracker? get tracker => _tracker;
+  TrackerStats get stats => _tracker?.stats ?? const TrackerStats();
+
+  /// Next finger for finger touches: 0 index ... 3 little finger.
+  int get expectedFinger => _touches?.expectedFinger ?? 0;
+
+  // ---- Steps ---------------------------------------------------------------
+
+  /// "Start" on the instructions.
+  Future<void> start() async {
+    switch (await _permission.status()) {
+      case CameraAccess.granted:
+        await _openCamera();
+      case CameraAccess.notAsked:
+        _go(FlowStep.permission);
+      case CameraAccess.denied:
+        _go(FlowStep.permissionDenied);
+    }
+  }
+
+  /// "Allow camera" on the explanation screen.
+  Future<void> allowCamera() async {
+    final access = await _permission.request();
+    if (access == CameraAccess.granted) {
+      await _openCamera();
+    } else {
+      _go(FlowStep.permissionDenied);
+    }
+  }
+
+  Future<void> openSettings() => _permission.openSettings();
+
+  /// Called when the app returns to the foreground (e.g. from Settings).
+  Future<void> recheckPermission() async {
+    if (step != FlowStep.permissionDenied && step != FlowStep.permission) {
+      return;
+    }
+    if (await _permission.status() == CameraAccess.granted) {
+      await _openCamera();
+    }
+  }
+
+  /// "Try again" after a camera error.
+  Future<void> retryCamera() => _openCamera();
+
+  /// "Try again" after calibration failed.
+  void retryCalibration() => _beginCalibration();
+
+  /// "End exercise".
+  Future<void> endExercise() => _finish(completed: false);
+
+  Future<void> _openCamera() async {
+    _go(FlowStep.starting);
+    final tracker = _tracker ?? _trackerFactory();
+    _tracker = tracker;
+    try {
+      await tracker.start();
+    } on HandTrackerException catch (e) {
+      errorMessage = e.message;
+      _go(FlowStep.cameraError);
+      return;
+    }
+    if (_disposed) {
+      await tracker.stop();
+      return;
+    }
+    _sub ??= tracker.frames.listen(_onFrame);
+    _ticker ??= Timer.periodic(tick, (_) => _onTick());
+    _lastSeen = null;
+    _presentSince = null;
+    _go(FlowStep.handCheck);
+  }
+
+  void _beginCalibration() {
+    _high.clear();
+    _low.clear();
+    calibratePhase = CalibratePhase.high;
+    _phaseStart = _now;
+    secondsLeft = calibratePhaseTime.inSeconds;
+    _go(FlowStep.calibrate);
+  }
+
+  void _beginExercise() {
+    _smooth.reset();
+    reps = 0;
+    percent = 0;
+    handLost = false;
+    _rangeMin = null;
+    _rangeMax = null;
+    _hysteresis = exercise.kind == ExerciseKind.fingerTouches
+        ? null
+        : HysteresisRepCounter();
+    _touches = exercise.kind == ExerciseKind.fingerTouches
+        ? FingerTouchCounter()
+        : null;
+    _exerciseStart = _now;
+    _startedAt = _wallClock();
+    _go(FlowStep.exercise);
+  }
+
+  Future<void> _finish({required bool completed}) async {
+    if (step != FlowStep.exercise) return;
+    final duration = _now - (_exerciseStart ?? _now);
+    summary = DoneSummary(
+      reps: reps,
+      target: exercise.targetReps,
+      completed: completed,
+      rangeMin: _rangeMin,
+      rangeMax: _rangeMax,
+    );
+    _go(FlowStep.done);
+    await _stopCamera();
+    if (reps > 0) {
+      await _repository.save(ExerciseSessionRecord(
+        exerciseId: exercise.id,
+        mode: 'camera',
+        reps: reps,
+        targetReps: exercise.targetReps,
+        rangeMin: _rangeMin,
+        rangeMax: _rangeMax,
+        durationSec: duration.inSeconds,
+        startedAt: _startedAt ?? _wallClock(),
+      ));
+    }
+  }
+
+  // ---- Frames and time -----------------------------------------------------
+
+  void _onFrame(HandFrame frame) {
+    if (!frame.isUsable) return;
+    _lastSeen = _now;
+    final lm = frame.points;
+
+    switch (step) {
+      case FlowStep.calibrate:
+        if (_now - _phaseStart < calibrateSettle) return; // moving into pose
+        final raw = _raw(lm);
+        (calibratePhase == CalibratePhase.high ? _high : _low).add(raw);
+      case FlowStep.exercise:
+        if (handLost) {
+          handLost = false;
+          _smooth.reset();
+        }
+        final range = _range!;
+        final p = _smooth.add(range.percent(_raw(lm)));
+        percent = p;
+        _rangeMin = _rangeMin == null || p < _rangeMin! ? p : _rangeMin;
+        _rangeMax = _rangeMax == null || p > _rangeMax! ? p : _rangeMax;
+        final counted = _touches != null
+            ? _touches!.update(lm, frame.timestamp)
+            : _hysteresis!.update(p, frame.timestamp);
+        if (counted) {
+          reps++;
+          onRepCounted?.call(reps);
+          if (reps >= exercise.targetReps) {
+            _finish(completed: true);
+            return;
+          }
+        }
+        notifyListeners();
+      default:
+        break;
+    }
+  }
+
+  double _raw(List<Point3> lm) => exercise.usesSpread
+      ? HandMetrics.rawSpread(lm)
+      : HandMetrics.rawOpenness(lm);
+
+  void _onTick() {
+    _now += tick;
+    final seen = _lastSeen != null && _now - _lastSeen! <= presenceGap;
+
+    switch (step) {
+      case FlowStep.handCheck:
+        if (!seen) {
+          _presentSince = null;
+        } else {
+          _presentSince ??= _now;
+          if (_now - _presentSince! >= handCheckTime) {
+            _range = _loadRange();
+            if (_range == null) {
+              _beginCalibration();
+            } else {
+              _beginExercise();
+            }
+          }
+        }
+      case FlowStep.calibrate:
+        final elapsed = _now - _phaseStart;
+        final left = (calibratePhaseTime - elapsed).inMilliseconds;
+        final secs = (left / 1000).ceil().clamp(0, 3);
+        if (secs != secondsLeft) {
+          secondsLeft = secs;
+          notifyListeners();
+        }
+        if (elapsed >= calibratePhaseTime) {
+          if (calibratePhase == CalibratePhase.high) {
+            calibratePhase = CalibratePhase.low;
+            _phaseStart = _now;
+            secondsLeft = calibratePhaseTime.inSeconds;
+            notifyListeners();
+          } else {
+            final range = RangeCalibration.fromSamples(
+              high: _high,
+              low: _low,
+              minSpan: exercise.usesSpread
+                  ? RangeCalibration.minSpreadSpan
+                  : RangeCalibration.minOpennessSpan,
+            );
+            if (range == null) {
+              _go(FlowStep.calibrationFailed);
+            } else {
+              _range = range;
+              _saveRange(range);
+              _beginExercise();
+            }
+          }
+        }
+      case FlowStep.exercise:
+        final lost = _lastSeen == null || _now - _lastSeen! > lostAfter;
+        if (lost && !handLost) {
+          handLost = true;
+          _hysteresis?.resetCycle();
+          _touches?.resetCycle();
+          notifyListeners();
+        }
+      default:
+        break;
+    }
+  }
+
+  void _go(FlowStep next) {
+    step = next;
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Releases the camera first, then the listeners.
+  Future<void> _stopCamera() async {
+    _ticker?.cancel();
+    _ticker = null;
+    final sub = _sub;
+    _sub = null;
+    await _tracker?.stop();
+    await sub?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _stopCamera();
+    super.dispose();
+  }
+}

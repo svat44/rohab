@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
-import '../theme/app_theme.dart';
+import 'level_bar.dart';
 
 /// A labelled vertical line on the [EffortBar].
 class EffortMarker {
@@ -30,10 +30,9 @@ class EffortBar extends StatefulWidget {
 
   /// Fixed scale chosen so weak grips are still visible (see session notes).
   static const defaultScaleMax = 512;
-  static const barHeight = 32.0;
+  static const barHeight = LevelBar.barHeight;
   static const averageWindow = 8; // ~150 ms at 50 Hz
   static const redrawInterval = Duration(milliseconds: 50); // 20 Hz
-  static const markerWidth = 2.0;
 
   final Stream<int> samples;
   final List<EffortMarker> markers;
@@ -85,120 +84,16 @@ class _EffortBarState extends State<EffortBar> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final label = Theme.of(context).textTheme.labelMedium!;
-    final markerLabel = label.copyWith(color: c.text);
-    final hasAbove = widget.markers.any((m) => m.above);
-    final hasBelow = widget.markers.any((m) => !m.above);
-    const labelBand = RohabType.label * 1.25 + RohabSpace.s8;
-    const tick = RohabSpace.s8 / 2;
-
-    double fraction(num v) => (v / widget.scaleMax).clamp(0.0, 1.0).toDouble();
-
     final trigger = widget.markers.where((m) => m.above).firstOrNull;
-    return Semantics(
-      label: 'Muscle effort',
-      value: '${_shown.round()}'
+    return LevelBar(
+      value: _shown / widget.scaleMax,
+      semanticsLabel: 'Muscle effort',
+      semanticsValue: '${_shown.round()}'
           '${trigger == null ? '' : ', trigger at ${trigger.value.round()}'}',
-      excludeSemantics: true,
-      child: LayoutBuilder(builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final top = hasAbove ? labelBand : 0.0;
-        final height =
-            top + EffortBar.barHeight + (hasBelow ? labelBand : 0.0);
-
-        final children = <Widget>[
-          Positioned(
-            left: 0,
-            right: 0,
-            top: top,
-            height: EffortBar.barHeight,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(RohabShape.radius),
-              child: ColoredBox(
-                color: c.divider,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: fraction(_shown),
-                    heightFactor: 1,
-                    child: ColoredBox(color: c.accent),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ];
-
-        // Marker lines.
-        for (final m in widget.markers) {
-          final x = fraction(m.value) * width;
-          final lineLeft = (x - EffortBar.markerWidth / 2)
-              .clamp(0.0, width - EffortBar.markerWidth);
-          children.add(Positioned(
-            left: lineLeft,
-            width: EffortBar.markerWidth,
-            top: top - (m.above ? tick : 0),
-            height: EffortBar.barHeight + tick,
-            child: ColoredBox(color: c.text),
-          ));
-        }
-
-        // Labels, centred on their line, kept inside the bar and never
-        // overlapping another label on the same side.
-        final scaler = MediaQuery.textScalerOf(context);
-        for (final above in [true, false]) {
-          final group = [
-            for (final m in widget.markers)
-              if (m.above == above) m
-          ]..sort((a, b) => a.value.compareTo(b.value));
-          final widths = [
-            for (final m in group) _textWidth(m.label, markerLabel, scaler)
-          ];
-          final lefts = [
-            for (var i = 0; i < group.length; i++)
-              fraction(group[i].value) * width - widths[i] / 2
-          ];
-          const gap = RohabSpace.s8;
-          for (var i = 0; i < lefts.length; i++) {
-            if (i > 0) {
-              final minLeft = lefts[i - 1] + widths[i - 1] + gap;
-              if (lefts[i] < minLeft) lefts[i] = minLeft;
-            }
-            if (lefts[i] < 0) lefts[i] = 0;
-          }
-          for (var i = lefts.length - 1; i >= 0; i--) {
-            final maxLeft = i == lefts.length - 1
-                ? width - widths[i]
-                : lefts[i + 1] - gap - widths[i];
-            if (lefts[i] > maxLeft) lefts[i] = maxLeft;
-          }
-          for (var i = 0; i < group.length; i++) {
-            children.add(Positioned(
-              left: lefts[i],
-              top: above ? 0 : top + EffortBar.barHeight + tick,
-              child: Text(group[i].label, style: markerLabel),
-            ));
-          }
-        }
-
-        return SizedBox(
-          height: height,
-          width: width,
-          child: Stack(clipBehavior: Clip.none, children: children),
-        );
-      }),
+      markers: [
+        for (final m in widget.markers)
+          LevelMarker(m.value / widget.scaleMax, m.label, above: m.above),
+      ],
     );
   }
-}
-
-double _textWidth(String text, TextStyle style, TextScaler scaler) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: TextDirection.ltr,
-    textScaler: scaler,
-  )..layout();
-  final w = painter.width;
-  painter.dispose();
-  return w;
 }

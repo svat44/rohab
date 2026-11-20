@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:rohab/app/app.dart';
@@ -16,6 +17,7 @@ Future<MockGloveService> pumpRohab(
   MockGloveService? glove,
   Map<String, Object> prefs = const {},
   DateTime Function()? clock,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
@@ -29,6 +31,7 @@ Future<MockGloveService> pumpRohab(
       gloveServiceProvider.overrideWithValue(g),
       sharedPreferencesProvider.overrideWithValue(sp),
       if (clock != null) clockProvider.overrideWithValue(clock),
+      ...overrides,
     ],
     child: const RohabApp(),
   ));

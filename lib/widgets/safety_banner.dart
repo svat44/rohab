@@ -94,7 +94,7 @@ class SafetyBanner extends ConsumerWidget {
       return ('Glove vented', 'Fault: ${s.faults.first.label}');
     }
     return switch (s.connection) {
-      GloveConnection.disconnected => ('Not connected', null),
+      GloveConnection.disconnected => ('Glove not connected', null),
       GloveConnection.connecting => ('Connecting', null),
       GloveConnection.connected => ('Connected', s.state.label),
     };
