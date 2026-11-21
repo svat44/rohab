@@ -592,7 +592,7 @@ function renderToday(p) {
     p.innerHTML = `<h2>First, measure your hands</h2>
       <p>Rohab measures how far each hand opens and closes. This sets a starting level that fits your hand. It takes about 2 minutes.</p>
       <div class="actions"><button data-act="measure">Measure my hands</button>
-      <button class="text" data-act="free">Or practise any exercise without a plan</button></div>`;
+      <button class="text" data-act="free">Or practice any exercise without a plan</button></div>`;
     return;
   }
   const plan = o.plan, next = plan.next;
@@ -606,7 +606,7 @@ function renderToday(p) {
     <h2>${plan.doneTotal} of ${plan.planned} today</h2>
     <div class="bar" aria-hidden="true"><div style="width:${plan.planned ? plan.doneTotal / plan.planned * 100 : 0}%"></div></div>
     ${painHigh ? `<p>You reported high pain today. Rest your hand, and tell your therapist if it stays high.</p>` : ""}
-    ${db.baseline.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practise with your therapist or the glove as well.</p>` : ""}
+    ${db.baseline.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practice with your therapist or the glove as well.</p>` : ""}
     <div>${plan.items.map((i) => `
       <div class="plan-item ${i.complete ? "done" : ""} ${i === next ? "next" : ""}">
         <span class="tick" aria-hidden="true">${i.complete ? "✓" : ""}</span>
@@ -620,7 +620,7 @@ function renderToday(p) {
 
 // ---- Free practice ---------------------------------------------------
 function renderFree(p) {
-  p.innerHTML = `<h2>Practise any exercise</h2>
+  p.innerHTML = `<h2>Practice any exercise</h2>
     <p class="label">Sets of exercises in today's plan count toward it.</p>
     <div>${CATALOG.map((e) => `<div class="row"><div><div>${esc(e.title)}</div><div class="label">Level ${e.level}</div></div>
       <button class="text" style="width:auto" data-act="free:${e.id}">Open</button></div>`).join("")}</div>`;
@@ -703,7 +703,7 @@ function renderMeasure(p, needCamera) {
     p.innerHTML = `<h2>Starting level: ${b.level}</h2><p>${LEVEL_NAMES[b.level]}</p>
       <div>${row(`${b.affectedHand} hand (affected)`, b.affected)}${b.other ? row(`${b.affectedHand === "Left" ? "Right" : "Left"} hand`, b.other) : ""}</div>
       ${b.other && rng(b.other) > 0 ? `<p>Your affected hand moves ${Math.round(Math.min(1, rng(b.affected) / rng(b.other)) * 100)}% as far as your other hand.</p>` : ""}
-      ${b.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practise with your therapist or the glove as well.</p>` : ""}
+      ${b.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practice with your therapist or the glove as well.</p>` : ""}
       <p class="label">Range is finger bend from most open to most closed, about 10° either way. Measure again in a week.</p>
       <div class="actions"><button data-act="today">See today's plan</button></div>`;
   }
@@ -763,7 +763,7 @@ function renderPain(p) {
   const f = flow;
   if (f.advice === "rest") {
     p.innerHTML = `<h2>Your pain is high today</h2><p>Resting is the safer choice. Tell your therapist if the pain stays high.</p>
-      <div class="actions"><button data-act="today">Rest today</button><button class="text" data-act="painContinue">Practise anyway</button></div>`;
+      <div class="actions"><button data-act="today">Rest today</button><button class="text" data-act="painContinue">Practice anyway</button></div>`;
     return;
   }
   if (f.advice === "rose") {

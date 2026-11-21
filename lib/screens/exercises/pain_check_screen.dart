@@ -79,7 +79,7 @@ class _PainCheckScreenState extends ConsumerState<PainCheckScreen> {
         secondary: TextButton(
           key: PainCheckScreen.secondaryKey,
           onPressed: _continue,
-          child: const Text('Practise anyway'),
+          child: const Text('Practice anyway'),
         ),
         primary: FilledButton(
           key: PainCheckScreen.primaryKey,

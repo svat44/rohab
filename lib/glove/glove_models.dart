@@ -2,6 +2,8 @@
 /// Matches docs/ble-protocol.md.
 library;
 
+import '../config/pressure_limits.dart';
+
 enum GloveConnection { disconnected, connecting, connected }
 
 enum GloveMode { assist, passive, mirror }
@@ -19,11 +21,21 @@ extension GloveModeLabel on GloveMode {
 }
 
 extension GloveStateLabel on GloveState {
+  /// Internal name, matching the firmware states. For logs and tests; not
+  /// shown to patients.
   String get label => switch (this) {
         GloveState.idle => 'Idle',
         GloveState.inflating => 'Inflating',
         GloveState.holding => 'Holding',
         GloveState.venting => 'Venting',
+      };
+
+  /// What the hand is doing, in the patient's words.
+  String get patientLabel => switch (this) {
+        GloveState.idle => 'Ready',
+        GloveState.inflating => 'Closing hand',
+        GloveState.holding => 'Holding',
+        GloveState.venting => 'Opening hand',
       };
 }
 
@@ -53,8 +65,7 @@ class GloveSnapshot {
     state: GloveState.idle,
     mode: GloveMode.assist,
     pressureKpa: 0,
-    // Placeholder from the literature; see docs/rehab-science.md section 8.
-    targetKpa: 200,
+    targetKpa: kTargetPressureKpa,
     emg: 0,
     reps: 0,
     faults: {},

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rohab/config/pressure_limits.dart';
 import 'package:rohab/glove/glove_service.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
 
@@ -36,7 +37,7 @@ void main() {
 
       async.elapse(const Duration(seconds: 2));
       expect(glove.snapshot.value.state, GloveState.holding);
-      expect(glove.snapshot.value.pressureKpa, closeTo(200, 0.5));
+      expect(glove.snapshot.value.pressureKpa, closeTo(kTargetPressureKpa, 0.5));
 
       // Hold 2 s, vent 1 s.
       async.elapse(const Duration(seconds: 3, milliseconds: 200));
@@ -68,7 +69,7 @@ void main() {
       connect(async);
       glove.start();
       async.elapse(const Duration(seconds: 3));
-      expect(glove.snapshot.value.pressureKpa, closeTo(200, 0.5));
+      expect(glove.snapshot.value.pressureKpa, closeTo(kTargetPressureKpa, 0.5));
       glove.emergencyVent();
       async.elapse(const Duration(milliseconds: 300));
       expect(glove.snapshot.value.pressureKpa, 0);
@@ -169,6 +170,63 @@ void main() {
     test('stores the threshold the app sends', () {
       glove.setEmgThreshold(188);
       expect(glove.emgThreshold, 188);
+      glove.dispose();
+    });
+  });
+
+  group('pressure limits', () {
+    test('never reports pressure above the hard limit', () {
+      fakeAsync((async) {
+        connect(async);
+        var max = 0.0;
+        void watch() {
+          final p = glove.snapshot.value.pressureKpa;
+          if (p > max) max = p;
+        }
+
+        glove.snapshot.addListener(watch);
+        // Targets at, near and above the limit, across full cycles.
+        for (final target in [
+          kTargetPressureKpa,
+          kHardLimitKpa - 0.1,
+          kHardLimitKpa,
+          kHardLimitKpa + 30,
+          500.0,
+        ]) {
+          glove.setTargetPressure(target);
+          glove.start();
+          async.elapse(const Duration(seconds: 8));
+          glove.stop();
+          async.elapse(const Duration(seconds: 3));
+        }
+        glove.snapshot.removeListener(watch);
+        expect(max, lessThanOrEqualTo(kHardLimitKpa));
+        expect(max, greaterThan(kHardLimitKpa - 1), reason: 'did reach it');
+        glove.dispose();
+      });
+    });
+
+    test('a target above the limit is clamped and raises overpressure', () {
+      fakeAsync((async) {
+        connect(async);
+        glove.start();
+        async.elapse(const Duration(seconds: 1));
+        glove.setTargetPressure(80);
+        final s = glove.snapshot.value;
+        expect(s.targetKpa, kHardLimitKpa);
+        expect(s.faults, contains(GloveFault.overpressure));
+        expect(s.sessionActive, isFalse);
+        async.elapse(const Duration(milliseconds: 500));
+        expect(glove.snapshot.value.pressureKpa, 0, reason: 'vented');
+        glove.dispose();
+      });
+    });
+
+    test('default target and limits match the hardware constants', () {
+      expect(kTargetPressureKpa, 35);
+      expect(kHardLimitKpa, 50);
+      expect(GloveSnapshot.initial.targetKpa, kTargetPressureKpa);
+      expect(kTargetPressureKpa, lessThan(kHardLimitKpa));
       glove.dispose();
     });
   });

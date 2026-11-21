@@ -37,7 +37,7 @@ class HandFrame {
   /// normalized separately.
   final double aspectRatio;
 
-  /// 21 landmarks in metres, origin near the middle of the hand (MediaPipe
+  /// 21 landmarks in meters, origin near the middle of the hand (MediaPipe
   /// world landmarks). Joint angles come from these: unlike image
   /// coordinates, they don't foreshorten when a finger bends toward the
   /// camera. Null if the tracker doesn't provide them.

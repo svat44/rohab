@@ -256,7 +256,7 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
               const SizedBox(height: RohabSpace.s16),
               Text(
                 'Your movement is smaller than the camera can count '
-                'reliably. Practise with your therapist or the glove as well.',
+                'reliably. Practice with your therapist or the glove as well.',
                 style: t.bodyLarge,
               ),
             ],

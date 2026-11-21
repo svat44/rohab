@@ -105,7 +105,7 @@ class DailyPlan {
   }
 }
 
-/// How yesterday (the last day practised) went.
+/// How yesterday (the last day practiced) went.
 class DayOutcome {
   const DayOutcome({
     required this.goal,

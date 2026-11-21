@@ -37,12 +37,12 @@ First byte is the opcode. Remaining bytes are the payload.
 | Opcode | Command        | Payload                              | Notes                                           |
 |--------|----------------|--------------------------------------|-------------------------------------------------|
 | `0x01` | Set mode       | `u8` mode: `0` assist, `1` passive, `2` mirror | Rejected while inflating or holding.   |
-| `0x02` | Set target     | `u16` target pressure, 0.1 kPa units | Firmware clamps to its own hard limit.          |
+| `0x02` | Set target     | `u16` target pressure, 0.1 kPa units | Firmware clamps to its 50 kPa hard cap.         |
 | `0x03` | Start          | none                                 | Begins repeating grip cycles in current mode.   |
 | `0x04` | Stop           | none                                 | Finishes venting normally, then stays idle.     |
 | `0x05` | Set EMG threshold | `u16` level, 0-1023               | Trigger for assisted grip. See below.           |
 
-Example: set target to 40.0 kPa -> `02 90 01`. Set EMG threshold to 188 ->
+Example: set target to 35.0 kPa -> `02 5E 01`. Set EMG threshold to 188 ->
 `05 BC 00`.
 
 **EMG threshold.** The app sends it after a calibration is saved and each
@@ -115,7 +115,7 @@ least 90.
 
 | Flag          | Raised when                                          | Glove action        |
 |---------------|------------------------------------------------------|---------------------|
-| Overpressure  | Pressure exceeds the firmware hard limit             | Vent immediately    |
+| Overpressure  | Pressure exceeds the 50 kPa hard cap                 | Vent immediately    |
 | Timeout       | Target not reached within 8 s of inflating           | Vent immediately    |
 
 Flags stay set until the next Start.
@@ -124,10 +124,15 @@ Flags stay set until the next Start.
 
 These do not depend on the app and must hold even if the app crashes:
 
-1. **Link-loss vent.** If the BLE connection drops while inflating or
-   holding, vent immediately.
-2. **Hard pressure limit.** The firmware enforces its own maximum regardless
-   of the target the app sends.
+1. **Link-loss vent.** If the BLE connection drops, vent automatically,
+   whatever the glove is doing.
+2. **Hard pressure cap: 50 kPa.** The firmware enforces its own cap of
+   50 kPa regardless of the target the app sends, and vents with the
+   overpressure fault if it is reached. Why 50: the Ecoflex 00-30 PneuNet
+   actuators reach full bend near 55 kPa and the Adafruit ZR370 pumps stall
+   near 55 kPa. The app's default target is 35 kPa. Both values live in
+   `lib/config/pressure_limits.dart` and are to be replaced with
+   bench-test values from the first cast actuator.
 3. **Physical vent.** A hardware button or valve on the glove vents without
    any software. The app's STOP button is a second path, not the only one.
 4. **Vent is idempotent.** Repeated emergency vent writes are safe.

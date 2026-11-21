@@ -142,7 +142,7 @@ class CameraExerciseListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: RohabSpace.s8),
-              Text('Practise any exercise', style: t.labelLarge),
+              Text('Practice any exercise', style: t.labelLarge),
               const SizedBox(height: RohabSpace.s8),
               Text("Sets of exercises in today's plan count toward it.",
                   style: t.labelMedium),

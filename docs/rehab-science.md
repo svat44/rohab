@@ -74,7 +74,7 @@ and rest intervals belong in the plan.
 
 **What this means for Rohab**
 
-- **Specific:** practise grasps used in daily life (cylinder, hook, pinch),
+- **Specific:** practice grasps used in daily life (cylinder, hook, pinch),
   not only open/close in the air.
 - **Graded:** levels, moved up or down from measured performance.
 - **Variable:** mix tasks within a session.
@@ -128,8 +128,8 @@ their own history. Not an abstract "openness %".
   anatomically exact
   ([PMC11274637](https://pmc.ncbi.nlm.nih.gov/articles/PMC11274637/)).
   No study validated MediaPipe finger angles in stroke patients.
-- MediaPipe also gives **world landmarks**: 3D coordinates in metres around
-  the hand's centre
+- MediaPipe also gives **world landmarks**: 3D coordinates in meters around
+  the hand's center
   ([MediaPipe Hands docs](https://github.com/google/mediapipe/blob/master/docs/solutions/hands.md)).
   Self-occlusion (a closed fist) is the main source of error.
 
@@ -183,9 +183,11 @@ next to range. Progress can then show quality, not just count.
 
 **What this means for Rohab**
 
-- The mock's 40 kPa target and 80 kPa limit are far below typical working
-  pressures (about 100-300 kPa). Real values must come from the glove's
-  actuators.
+- The published figures above are for fiber-reinforced actuators. This
+  glove uses Ecoflex 00-30 PneuNet actuators, which reach full bend near
+  55 kPa, driven by Adafruit ZR370 pumps that stall near 55 kPa. The app
+  targets 35 kPa with a 50 kPa hard cap (`lib/config/pressure_limits.dart`)
+  until bench tests on the first cast actuator give measured values.
 - Targets should be set as **finger angle**, using a per-glove measured
   pressure-to-angle curve, with pressure as the means.
 - Keep the EMG trigger: the patient must start the movement. Lower the
@@ -195,7 +197,7 @@ next to range. Progress can then show quality, not just count.
 
 | Today | Change |
 | --- | --- |
-| Angles from normalized image coordinates | World landmarks (metres, 3D); per-joint MCP, PIP, DIP angles; One Euro filter |
+| Angles from normalized image coordinates | World landmarks (meters, 3D); per-joint MCP, PIP, DIP angles; One Euro filter |
 | "Openness %" | Degrees per joint and TAM per finger, against the other hand |
 | 6 s open/close calibration | Baseline test of both hands that sets the starting level |
 | 3 exercises for a near-normal hand | Levels: (1) mass flexion/extension with any measurable movement; (2) functional grasps: cylinder, hook, thumb, pinch; (3) individuation, opposition sequence, speed |
@@ -204,7 +206,7 @@ next to range. Progress can then show quality, not just count.
 | Count only | Per-set feedback in degrees against last time; speed and smoothness stored |
 | No compensation check | Wrist watched (Holistic Landmarker or forearm-on-table check); wrist-driven reps don't count |
 | Palm facing camera | Side view for flexion/extension; view checked before counting |
-| Mock glove 40 kPa | Real actuator range; targets in degrees via a measured pressure-to-angle curve |
+| Pressure placeholders | 35 kPa target, 50 kPa cap for this glove's PneuNet actuators; later, targets in degrees via a measured pressure-to-angle curve |
 | No safety check-in | Pain 0-10 before and after; stop and advise if pain rises |
 
 Not changed: Rohab does not diagnose, score Fugl-Meyer, or replace a

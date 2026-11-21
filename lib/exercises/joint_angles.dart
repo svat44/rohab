@@ -2,7 +2,7 @@
 ///
 /// Convention (clinical goniometry): 0 degrees = straight, positive = flexed
 /// (bent toward the palm), negative = hyperextended. Angles come from the
-/// 3D world landmarks (metres), so they don't shrink when a finger bends
+/// 3D world landmarks (meters), so they don't shrink when a finger bends
 /// toward the camera, unlike angles from flat image coordinates.
 ///
 /// Accuracy: studies of MediaPipe against goniometers and motion capture
@@ -95,7 +95,7 @@ class JointAngles {
     final sum = raw.expand((f) => f).reduce((a, b) => a + b);
     // A real hand can't average more than about 40 degrees past straight
     // (sum of three joints, four fingers). Beyond that the hand label is
-    // wrong (the other hand is in view, or the model mislabelled it), so
+    // wrong (the other hand is in view, or the model mislabeled it), so
     // the sign is flipped.
     const impossible = -40.0 * 4;
     if (sign == 0 || sign * sum < impossible) {

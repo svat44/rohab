@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../config/pressure_limits.dart';
 import 'glove_service.dart';
 
 /// Simulated grip strength for the fake patient. Debug builds can switch
@@ -38,18 +39,16 @@ class MockGloveService implements GloveService, PatientCueSink {
   static const tick = Duration(milliseconds: 50);
   static const emgTick = Duration(milliseconds: 20); // 50 Hz
   static const connectDelay = Duration(milliseconds: 600);
-  // PLACEHOLDERS from the soft-actuator literature (fiber-reinforced
-  // pneumatic actuators assist at about 200 kPa and are run up to 300-500
-  // kPa; see docs/rehab-science.md section 8). Replace with the real
-  // glove's measured values.
-  static const inflateRateKpaPerSec = 100.0;
-  static const ventRateKpaPerSec = 200.0;
-  static const emergencyVentRateKpaPerSec = 1000.0;
+  // Rates for small pumps (Adafruit ZR370) into Ecoflex PneuNet actuators:
+  // about 2.3 s to reach the 35 kPa target. Emergency vent reaches 0 from
+  // the target in about 0.2 s. Limits come from lib/config/pressure_limits.dart.
+  static const inflateRateKpaPerSec = 15.0;
+  static const ventRateKpaPerSec = 35.0;
+  static const emergencyVentRateKpaPerSec = 175.0;
   static const holdTime = Duration(seconds: 2);
   static const restTime = Duration(seconds: 1);
   static const inflateTimeout = Duration(seconds: 8);
   static const effortRamp = Duration(milliseconds: 300);
-  static const hardLimitKpa = 300.0;
 
   final Random _random;
   final ValueNotifier<GloveSnapshot> _snapshot =
@@ -121,8 +120,16 @@ class MockGloveService implements GloveService, PatientCueSink {
   }
 
   @override
+  /// Targets above [kHardLimitKpa] are clamped to it and raise the
+  /// overpressure fault (which vents, as the firmware would).
+  @override
   Future<void> setTargetPressure(double kPa) async {
-    _s = _s.copyWith(targetKpa: kPa.clamp(0, hardLimitKpa).toDouble());
+    if (kPa > kHardLimitKpa) {
+      _s = _s.copyWith(targetKpa: kHardLimitKpa);
+      simulateFault(GloveFault.overpressure);
+      return;
+    }
+    _s = _s.copyWith(targetKpa: kPa < 0 ? 0 : kPa);
   }
 
   @override
@@ -227,6 +234,10 @@ class MockGloveService implements GloveService, PatientCueSink {
         }
     }
 
+    // Hard cap: the reported pressure never exceeds the limit.
+    if (s.pressureKpa > kHardLimitKpa) {
+      s = s.copyWith(pressureKpa: kHardLimitKpa);
+    }
     _s = s.copyWith(emg: _lastEmg);
   }
 

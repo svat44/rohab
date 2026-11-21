@@ -64,7 +64,7 @@ class ProgramScreen extends ConsumerWidget {
               const SizedBox(height: RohabSpace.s16),
               _InlineAction(
                 key: ProgramScreen.freePracticeKey,
-                text: 'Or practise any exercise without a plan.',
+                text: 'Or practice any exercise without a plan.',
                 action: 'Open',
                 onPressed: () => context.go(Routes.allCameraExercises),
               ),
@@ -148,7 +148,7 @@ class _Today extends StatelessWidget {
           const SizedBox(height: RohabSpace.s16),
           Text(
             'Your movement is smaller than the camera can count reliably. '
-            'Practise with your therapist or the glove as well.',
+            'Practice with your therapist or the glove as well.',
             style: t.bodyLarge,
           ),
         ],
@@ -168,7 +168,7 @@ class _Today extends StatelessWidget {
           ),
         _InlineAction(
           key: ProgramScreen.freePracticeKey,
-          text: 'Practise any exercise, outside the plan.',
+          text: 'Practice any exercise, outside the plan.',
           action: 'Open',
           onPressed: () => context.go(Routes.allCameraExercises),
         ),

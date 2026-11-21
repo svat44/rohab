@@ -27,7 +27,7 @@ class HandPose {
   final double spread;
   final int? thumbOn;
 
-  /// Shows a right hand (mirrored geometry, labelled right).
+  /// Shows a right hand (mirrored geometry, labeled right).
   final bool rightHand;
 
   /// Tilts the hand at the wrist, degrees.
@@ -119,7 +119,7 @@ class MockHandTracker implements HandTracker {
           fingerCurls: p.fingerCurls,
           wristPitch: p.wristPitch);
       if (noise > 0) {
-        // Same jitter in metres (image unit is about 0.45 m here).
+        // Same jitter in meters (image unit is about 0.45 m here).
         world = [
           for (final q in world)
             Point3(q.x + _jitter() * 0.45, q.y + _jitter() * 0.45,

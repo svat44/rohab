@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'level_bar.dart';
 
-/// A labelled vertical line on the [EffortBar].
+/// A labeled vertical line on the [EffortBar].
 class EffortMarker {
   const EffortMarker(this.value, this.label, {this.above = false});
 

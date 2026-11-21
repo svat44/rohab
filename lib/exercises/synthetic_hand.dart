@@ -99,7 +99,7 @@ class SyntheticHand {
     ];
   }
 
-  /// World landmarks in metres, like MediaPipe's handWorldLandmarks:
+  /// World landmarks in meters, like MediaPipe's handWorldLandmarks:
   /// origin near the middle of the hand, palm about 8 cm wide.
   ///
   /// The image-space pose above is a left hand with its palm toward the
@@ -114,7 +114,7 @@ class SyntheticHand {
     bool hook = false,
     double wristPitch = 0,
   }) {
-    const metresPerUnit = 0.45; // palm 0.18 units -> about 8 cm
+    const metersPerUnit = 0.45; // palm 0.18 units -> about 8 cm
     final img = pose(
       curl: curl,
       spread: spread,
@@ -127,9 +127,9 @@ class SyntheticHand {
     return [
       for (final p in img)
         Point3(
-          (rightHand ? -1 : 1) * (p.x - c.x) * metresPerUnit,
-          (p.y - c.y) * metresPerUnit,
-          p.z * metresPerUnit,
+          (rightHand ? -1 : 1) * (p.x - c.x) * metersPerUnit,
+          (p.y - c.y) * metersPerUnit,
+          p.z * metersPerUnit,
         ),
     ];
   }

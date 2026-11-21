@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:rohab/config/pressure_limits.dart';
 import 'package:rohab/glove/glove_service.dart';
+import 'package:rohab/screens/settings/settings_screen.dart';
+import 'package:rohab/widgets/bottom_nav.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
 import 'package:rohab/screens/calibration/calibration_screen.dart';
 import 'package:rohab/screens/calibration/step_layout.dart';
@@ -39,12 +42,103 @@ void main() {
     final shown = double.parse(
         tester.widget<Text>(find.byKey(HomeScreen.pressureKey)).data!);
     expect(shown, greaterThan(10));
+    expect(shown, lessThanOrEqualTo(kHardLimitKpa));
     expect(find.text('End session'), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 3, milliseconds: 500)); // 1 rep
+    await tester.pump(const Duration(seconds: 4)); // 1 rep
     await tester.tap(find.byKey(HomeScreen.primaryButtonKey));
     await tester.pump(const Duration(seconds: 3));
     expect(find.textContaining('Session complete.'), findsOneWidget);
+    await finish(tester, glove);
+  });
+
+  testWidgets('Home: reps first, patient state labels, summary only after',
+      (tester) async {
+    final glove = await pumpRohab(tester);
+    String text(Key k) => tester.widget<Text>(find.byKey(k)).data!;
+    expect(find.text('Mode'), findsNothing);
+    expect(find.text('Disconnect'), findsNothing);
+
+    await connectFromHome(tester);
+    expect(text(HomeScreen.stateKey), 'Ready');
+    expect(find.byKey(HomeScreen.summaryKey), findsNothing);
+    expect(text(HomeScreen.repsKey), '–');
+
+    await tester.tap(find.byKey(HomeScreen.primaryButtonKey)); // Start
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(text(HomeScreen.stateKey), 'Closing hand');
+    await tester.pump(const Duration(seconds: 2));
+    expect(text(HomeScreen.stateKey), 'Holding');
+    expect(find.text('Holding'), findsWidgets); // banner says it too
+    await tester.pump(const Duration(seconds: 2));
+    expect(text(HomeScreen.stateKey), 'Opening hand');
+    await tester.pump(const Duration(seconds: 1, milliseconds: 500));
+    expect(text(HomeScreen.repsKey), '1');
+    for (final raw in ['Idle', 'Inflating', 'Venting']) {
+      expect(find.text(raw), findsNothing, reason: 'internal name');
+    }
+
+    // Reps is the largest number on Home; pressure is a smaller detail.
+    final repsSize = tester.widget<Text>(find.byKey(HomeScreen.repsKey))
+        .style!.fontSize!;
+    final pressureSize = tester
+        .widget<Text>(find.byKey(HomeScreen.pressureKey)).style!.fontSize!;
+    expect(repsSize, greaterThan(pressureSize));
+
+    await tester.tap(find.byKey(HomeScreen.primaryButtonKey)); // End
+    await tester.pump(const Duration(seconds: 3));
+    expect(text(HomeScreen.summaryKey), 'Session complete. 1 rep.');
+    expect(text(HomeScreen.stateKey), 'Ready');
+
+    await tester.tap(find.byKey(HomeScreen.primaryButtonKey)); // Start again
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(HomeScreen.summaryKey), findsNothing);
+    expect(text(HomeScreen.repsKey), '0');
+    await finish(tester, glove);
+  });
+
+  testWidgets('Disconnect lives in Settings, only when no session runs',
+      (tester) async {
+    final glove = await pumpRohab(tester);
+    await connectFromHome(tester);
+    await tester.tap(find.byKey(AppShell.settingsButtonKey));
+    await tester.pump();
+    expect(find.byKey(SettingsScreen.disconnectKey), findsOneWidget);
+    await tester.tap(find.byKey(SettingsScreen.disconnectKey));
+    await tester.pump();
+    expect(glove.snapshot.value.isConnected, isFalse);
+    expect(find.text('Not connected. Connect on Home.'), findsOneWidget);
+    await finish(tester, glove);
+  });
+
+  testWidgets('banner text is at least 16 and STOP is the largest control',
+      (tester) async {
+    final glove = await pumpRohab(tester);
+    await connectFromHome(tester);
+    final banner = find.byType(SafetyBanner);
+    for (final e in find.descendant(of: banner, matching: find.byType(Text))
+        .evaluate()) {
+      final size = DefaultTextStyle.of(e).style
+          .merge((e.widget as Text).style).fontSize ?? 14;
+      expect(size, greaterThanOrEqualTo(16), reason: (e.widget as Text).data);
+    }
+    final stop = tester.getSize(find.byKey(SafetyBanner.stopKey));
+    expect(stop.height, greaterThanOrEqualTo(80));
+    for (final e in find.descendant(of: banner, matching: find.byType(Icon))
+        .evaluate()) {
+      final r = tester.getSize(find.byWidget(e.widget));
+      expect(r.height, lessThan(stop.height));
+    }
+    // Bottom nav labels too.
+    for (final label in ['Home', 'Calibrate', 'Exercises', 'Progress']) {
+      final e = find.descendant(
+              of: find.byType(BottomNav), matching: find.text(label))
+          .evaluate()
+          .single;
+      final size = DefaultTextStyle.of(e).style
+          .merge((e.widget as Text).style).fontSize!;
+      expect(size, greaterThanOrEqualTo(16), reason: label);
+    }
     await finish(tester, glove);
   });
 
@@ -161,7 +255,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(rect(), disconnected, reason: 'connecting');
     await tester.pump(MockGloveService.connectDelay);
-    expect(find.text('Disconnect'), findsOneWidget);
     expect(rect(), disconnected, reason: 'connected');
     await tester.tap(find.byKey(HomeScreen.primaryButtonKey));
     await tester.pump(const Duration(seconds: 1));

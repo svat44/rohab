@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 
-/// A labelled vertical line on a [LevelBar].
+/// A labeled vertical line on a [LevelBar].
 class LevelMarker {
   const LevelMarker(this.position, this.label, {this.above = false});
 
@@ -97,7 +97,7 @@ class LevelBar extends StatelessWidget {
           ));
         }
 
-        // Labels, centred on their line, kept inside the bar and never
+        // Labels, centered on their line, kept inside the bar and never
         // overlapping another label on the same side.
         final scaler = MediaQuery.textScalerOf(context);
         for (final above in [true, false]) {
