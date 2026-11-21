@@ -3,21 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rohab Hand Tracking Test</title>
-<meta name="description" content="Live camera test of the hand tracking and joint-angle math Rohab uses. Video stays in this browser.">
+<title>Rohab Hand Practice</title>
+<meta name="description" content="Rohab's camera exercise program in a browser: measure your hands, follow a graded daily plan, and see joint angles live. Video stays in this browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
-  /* Rohab tokens (lib/theme/tokens.dart). One accent; red only for errors. */
+  /* Rohab tokens (lib/theme/tokens.dart). One accent; red only for STOP-like errors. */
   :root {
     --bg: #FAFAF9; --surface: #FFFFFF; --text: #1C1C1E; --secondary: #6B7280;
-    --divider: #E5E7EB; --accent: #0F766E; --on-accent: #FFFFFF; --danger: #DC2626;
-    --radius: 12px;
+    --divider: #E5E7EB; --accent: #0F766E; --on-accent: #FFFFFF; --accent-soft: #CCE7E4;
+    --danger: #DC2626; --radius: 12px;
     --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #111312; --surface: #1A1D1C; --text: #F3F4F3; --secondary: #9CA3AF;
-      --divider: #2A2E2D; --accent: #2DD4BF; --on-accent: #0B1F1D; color-scheme: dark; }
+      --divider: #2A2E2D; --accent: #2DD4BF; --on-accent: #0B1F1D; --accent-soft: #134E4A;
+      color-scheme: dark; }
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -25,23 +26,37 @@
   main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 24px;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-  header { grid-column: 1 / -1; }
-  h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.3px; }
+  header { grid-column: 1 / -1; display: grid; gap: 16px; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.3px; }
+  h2 { font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.3px; text-wrap: balance; }
   .lede { margin: 0; color: var(--secondary); font-size: 16px; }
+  nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  nav button { width: auto; min-height: 48px; background: var(--surface); color: var(--text);
+    border: 1px solid var(--divider); font-size: 16px; padding: 0 16px; }
+  nav button[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .stage { position: relative; background: var(--surface); border: 1px solid var(--divider);
     border-radius: var(--radius); overflow: hidden; aspect-ratio: 4 / 3; }
   video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .mirror { transform: scaleX(-1); }
+  .frame { position: absolute; inset: 24px; border: 2px solid var(--accent); border-radius: var(--radius); pointer-events: none; }
   .stage .empty { position: absolute; inset: 0; display: grid; place-items: center;
     color: var(--secondary); font-size: 16px; padding: 24px; text-align: center; }
+  .side { display: grid; gap: 16px; }
+  .camera-row { display: grid; gap: 8px; }
   .panel { display: grid; gap: 16px; }
   .status { font-weight: 600; min-height: 28px; }
   .status.error { color: var(--danger); }
   .big { font-size: 56px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
   .label { font-size: 16px; font-weight: 500; color: var(--secondary); }
-  .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0;
+  .instruction { font-size: 28px; font-weight: 500; line-height: 1.25; margin: 0; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0;
     border-bottom: 1px solid var(--divider); font-variant-numeric: tabular-nums; }
   .row b { font-weight: 600; }
+  .plan-item { display: grid; grid-template-columns: 32px 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .plan-item .tick { color: var(--accent); font-weight: 700; }
+  .plan-item.next .title { font-weight: 600; }
+  .plan-item.done .title { color: var(--secondary); }
+  ol.steps { margin: 0; padding-left: 28px; display: grid; gap: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 16px; font-variant-numeric: tabular-nums; }
   th, td { text-align: right; padding: 8px 4px; border-bottom: 1px solid var(--divider); }
   th:first-child, td:first-child { text-align: left; }
@@ -51,51 +66,53 @@
   button { font: 600 20px var(--font); min-height: 64px; padding: 0 24px; border-radius: var(--radius);
     border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; width: 100%; }
   button.text { background: transparent; color: var(--accent); }
+  button.choice { background: var(--surface); color: var(--text); border: 1px solid var(--divider); }
+  button.choice[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  button:disabled { background: var(--divider); color: var(--secondary); cursor: default; }
+  button.text:disabled { background: transparent; }
   button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .actions { display: grid; gap: 8px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stepper { display: grid; grid-template-columns: 64px 1fr 64px; gap: 8px; align-items: center; text-align: center; font-weight: 600; }
+  .stepper button { background: var(--surface); color: var(--text); border: 1px solid var(--divider); padding: 0; }
+  input[type=password] { font: 600 28px var(--font); padding: 12px 16px; border: 1px solid var(--divider);
+    border-radius: var(--radius); background: var(--surface); color: var(--text); width: 100%; letter-spacing: 8px; }
   .notes { font-size: 16px; color: var(--secondary); display: grid; gap: 8px; }
   .notes p { margin: 0; }
+  p { margin: 0; }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>Rohab hand tracking test</h1>
-    <p class="lede">The same Google MediaPipe hand model and joint-angle math the Rohab app uses. Video stays in this browser; nothing is uploaded or saved.</p>
+    <div>
+      <h1>Rohab hand practice</h1>
+      <p class="lede">Rohab's camera exercise program, using the same Google MediaPipe hand model and math as the app. Video stays in this browser; only numbers are kept, on this computer.</p>
+    </div>
+    <nav aria-label="Sections">
+      <button data-go="today">Today</button>
+      <button data-go="measure">Measure hands</button>
+      <button data-go="free">Free practice</button>
+      <button data-go="angles">Live angles</button>
+      <button data-go="therapist">Therapist</button>
+    </nav>
   </header>
 
-  <section>
-    <div class="stage" id="stage">
+  <section class="camera-row">
+    <div class="stage">
       <video id="video" class="mirror" playsinline muted></video>
       <canvas id="overlay" class="mirror"></canvas>
+      <div class="frame" id="frame" hidden></div>
       <div class="empty" id="empty">Camera is off.</div>
     </div>
+    <div class="status" id="status" aria-live="polite">Press Start camera.</div>
+    <button id="start">Start camera</button>
+    <div class="label" id="fps"></div>
   </section>
 
-  <section class="panel" aria-live="polite">
-    <div class="status" id="status">Press Start camera.</div>
-    <div>
-      <div class="label">Finger bend (mean of MCP + PIP + DIP)</div>
-      <div class="big"><span id="closure">–</span>°</div>
-      <div class="label">0° is straight. A full fist is about 250°.</div>
-    </div>
-    <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
-    <div>
-      <div class="row"><span>Range of motion this session</span><b id="rom">–</b></div>
-      <div class="row"><span>Most open / most closed</span><b id="minmax">–</b></div>
-      <div class="row"><span>Hand</span><b id="hand">–</b></div>
-      <div class="row"><span>Tracking speed</span><b id="fps">–</b></div>
-    </div>
-    <table aria-label="Joint angles in degrees">
-      <thead><tr><th>Finger</th><th>MCP</th><th>PIP</th><th>DIP</th><th>Total</th></tr></thead>
-      <tbody id="fingers"></tbody>
-    </table>
-    <div class="row"><span>Thumb IP / MCP / abduction</span><b id="thumb">–</b></div>
-    <button id="start">Start camera</button>
-    <button id="reset" class="text">Reset range</button>
-    <div class="notes">
-      <p>Angles are approximate: studies of this model report errors from about 4° to over 20° per joint, worst at the middle (PIP) joint.</p>
-      <p>For bending, show the hand from the side, in good light, with the whole hand in view.</p>
-    </div>
+  <section class="side">
+    <div class="panel" id="panel" aria-live="polite"></div>
   </section>
 </main>
 
@@ -104,14 +121,20 @@
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.2";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
-// ---- Math: a direct port of lib/exercises/joint_angles.dart and
-// movement_quality.dart (OneEuroFilter). Keep the two in step.
+// =====================================================================
+// Math and program logic. Direct ports of the Dart code; keep in step:
+//   joint_angles.dart, movement_quality.dart, hand_metrics.dart,
+//   rep_counter.dart, exercise_counters.dart, exercise_catalog.dart,
+//   program/baseline.dart, daily_plan.dart, pain.dart, therapist_pin.dart
+// =====================================================================
 const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
 const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
 const cross = (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
 const len = (a) => Math.sqrt(dot(a, a));
 const norm = (a) => { const l = len(a); return l ? { x: a.x / l, y: a.y / l, z: a.z / l } : a; };
+const dist = (a, b) => len(sub(a, b));
 const DEG = 180 / Math.PI;
+const mean = (xs) => xs.reduce((s, v) => s + v, 0) / xs.length;
 
 function signedAngle(a, b, axis) {
   const y = dot(cross(a, b), axis), x = dot(a, b);
@@ -147,6 +170,10 @@ function computeAngles(w, hand) {
   };
 }
 
+const palmWidth = (w) => dist(w[5], w[17]);
+const thumbTo = (w, tip) => { const p = palmWidth(w); return p ? dist(w[4], w[tip]) / p : 0; };
+const rawSpread = (w) => { const p = palmWidth(w); return p ? mean([dist(w[8], w[12]), dist(w[12], w[16]), dist(w[16], w[20])]) / p : 0; };
+
 class OneEuroFilter {
   constructor(minCutoff = 1.0, beta = 0.004, dCutoff = 1.0) {
     Object.assign(this, { minCutoff, beta, dCutoff, x: null, dx: 0, t: null });
@@ -163,55 +190,298 @@ class OneEuroFilter {
   reset() { this.x = null; this.t = null; this.dx = 0; }
 }
 
-// Exposed for automated checks and for anyone curious in the console.
-window.rohabMath = { computeAngles, OneEuroFilter };
+function percentile(values, p) {
+  const s = [...values].sort((a, b) => a - b);
+  return s[Math.round((s.length - 1) * p)];
+}
+/** high: raw values while asked to open/spread; low: while closing. */
+function rangeFromSamples(high, low, minSpan) {
+  if (!high.length || !low.length) return null;
+  const max = percentile(high, 0.9), min = percentile(low, 0.1);
+  return max - min < minSpan ? null : { min, max };
+}
+const percentOf = (raw, r) => r.max - r.min <= 0 ? 0 : Math.max(0, Math.min(100, (raw - r.min) / (r.max - r.min) * 100));
+const MIN_CLOSURE_SPAN = 30, MIN_SPREAD_SPAN = 0.08;
 
-// ---- UI
+class Hysteresis {
+  constructor(high = 80, low = 20, minMs = 800) { Object.assign(this, { high, low, minMs, count: 0, phase: 0, start: 0 }); }
+  update(s, t) {
+    const p = s.percent;
+    if (this.phase === 0) { if (p >= this.high) { this.phase = 1; this.start = t; } }
+    else if (this.phase === 1) { if (p <= this.low) this.phase = 2; }
+    else if (p >= this.high) {
+      const ok = t - this.start >= this.minMs;
+      if (ok) this.count++;
+      this.phase = 1; this.start = t;
+      return ok;
+    }
+    return false;
+  }
+  resetCycle() { this.phase = 0; }
+  get hint() { return null; }
+}
+
+class PostureCycle {
+  constructor(inTarget, released, holdMs, holdHint, releaseHint) {
+    Object.assign(this, { inTarget, released, holdMs, holdHint, releaseHint, count: 0, since: null, waiting: false, hint: null });
+  }
+  update(s, t) {
+    if (this.waiting) { if (this.released(s)) { this.waiting = false; this.hint = null; } return false; }
+    if (!this.inTarget(s)) { this.since = null; this.hint = null; return false; }
+    this.since ??= t; this.hint = this.holdHint;
+    if (t - this.since >= this.holdMs) { this.count++; this.since = null; this.waiting = true; this.hint = this.releaseHint; return true; }
+    return false;
+  }
+  resetCycle() { this.since = null; this.hint = null; }
+}
+
+const FINGER_NAMES = ["index", "middle", "ring", "little"];
+const TIPS = [8, 12, 16, 20];
+
+/** Thumb to index, middle, ring, little in order; one round = four. */
+class FingerTouches {
+  constructor() { Object.assign(this, { count: 0, next: 0, cand: null, since: null, reg: null }); }
+  update(s, t) {
+    const d = TIPS.map((tip) => thumbTo(s.points, tip));
+    if (this.reg !== null && d[TIPS.indexOf(this.reg)] > 0.35) this.reg = null;
+    let touching = null, best = Infinity;
+    d.forEach((v, i) => { if (v < 0.25 && v < best) { best = v; touching = TIPS[i]; } });
+    if (touching !== this.cand) { this.cand = touching; this.since = touching === null ? null : t; return false; }
+    if (touching === null || touching === this.reg || t - this.since < 200) return false;
+    this.reg = touching;
+    return this.register(TIPS.indexOf(touching));
+  }
+  register(f) {
+    if (f === this.next) { this.next++; if (this.next === 4) { this.next = 0; this.count++; return true; } }
+    else this.next = f === 0 ? 1 : 0;
+    return false;
+  }
+  resetCycle() { Object.assign(this, { next: 0, cand: null, since: null, reg: null }); }
+  get hint() { return `Next: ${FINGER_NAMES[this.next]} finger`; }
+}
+
+/** Straighten one finger at a time (60 degrees less bent than the others). */
+class FingerLifts extends FingerTouches {
+  update(s, t) {
+    const totals = s.angles.fingers.map((f) => f.total);
+    let lifted = null, bestGap = 60;
+    totals.forEach((v, i) => {
+      const others = totals.filter((_, j) => j !== i);
+      const gap = mean(others) - v;
+      if (gap >= bestGap) { bestGap = gap; lifted = i; }
+    });
+    if (lifted === null) this.reg = null;
+    if (lifted !== this.cand) { this.cand = lifted; this.since = lifted === null ? null : t; return false; }
+    if (lifted === null || lifted === this.reg || t - this.since < 400) return false;
+    this.reg = lifted;
+    return this.register(lifted);
+  }
+}
+
+const isHook = (s) => mean(s.angles.fingers.map((f) => f.mcp)) <= 30 && mean(s.angles.fingers.map((f) => f.pip)) >= 60;
+
+function counterFor(kind) {
+  switch (kind) {
+    case "openCloseGentle": return new Hysteresis(70, 30);
+    case "openClose": case "spread": return new Hysteresis();
+    case "holdOpen": return new PostureCycle((s) => s.percent >= 70, (s) => s.percent <= 40, 3000, "Hold it open.", "Now relax your hand.");
+    case "cylinder": return new PostureCycle((s) => s.percent >= 15 && s.percent <= 65, (s) => s.percent >= 75, 2000, "Hold the grip.", "Let go and open your hand.");
+    case "hook": return new PostureCycle(isHook, (s) => s.percent >= 75, 1000, "Hold the hook.", "Open your hand fully.");
+    case "pinch": return new PostureCycle((s) => thumbTo(s.points, 8) < 0.25, (s) => thumbTo(s.points, 8) > 0.45, 300, "Hold the pinch.", "Move them apart.");
+    case "fingerTouches": return new FingerTouches();
+    case "fingerLifts": return new FingerLifts();
+  }
+}
+
+/** Hand tilting at the wrist more than 25 degrees from where it started. */
+class WristMonitor {
+  constructor(limit = 25, refFrames = 10) { Object.assign(this, { limit, refFrames, samples: [], ref: null, deviation: 0 }); }
+  update(w) {
+    const v = sub(w[9], w[0]);
+    if (!this.ref) {
+      this.samples.push(v);
+      if (this.samples.length >= this.refFrames) {
+        this.ref = { x: mean(this.samples.map((p) => p.x)), y: mean(this.samples.map((p) => p.y)), z: mean(this.samples.map((p) => p.z)) };
+      }
+      return;
+    }
+    this.deviation = angleBetween(this.ref, v);
+  }
+  get moved() { return this.deviation > this.limit; }
+  reset() { this.samples = []; this.ref = null; this.deviation = 0; }
+}
+
+/** Every movement swing, counted or not; fatigue judged on these. */
+class Swings {
+  constructor(deadband = 10) { Object.assign(this, { deadband, dir: 0, turn: null, ext: null, all: [] }); }
+  update(v) {
+    if (this.turn === null) { this.turn = this.ext = v; return; }
+    if (this.dir === 0) { if (Math.abs(v - this.turn) > this.deadband) { this.dir = v > this.turn ? 1 : -1; this.ext = v; } }
+    else if (this.dir === 1) { if (v > this.ext) this.ext = v; else if (this.ext - v > this.deadband) { this.all.push(this.ext - this.turn); this.turn = this.ext; this.ext = v; this.dir = -1; } }
+    else { if (v < this.ext) this.ext = v; else if (v - this.ext > this.deadband) { this.all.push(this.turn - this.ext); this.turn = this.ext; this.ext = v; this.dir = 1; } }
+  }
+  get fatigued() {
+    const w = 6, a = this.all;
+    if (a.length < w * 2) return false;
+    const opening = mean(a.slice(0, w)), recent = mean(a.slice(-w));
+    return opening > 0 && recent < opening * 0.7;
+  }
+  reset() { this.dir = 0; this.turn = null; this.ext = null; }
+}
+
+const REST_STEP = "Rest your forearm on the table, side of the hand facing the camera.";
+const CATALOG = [
+  { id: "open_close_gentle", level: 1, kind: "openCloseGentle", title: "Open and close, gently", unit: "reps", factor: 1,
+    steps: [REST_STEP, "Keep your wrist still.", "Open your hand as far as it goes. Any amount counts.", "Close it again. Go slowly."] },
+  { id: "hold_open", level: 1, kind: "holdOpen", title: "Hold your hand open", unit: "holds", factor: 0.5,
+    steps: [REST_STEP, "Keep your wrist still.", "Open your hand as far as you can and hold it for 3 seconds.", "Relax your hand, then start again."] },
+  { id: "open_close", level: 2, kind: "openClose", title: "Open and close", unit: "reps", factor: 1,
+    steps: [REST_STEP, "Keep your wrist still.", "Open your hand fully and straighten your fingers.", "Close your hand into a fist."] },
+  { id: "cylinder_grasp", level: 2, kind: "cylinder", title: "Grip a cup", unit: "reps", factor: 1, object: "An empty plastic cup or a rolled towel",
+    steps: ["Stand the cup on the table next to your hand.", "Close your fingers around it and hold for 2 seconds.", "Let go and open your hand fully.", "Keep your wrist still."] },
+  { id: "hook_grip", level: 2, kind: "hook", title: "Hook grip", unit: "reps", factor: 1,
+    steps: [REST_STEP, "Keep your knuckles straight and bend the rest of your fingers, like holding a bag handle.", "Hold for 1 second.", "Open your hand fully."] },
+  { id: "pinch", level: 2, kind: "pinch", title: "Pinch", unit: "reps", factor: 1,
+    steps: [REST_STEP, "Touch the tip of your thumb to the tip of your index finger.", "Hold briefly, then move them apart.", "Keep your other fingers relaxed."] },
+  { id: "finger_touches", level: 3, kind: "fingerTouches", title: "Finger touches", unit: "rounds", factor: 0.5,
+    steps: ["Hold your hand up, palm facing the camera.", "Touch your thumb to the tip of your index finger.", "Then your middle, ring and little finger, in that order.", "That is one round. Start again at the index finger."] },
+  { id: "finger_lifts", level: 3, kind: "fingerLifts", title: "One finger at a time", unit: "rounds", factor: 0.5,
+    steps: ["Make a loose fist, side of the hand facing the camera.", "Straighten your index finger only, then bend it again.", "Then your middle, ring and little finger, in that order.", "That is one round."] },
+  { id: "spread_fingers", level: 3, kind: "spread", title: "Spread fingers", unit: "reps", factor: 1,
+    steps: ["Hold your hand up, palm facing the camera.", "Keep your fingers straight and spread them apart.", "Bring them back together.", "Repeat slowly."] },
+];
+const byId = (id) => CATALOG.find((e) => e.id === id);
+const setSizeFor = (e, base) => Math.max(1, Math.round(base * e.factor));
+const LEVEL_NAMES = { 1: "Opening the hand", 2: "Everyday grips", 3: "Single fingers" };
+
+function placeLevel(affected, other) {
+  const range = (r) => Math.max(0, r.closed - r.open);
+  if (range(affected) < MIN_CLOSURE_SPAN) return 1;
+  if (affected.open > 120) return 1;
+  const ratio = other && range(other) > 0 ? range(affected) / range(other) : range(affected) / 260;
+  return ratio < 0.5 ? 1 : ratio < 0.85 ? 2 : 3;
+}
+
+function buildPlan(level, goal, settings, dayNumber, doneById) {
+  const pool = CATALOG.filter((e) => e.level === level);
+  const count = pool.length <= 2 ? pool.length : 3;
+  const start = pool.length <= count ? 0 : dayNumber % pool.length;
+  const chosen = Array.from({ length: count }, (_, k) => pool[(start + k) % pool.length]);
+  const per = Math.ceil(goal / chosen.length);
+  const items = chosen.map((e) => {
+    const setSize = setSizeFor(e, settings.setSize);
+    const sets = Math.min(100, Math.max(1, Math.ceil(per / settings.setSize)));
+    const done = doneById[e.id] ?? 0;
+    return { exercise: e, sets, setSize, done, target: sets * setSize, weight: 1 / e.factor,
+      setsDone: Math.min(sets, Math.floor(done / setSize)), complete: done >= sets * setSize };
+  });
+  const planned = items.reduce((a, i) => a + Math.round(i.target * i.weight), 0);
+  const doneTotal = items.reduce((a, i) => a + Math.round(Math.min(i.done, i.target) * i.weight), 0);
+  return { level, goal, items, planned, doneTotal, next: items.find((i) => !i.complete) ?? null };
+}
+
+function nextGoal(current, last, s) {
+  if (!s.autoProgress || !last) return current;
+  if (last.painRose) { const lowered = Math.floor(current * 9 / 100) * 10; return Math.max(20, lowered); }
+  if (last.reps >= last.goal && !last.fatigued) return Math.min(s.maxGoal, Math.max(20, Math.floor((current * 11 + 99) / 100) * 10));
+  return current;
+}
+
+function pinHash(pin) {
+  let h = 0x811c9dc5;
+  for (const c of `rohab-therapist:${pin}`) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, "0");
+}
+
+window.rohabMath = { computeAngles, OneEuroFilter, placeLevel, buildPlan, nextGoal, counterFor, WristMonitor };
+
+// =====================================================================
+// Storage: numbers only, in this browser. Never video or landmarks.
+// =====================================================================
+const KEY = "rohab.web.v1";
+const DEFAULT_SETTINGS = { levelOverride: null, startingGoal: 100, maxGoal: 300, setSize: 10, restSeconds: 60,
+  autoProgress: true, painRiseLimit: 2, painHighLimit: 7 };
+function load() {
+  try { const d = JSON.parse(localStorage.getItem(KEY) ?? "null"); if (d) return d; } catch {}
+  return { baseline: null, settings: { ...DEFAULT_SETTINGS }, goal: null, sessions: [], pain: [], pinHash: null };
+}
+let db = load();
+db.settings = { ...DEFAULT_SETTINGS, ...db.settings };
+function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} }
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const onDay = (iso, key) => dayKey(new Date(iso)) === key;
+
+function overview() {
+  const today = dayKey();
+  const pain = db.pain.filter((p) => onDay(p.at, today));
+  const latest = (phase) => { const xs = pain.filter((p) => p.phase === phase); return xs.length ? xs[xs.length - 1].score : null; };
+  const o = { painBefore: latest("before"), painAfter: latest("after"), plan: null };
+  if (!db.baseline) return o;
+  const s = db.settings;
+  if (!db.goal) { db.goal = { goal: s.startingGoal, date: today }; save(); }
+  else if (db.goal.date !== today) {
+    const pastDays = [...new Set(db.sessions.map((r) => dayKey(new Date(r.startedAt))))].filter((d) => d < today).sort();
+    const lastDay = pastDays[pastDays.length - 1];
+    let goal = db.goal.goal;
+    if (lastDay) {
+      const rows = db.sessions.filter((r) => onDay(r.startedAt, lastDay));
+      const dp = db.pain.filter((p) => onDay(p.at, lastDay));
+      const before = dp.filter((p) => p.phase === "before"), after = dp.filter((p) => p.phase === "after");
+      goal = nextGoal(goal, {
+        goal, reps: rows.reduce((a, r) => a + r.reps, 0), fatigued: rows.some((r) => r.fatigued),
+        painRose: before.length && after.length && after[after.length - 1].score - before[0].score >= s.painRiseLimit,
+      }, s);
+    }
+    db.goal = { goal, date: today }; save();
+  }
+  const done = {};
+  for (const r of db.sessions.filter((r) => onDay(r.startedAt, today))) done[r.exerciseId] = (done[r.exerciseId] ?? 0) + r.reps;
+  const level = s.levelOverride ?? db.baseline.level;
+  const dayNumber = Math.floor((Date.now() - new Date(2026, 0, 1).getTime()) / 86400000);
+  o.plan = buildPlan(level, db.goal.goal, s, dayNumber, done);
+  o.recheckDue = Date.now() - new Date(db.baseline.takenAt).getTime() >= 7 * 86400000;
+  return o;
+}
+
+// =====================================================================
+// Camera and model loop. Each processed frame goes to the active view.
+// =====================================================================
 const $ = (id) => document.getElementById(id);
-const NAMES = ["Index", "Middle", "Ring", "Little"];
 const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
   [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const fmt = (v) => `${Math.round(v)}°`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-let vision = null, landmarker = null, running = false, lastVideoTime = -1;
-let filters = new Map(), range = { min: Infinity, max: -Infinity };
+let vision = null, landmarker = null, cameraOn = false, lastVideoTime = -1;
 let frames = 0, windowStart = performance.now(), inferMs = 0;
+let consumer = null; // (frame | null, tMs) => void, set by the active view
 
-function setStatus(text, error = false) {
-  $("status").textContent = text;
-  $("status").classList.toggle("error", error);
-}
+function setStatus(text, error = false) { $("status").textContent = text; $("status").classList.toggle("error", error); }
 
 async function loadModel() {
   setStatus("Loading the hand model.");
   vision ??= await import(`${MP}/vision_bundle.mjs`);
   const files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
   const make = (delegate) => vision.HandLandmarker.createFromOptions(files, {
-    baseOptions: { modelAssetPath: MODEL, delegate },
-    runningMode: "VIDEO", numHands: 1,
-  });
+    baseOptions: { modelAssetPath: MODEL, delegate }, runningMode: "VIDEO", numHands: 1 });
   try { landmarker = await make("GPU"); } catch { landmarker = await make("CPU"); }
-  window.rohabLandmarker = landmarker;
-  return vision;
 }
 
-/** For automated checks: run the model on a still image URL. */
 window.rohabAnalyzeImage = async (url) => {
   if (!vision) await loadModel();
   const still = await vision.HandLandmarker.createFromOptions(
     await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`),
     { baseOptions: { modelAssetPath: MODEL, delegate: "CPU" }, runningMode: "IMAGE", numHands: 2 });
   const img = new Image(); img.crossOrigin = "anonymous"; img.src = url; await img.decode();
-  const r = still.detect(img);
-  still.close();
+  const r = still.detect(img); still.close();
   return r.worldLandmarks.map((w, i) => {
     const label = r.handedness[i]?.[0]?.categoryName ?? null;
     return { label, score: r.handedness[i]?.[0]?.score, labeled: computeAngles(w, label), unknown: computeAngles(w, null) };
   });
 };
 
-async function start() {
+async function startCamera() {
   $("start").disabled = true;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -220,10 +490,11 @@ async function start() {
     await $("video").play();
     $("empty").hidden = true;
     if (!landmarker) await loadModel();
-    setStatus("Show one hand to the camera.");
-    running = true;
+    cameraOn = true;
     $("start").textContent = "Camera on";
+    setStatus("Show one hand to the camera.");
     requestAnimationFrame(loop);
+    render();
   } catch (e) {
     $("start").disabled = false;
     const denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
@@ -233,27 +504,28 @@ async function start() {
   }
 }
 
-function smooth(key, value, t) {
-  if (!filters.has(key)) filters.set(key, new OneEuroFilter());
-  return filters.get(key).filter(value, t);
-}
-
 function loop() {
-  if (!running) return;
+  if (!cameraOn) return;
   const video = $("video");
+  const t = performance.now();
   if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
     lastVideoTime = video.currentTime;
-    const t = performance.now();
     const r = landmarker.detectForVideo(video, t);
     inferMs = performance.now() - t;
     frames++;
     draw(r, video);
-    show(r, t);
+    const w = r.worldLandmarks[0];
+    const score = r.handedness[0]?.[0]?.score ?? 0;
+    // Frames below 0.6 confidence are ignored, as in the app.
+    const frame = w && score >= 0.6 ? { world: w, label: r.handedness[0][0].categoryName, score } : null;
+    if (!consumer) setStatus(frame ? "Tracking." : "Show one hand to the camera.");
+    consumer?.(frame, t);
+  } else {
+    consumer?.(undefined, t); // a tick without a new frame
   }
-  const now = performance.now();
-  if (now - windowStart >= 1000) {
-    $("fps").textContent = `${Math.round(frames * 1000 / (now - windowStart))} fps · ${inferMs.toFixed(0)} ms per frame`;
-    frames = 0; windowStart = now;
+  if (t - windowStart >= 1000) {
+    $("fps").textContent = `${Math.round(frames * 1000 / (t - windowStart))} fps · ${inferMs.toFixed(0)} ms per frame`;
+    frames = 0; windowStart = t;
   }
   requestAnimationFrame(loop);
 }
@@ -266,42 +538,511 @@ function draw(r, video) {
   if (!lm) return;
   ctx.strokeStyle = css("--accent"); ctx.fillStyle = css("--accent"); ctx.lineWidth = 3;
   for (const [a, b] of BONES) {
-    ctx.beginPath();
-    ctx.moveTo(lm[a].x * c.width, lm[a].y * c.height);
-    ctx.lineTo(lm[b].x * c.width, lm[b].y * c.height);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lm[a].x * c.width, lm[a].y * c.height); ctx.lineTo(lm[b].x * c.width, lm[b].y * c.height); ctx.stroke();
   }
   for (const p of lm) { ctx.beginPath(); ctx.arc(p.x * c.width, p.y * c.height, 4, 0, 2 * Math.PI); ctx.fill(); }
 }
 
-function show(r, t) {
-  const w = r.worldLandmarks[0];
-  if (!w) {
-    setStatus("Show one hand to the camera.");
-    filters.forEach((f) => f.reset());
-    return;
+/** Tracks whether a hand has been seen recently, for hand checks and lost-hand pauses. */
+class Presence {
+  constructor() { this.lastSeen = null; this.since = null; }
+  update(frame, t) {
+    if (frame) { this.lastSeen = t; this.since ??= t; }
+    else if (frame === null || (this.lastSeen !== null && t - this.lastSeen > 300)) {
+      if (this.lastSeen === null || t - this.lastSeen > 300) this.since = null;
+    }
   }
-  const label = r.handedness[0]?.[0]?.categoryName ?? null;
-  const score = r.handedness[0]?.[0]?.score ?? 0;
-  if (score < 0.6) { setStatus("Hand unclear. Move it fully into view."); return; }
-  setStatus("Tracking.");
-  const a = computeAngles(w, label);
-  const closure = smooth("closure", a.closure, t);
-  range.min = Math.min(range.min, closure); range.max = Math.max(range.max, closure);
-  $("closure").textContent = Math.round(closure);
-  $("barFill").style.width = `${Math.max(0, Math.min(100, closure / 250 * 100))}%`;
-  $("rom").textContent = fmt(range.max - range.min);
-  $("minmax").textContent = `${fmt(range.min)} / ${fmt(range.max)}`;
-  $("hand").textContent = `${label === "Left" ? "Left" : label === "Right" ? "Right" : "Unknown"} (${Math.round(score * 100)}%)`;
-  $("fingers").innerHTML = a.fingers.map((f, i) => {
-    const s = (k) => Math.round(smooth(`${i}${k}`, f[k], t));
-    return `<tr><td>${NAMES[i]}</td><td>${s("mcp")}</td><td>${s("pip")}</td><td>${s("dip")}</td><td>${s("total")}</td></tr>`;
-  }).join("");
-  $("thumb").textContent = `${fmt(a.thumbIp)} / ${fmt(a.thumbMcp)} / ${fmt(a.thumbAbduction)}`;
+  heldFor(t) { return this.since === null ? 0 : t - this.since; }
+  lostFor(t) { return this.lastSeen === null ? Infinity : t - this.lastSeen; }
 }
 
-$("start").addEventListener("click", start);
-$("reset").addEventListener("click", () => { range = { min: Infinity, max: -Infinity }; $("rom").textContent = "–"; $("minmax").textContent = "–"; });
+// =====================================================================
+// Views
+// =====================================================================
+let view = "today";
+let flow = null;          // active exercise or measurement state
+let sessionRanges = {};   // { openness, spread }: calibrated once per session
+let restTimer = null;
+
+function go(v) {
+  view = v; flow = null; consumer = null; clearInterval(restTimer);
+  $("frame").hidden = true;
+  render();
+}
+
+function render() {
+  document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-current", b.dataset.go === view ? "page" : "false"));
+  const p = $("panel");
+  const needCamera = !cameraOn ? `<p class="label">Start the camera first (left).</p>` : "";
+  switch (view) {
+    case "today": return renderToday(p);
+    case "measure": return renderMeasure(p, needCamera);
+    case "free": return renderFree(p);
+    case "angles": return renderAngles(p, needCamera);
+    case "therapist": return renderTherapist(p);
+    case "pain": return renderPain(p);
+    case "exercise": return renderExercise(p, needCamera);
+  }
+}
+
+// ---- Today -----------------------------------------------------------
+function renderToday(p) {
+  const o = overview();
+  if (!o.plan) {
+    p.innerHTML = `<h2>First, measure your hands</h2>
+      <p>Rohab measures how far each hand opens and closes. This sets a starting level that fits your hand. It takes about 2 minutes.</p>
+      <div class="actions"><button data-act="measure">Measure my hands</button>
+      <button class="text" data-act="free">Or practise any exercise without a plan</button></div>`;
+    return;
+  }
+  const plan = o.plan, next = plan.next;
+  const painHigh = o.painBefore !== null && o.painBefore >= db.settings.painHighLimit;
+  let primary;
+  if (next) primary = `<button data-act="startPlan">${plan.doneTotal === 0 ? "Start" : "Continue"}: ${esc(next.exercise.title)}</button>`;
+  else if (o.painAfter === null && o.painBefore !== null) primary = `<button data-act="finishToday">Finish for today</button>`;
+  else primary = `<button disabled>Done for today</button>`;
+  p.innerHTML = `
+    <div class="label">Level ${plan.level} · ${LEVEL_NAMES[plan.level]}</div>
+    <h2>${plan.doneTotal} of ${plan.planned} today</h2>
+    <div class="bar" aria-hidden="true"><div style="width:${plan.planned ? plan.doneTotal / plan.planned * 100 : 0}%"></div></div>
+    ${painHigh ? `<p>You reported high pain today. Rest your hand, and tell your therapist if it stays high.</p>` : ""}
+    ${db.baseline.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practise with your therapist or the glove as well.</p>` : ""}
+    <div>${plan.items.map((i) => `
+      <div class="plan-item ${i.complete ? "done" : ""} ${i === next ? "next" : ""}">
+        <span class="tick" aria-hidden="true">${i.complete ? "✓" : ""}</span>
+        <div><div class="title">${esc(i.exercise.title)}</div>
+        <div class="label">${i.complete ? "Done" : `${i.setsDone} of ${i.sets} sets · ${i.setSize} ${i.exercise.unit} each`}</div></div>
+      </div>`).join("")}</div>
+    ${o.recheckDue ? `<p class="label">It's been a week. Measure your hands again.</p>` : ""}
+    <div class="actions">${primary}<button class="text" data-act="measure">Measure hands again</button></div>
+    <p class="label">Level set by ${db.settings.levelOverride === null ? "your hand measurement" : "your therapist"}. Daily goal: ${plan.goal}. Holds and rounds count double.</p>`;
+}
+
+// ---- Free practice ---------------------------------------------------
+function renderFree(p) {
+  p.innerHTML = `<h2>Practise any exercise</h2>
+    <p class="label">Sets of exercises in today's plan count toward it.</p>
+    <div>${CATALOG.map((e) => `<div class="row"><div><div>${esc(e.title)}</div><div class="label">Level ${e.level}</div></div>
+      <button class="text" style="width:auto" data-act="free:${e.id}">Open</button></div>`).join("")}</div>`;
+}
+
+// ---- Live angles -----------------------------------------------------
+function renderAngles(p, needCamera) {
+  p.innerHTML = `${needCamera}
+    <div><div class="label">Finger bend (mean of MCP + PIP + DIP)</div>
+    <div class="big"><span id="closure">–</span>°</div>
+    <div class="label">0° is straight. A full fist is about 250°.</div></div>
+    <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
+    <div><div class="row"><span>Range of motion this session</span><b id="rom">–</b></div>
+    <div class="row"><span>Most open / most closed</span><b id="minmax">–</b></div>
+    <div class="row"><span>Hand</span><b id="hand">–</b></div></div>
+    <table aria-label="Joint angles in degrees"><thead><tr><th>Finger</th><th>MCP</th><th>PIP</th><th>DIP</th><th>Total</th></tr></thead><tbody id="fingers"></tbody></table>
+    <div class="row"><span>Thumb IP / MCP / abduction</span><b id="thumb">–</b></div>
+    <button class="text" data-act="resetRange">Reset range</button>
+    <div class="notes"><p>Angles are approximate: studies of this model report errors from about 4° to over 20° per joint, worst at the middle (PIP) joint.</p>
+    <p>For bending, show the hand from the side, in good light, with the whole hand in view.</p></div>`;
+  const filters = new Map(); let range = { min: Infinity, max: -Infinity };
+  const smooth = (k, v, t) => { if (!filters.has(k)) filters.set(k, new OneEuroFilter()); return filters.get(k).filter(v, t); };
+  flow = { resetRange: () => { range = { min: Infinity, max: -Infinity }; $("rom").textContent = "–"; $("minmax").textContent = "–"; } };
+  consumer = (f, t) => {
+    if (f === undefined) return;
+    if (!f) { setStatus("Show one hand to the camera."); filters.forEach((x) => x.reset()); return; }
+    setStatus("Tracking.");
+    const a = computeAngles(f.world, f.label);
+    const c = smooth("closure", a.closure, t);
+    range.min = Math.min(range.min, c); range.max = Math.max(range.max, c);
+    $("closure").textContent = Math.round(c);
+    $("barFill").style.width = `${Math.max(0, Math.min(100, c / 250 * 100))}%`;
+    $("rom").textContent = fmt(range.max - range.min);
+    $("minmax").textContent = `${fmt(range.min)} / ${fmt(range.max)}`;
+    $("hand").textContent = `${f.label} (${Math.round(f.score * 100)}%)`;
+    $("fingers").innerHTML = a.fingers.map((x, i) => {
+      const s = (k) => Math.round(smooth(`${i}${k}`, x[k], t));
+      return `<tr><td>${FINGER_NAMES[i][0].toUpperCase() + FINGER_NAMES[i].slice(1)}</td><td>${s("mcp")}</td><td>${s("pip")}</td><td>${s("dip")}</td><td>${s("total")}</td></tr>`;
+    }).join("");
+    $("thumb").textContent = `${fmt(a.thumbIp)} / ${fmt(a.thumbMcp)} / ${fmt(a.thumbAbduction)}`;
+  };
+}
+
+// ---- Measure hands ---------------------------------------------------
+function renderMeasure(p, needCamera) {
+  if (!flow || flow.type !== "measure") flow = { type: "measure", step: "choose" };
+  const f = flow;
+  const handName = (h) => h.toLowerCase();
+  if (f.step === "choose") {
+    p.innerHTML = `<h2>Which hand did the stroke affect?</h2>
+      <div class="actions"><button class="choice" data-act="hand:Left">Left hand</button><button class="choice" data-act="hand:Right">Right hand</button></div>
+      <p>Rohab measures that hand first, then your other hand to compare. Rest your forearm on a table with the side of your hand facing the camera.</p>
+      ${needCamera}`;
+    return;
+  }
+  if (f.step === "check" || f.step === "measure") {
+    $("frame").hidden = false;
+    p.innerHTML = `<div class="label">${f.other ? "Other hand" : "Affected hand"}: ${handName(f.current)}${f.step === "measure" ? ` · ${f.cycle} of 2` : ""}</div>
+      <p class="instruction" id="instr">${f.step === "check" ? `Hold your ${handName(f.current)} hand inside the frame.` : (f.phase === "open" ? "Open your hand as far as you can." : "Now close it as far as you can.")}</p>
+      <div class="big" id="count" ${f.step === "check" ? "hidden" : ""}></div>
+      <p class="label" id="hint"></p>
+      <button class="text" data-act="today">Cancel</button>`;
+    return;
+  }
+  if (f.step === "otherPrompt") {
+    $("frame").hidden = true;
+    p.innerHTML = `<h2>Now your ${handName(f.current === "Left" ? "Right" : "Left")} hand</h2>
+      <p>Your other hand shows what is normal for you. If both hands were affected, skip this.</p>
+      <div class="actions"><button data-act="measureOther">Measure other hand</button><button class="text" data-act="skipOther">Skip</button></div>`;
+    return;
+  }
+  if (f.step === "failed") {
+    p.innerHTML = `<p>We couldn't see your hand well enough. Try again with your whole hand in view and good light.</p>
+      <div class="actions"><button data-act="measure">Try again</button></div>`;
+    return;
+  }
+  if (f.step === "result") {
+    const b = db.baseline, rng = (r) => r.closed - r.open;
+    const row = (label, r) => `<div class="row"><div><div>${label}</div><div class="label">Bend from ${fmt(r.open)} (most open) to ${fmt(r.closed)} (most closed)</div></div><b>${fmt(rng(r))}</b></div>`;
+    p.innerHTML = `<h2>Starting level: ${b.level}</h2><p>${LEVEL_NAMES[b.level]}</p>
+      <div>${row(`${b.affectedHand} hand (affected)`, b.affected)}${b.other ? row(`${b.affectedHand === "Left" ? "Right" : "Left"} hand`, b.other) : ""}</div>
+      ${b.other && rng(b.other) > 0 ? `<p>Your affected hand moves ${Math.round(Math.min(1, rng(b.affected) / rng(b.other)) * 100)}% as far as your other hand.</p>` : ""}
+      ${b.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practise with your therapist or the glove as well.</p>` : ""}
+      <p class="label">Range is finger bend from most open to most closed, about 10° either way. Measure again in a week.</p>
+      <div class="actions"><button data-act="today">See today's plan</button></div>`;
+  }
+}
+
+function startMeasureHand() {
+  const f = flow;
+  Object.assign(f, { step: "check", presence: new Presence(), open: [], closed: [], cycle: 1, phase: "open", wrong: 0 });
+  render();
+  consumer = (frame, t) => {
+    if (!cameraOn) return;
+    f.presence.update(frame, t);
+    if (frame) {
+      const wrong = frame.label && frame.label !== f.current;
+      f.wrong = wrong ? f.wrong + 1 : 0;
+      const hint = $("hint");
+      if (hint) hint.textContent = f.wrong > 20 ? `This looks like your ${frame.label.toLowerCase()} hand. Use your ${f.current.toLowerCase()} hand.` : "";
+    }
+    if (f.step === "check") {
+      setStatus(frame ? "Hand found." : "Show your hand to the camera.");
+      if (f.presence.heldFor(t) >= 1000) { f.step = "measure"; f.phaseStart = t; render(); }
+      return;
+    }
+    const elapsed = t - f.phaseStart;
+    const c = $("count"); if (c) c.textContent = `${Math.max(0, Math.ceil((4000 - elapsed) / 1000))} s`;
+    // The person said which hand this is; that sets the flexion sign.
+    if (frame && elapsed > 700) (f.phase === "open" ? f.open : f.closed).push(computeAngles(frame.world, f.current).closure);
+    if (elapsed < 4000) return;
+    f.phaseStart = t;
+    if (f.phase === "open") { f.phase = "closed"; render(); }
+    else if (f.cycle < 2) { f.cycle++; f.phase = "open"; render(); }
+    else endMeasureHand();
+  };
+}
+
+function endMeasureHand() {
+  const f = flow;
+  consumer = null;
+  if (f.open.length < 5 || f.closed.length < 5) { f.step = "failed"; render(); return; }
+  const range = { open: percentile(f.open, 0.1), closed: percentile(f.closed, 0.9) };
+  if (!f.other) { f.affected = range; f.step = "otherPrompt"; render(); }
+  else finishMeasure(range);
+}
+
+function finishMeasure(other) {
+  const f = flow;
+  const level = placeLevel(f.affected, other);
+  db.baseline = { affectedHand: f.affectedHand, affected: f.affected, other, level,
+    cameraLimited: f.affected.closed - f.affected.open < MIN_CLOSURE_SPAN, takenAt: new Date().toISOString() };
+  save();
+  f.step = "result"; $("frame").hidden = true;
+  render();
+}
+
+// ---- Pain check ------------------------------------------------------
+function renderPain(p) {
+  const f = flow;
+  if (f.advice === "rest") {
+    p.innerHTML = `<h2>Your pain is high today</h2><p>Resting is the safer choice. Tell your therapist if the pain stays high.</p>
+      <div class="actions"><button data-act="today">Rest today</button><button class="text" data-act="painContinue">Practise anyway</button></div>`;
+    return;
+  }
+  if (f.advice === "rose") {
+    p.innerHTML = `<h2>Your pain went up by ${f.rise}</h2><p>Rest your hand. Tomorrow's goal will be a little lower. Tell your therapist if the pain stays.</p>
+      <div class="actions"><button data-act="today">Done</button></div>`;
+    return;
+  }
+  p.innerHTML = `<h2>${f.after ? "Pain now?" : "Pain right now?"}</h2>
+    <p>In your hand or arm. 0 is none, 10 is the worst.</p>
+    <div class="grid4">${Array.from({ length: 11 }, (_, n) => `<button class="choice" aria-pressed="${f.score === n}" data-act="pain:${n}">${n}</button>`).join("")}</div>
+    <div class="actions"><button data-act="painSave" ${f.score === undefined ? "disabled" : ""}>${f.after ? "Save" : "Continue"}</button>
+    ${f.after ? "" : `<button class="text" data-act="today">Back</button>`}</div>`;
+}
+
+function savePain() {
+  const f = flow, s = db.settings;
+  const before = overview().painBefore;
+  db.pain.push({ at: new Date().toISOString(), phase: f.after ? "after" : "before", score: f.score }); save();
+  if (!f.after && f.score >= s.painHighLimit) { f.advice = "rest"; render(); return; }
+  if (f.after && before !== null && f.score - before >= s.painRiseLimit) { f.advice = "rose"; f.rise = f.score - before; sessionRanges = {}; render(); return; }
+  if (f.after) { sessionRanges = {}; go("today"); return; }
+  openExercise(f.next, true);
+}
+
+// ---- Exercise flow ---------------------------------------------------
+function openExercise(id, inPlan) {
+  const e = byId(id);
+  const o = overview();
+  const item = inPlan ? o.plan?.items.find((i) => i.exercise.id === id) : null;
+  view = "exercise";
+  flow = { type: "exercise", e, item, level: item ? o.plan.level : null, step: "instructions",
+    setSize: item ? item.setSize : setSizeFor(e, db.settings.setSize),
+    setNumber: item ? Math.min(item.sets, item.setsDone + 1) : 1 };
+  render();
+}
+
+function setLabel(f) {
+  return f.item ? `Set ${f.setNumber} of ${f.item.sets} · ${f.item.setSize} ${f.e.unit} each` : "Free practice";
+}
+
+function renderExercise(p, needCamera) {
+  const f = flow, e = f.e;
+  if (f.step === "instructions") {
+    $("frame").hidden = true;
+    p.innerHTML = `<div class="label">${setLabel(f)}</div><h2>${esc(e.title)}</h2>
+      <ol class="steps">${e.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
+      ${e.object ? `<p><b>You need:</b> ${esc(e.object)}.</p>` : ""}
+      ${needCamera}
+      <div class="actions"><button data-act="exStart" ${cameraOn ? "" : "disabled"}>Start</button><button class="text" data-act="today">Back</button></div>`;
+    return;
+  }
+  if (f.step === "check" || f.step === "calibrate" || f.step === "exercise") {
+    $("frame").hidden = false;
+    if (f.step === "exercise") {
+      p.innerHTML = `<div class="label">${setLabel(f)}</div>
+        <div class="big"><span id="reps">${f.reps} of ${f.setSize}</span> <span class="label">${e.unit}</span></div>
+        <p class="label" id="cue" style="color:var(--text)"></p>
+        <div class="bar" aria-hidden="true"><div id="pct"></div></div>
+        <button class="text" data-act="exEnd">End exercise</button>`;
+    } else {
+      const spread = e.kind === "spread", high = f.calPhase !== "low";
+      const text = f.step === "check" ? "Hold your hand inside the frame."
+        : spread ? (high ? "Spread your fingers as wide as you can." : "Now bring your fingers together.")
+        : (high ? "Open your hand as wide as you can." : "Now make a fist.");
+      p.innerHTML = `<div class="label">${setLabel(f)}</div><p class="instruction">${text}</p>
+        <div class="big" id="count" ${f.step === "check" ? "hidden" : ""}></div>
+        <button class="text" data-act="today">Cancel</button>`;
+    }
+    return;
+  }
+  if (f.step === "calFailed") {
+    p.innerHTML = `<p>We couldn't measure your hand. Keep your whole hand in the frame and try again.</p>
+      <div class="actions"><button data-act="exStart">Try again</button><button class="text" data-act="today">Cancel</button></div>`;
+    return;
+  }
+  if (f.step === "done") {
+    $("frame").hidden = true;
+    const s = f.summary, o = overview(), next = f.item ? o.plan?.next : null;
+    const unit = s.reps === 1 ? e.unit.replace(/s$/, "") : e.unit;
+    let actions;
+    if (!f.item) actions = `<button data-act="today">Back to plan</button>`;
+    else if (!next) actions = `<button data-act="finishToday">Finish for today</button>`;
+    else actions = `<button data-act="next:${next.exercise.id}">${next.exercise.id === e.id ? "Next set" : `Next: ${esc(next.exercise.title)}`}</button>
+      <button class="text" data-act="finishToday">Finish for today</button>`;
+    p.innerHTML = `<div class="label">${setLabel(f)}</div>
+      <h2>${s.completed ? "Set complete" : "Set ended"}. ${s.reps} ${unit}.</h2>
+      ${s.reps === 0 ? `<p class="label">Nothing was saved.</p>` : ""}
+      ${f.item && next ? `<p id="rest"><b>Rest for ${db.settings.restSeconds} s.</b></p>` : ""}
+      ${s.rangeMin !== null ? (e.kind === "spread"
+        ? `<p>Range: ${Math.round(s.rangeMin)}%–${Math.round(s.rangeMax)}%</p>`
+        : `<p>Range of motion: ${fmt(s.rangeMax - s.rangeMin)}</p><p class="label" style="color:var(--text)">Finger bend from ${fmt(s.rangeMin)} (most open) to ${fmt(s.rangeMax)} (most closed).</p>`) : ""}
+      ${s.compensated ? `<p>${s.compensated} did not count because the wrist moved. Keep your forearm resting and your wrist still.</p>` : ""}
+      ${s.fatigued ? `<p>Your later movements were smaller. Rest before the next set.</p>` : ""}
+      <p class="label">Camera measurements are approximate, about 10° either way per joint.</p>
+      <div class="actions">${actions}</div>`;
+    if (f.item && next) {
+      let left = db.settings.restSeconds;
+      clearInterval(restTimer);
+      restTimer = setInterval(() => {
+        left--; const el = $("rest");
+        if (!el) return clearInterval(restTimer);
+        el.innerHTML = left > 0 ? `<b>Rest for ${left} s.</b>` : "<b>Rested. Start when you are ready.</b>";
+        if (left <= 0) clearInterval(restTimer);
+      }, 1000);
+    }
+  }
+}
+
+function startExercise() {
+  const f = flow, e = f.e, spread = e.kind === "spread";
+  Object.assign(f, { step: "check", presence: new Presence(), reps: 0, compensated: 0 });
+  render();
+  const filter = new OneEuroFilter(), wrist = new WristMonitor(), swings = new Swings();
+  let counter = null, range = null, startedAt = null, rangeMin = null, rangeMax = null, lost = false, wristCue = false;
+  const raw = (frame) => spread ? rawSpread(frame.world) : -computeAngles(frame.world, frame.label).closure;
+
+  const beginExercise = () => {
+    f.step = "exercise"; counter = counterFor(e.kind); startedAt = new Date(); render();
+  };
+  consumer = (frame, t) => {
+    if (!cameraOn) return;
+    f.presence.update(frame, t);
+    if (f.step === "check") {
+      if (f.presence.heldFor(t) >= 1000) {
+        range = sessionRanges[spread ? "spread" : "openness"];
+        if (range) beginExercise();
+        else { Object.assign(f, { step: "calibrate", calPhase: "high", phaseStart: t, high: [], low: [] }); render(); }
+      }
+      return;
+    }
+    if (f.step === "calibrate") {
+      const elapsed = t - f.phaseStart;
+      const c = $("count"); if (c) c.textContent = `${Math.max(0, Math.ceil((3000 - elapsed) / 1000))} s`;
+      if (frame && elapsed > 500) (f.calPhase === "high" ? f.high : f.low).push(raw(frame));
+      if (elapsed < 3000) return;
+      if (f.calPhase === "high") { f.calPhase = "low"; f.phaseStart = t; render(); return; }
+      range = rangeFromSamples(f.high, f.low, spread ? MIN_SPREAD_SPAN : MIN_CLOSURE_SPAN);
+      if (!range) { f.step = "calFailed"; consumer = null; render(); return; }
+      sessionRanges[spread ? "spread" : "openness"] = range;
+      beginExercise();
+      return;
+    }
+    if (f.step !== "exercise") return;
+    const cue = $("cue");
+    if (f.presence.lostFor(t) > 2000) {
+      if (!lost) { lost = true; counter.resetCycle(); wrist.reset(); swings.reset(); filter.reset(); }
+      if (cue) cue.textContent = "Hold your hand inside the frame.";
+      return;
+    }
+    if (!frame) return;
+    lost = false;
+    const angles = computeAngles(frame.world, frame.label);
+    const value = filter.filter(spread ? rawSpread(frame.world) : -angles.closure, t);
+    const pct = percentOf(value, range);
+    const shown = spread ? pct : -value;
+    rangeMin = rangeMin === null ? shown : Math.min(rangeMin, shown);
+    rangeMax = rangeMax === null ? shown : Math.max(rangeMax, shown);
+    swings.update(shown);
+    wrist.update(frame.world);
+    const counted = counter.update({ points: frame.world, angles, percent: pct }, t);
+    if (counted && wrist.moved) { f.compensated++; wristCue = true; }
+    else if (counted) { wristCue = false; f.reps++; }
+    const bar = $("pct"); if (bar) bar.style.width = `${pct}%`;
+    const reps = $("reps"); if (reps) reps.textContent = `${f.reps} of ${f.setSize}`;
+    if (cue) cue.textContent = wristCue ? "Wrist moved. That one did not count."
+      : swings.fatigued ? "Movements are getting smaller. A rest may help."
+      : counter.hint ?? (spread ? `Spread ${Math.round(pct)}%` : `Open ${Math.round(pct)}% · bend ${Math.round(-value)}°`);
+    if (f.reps >= f.setSize) endExercise(true, { rangeMin, rangeMax, fatigued: swings.fatigued, startedAt });
+  };
+  f.end = () => endExercise(false, { rangeMin, rangeMax, fatigued: swings.fatigued, startedAt });
+}
+
+function endExercise(completed, m) {
+  const f = flow;
+  consumer = null;
+  f.summary = { completed, reps: f.reps, compensated: f.compensated, ...m };
+  if (f.reps > 0) {
+    db.sessions.push({ exerciseId: f.e.id, mode: "camera", reps: f.reps, setSize: f.setSize, level: f.level,
+      rangeMin: m.rangeMin, rangeMax: m.rangeMax, unit: f.e.kind === "spread" ? "%" : "deg",
+      fatigued: m.fatigued, compensatedReps: f.compensated, startedAt: (m.startedAt ?? new Date()).toISOString() });
+    save();
+  }
+  f.step = "done";
+  render();
+}
+
+// ---- Therapist -------------------------------------------------------
+let therapistUnlocked = false, pinFirst = null, pinError = "", draft = null, notice = "";
+function renderTherapist(p) {
+  if (!therapistUnlocked) {
+    const title = !db.pinHash ? (pinFirst ? "Enter the PIN again" : "Choose a therapist PIN") : "Therapist PIN";
+    p.innerHTML = `<h2>${title}</h2>
+      <p>${db.pinHash ? "These settings are for the therapist or caregiver." : "4 digits. It keeps the plan from being changed by accident; it is not a password."}</p>
+      <input type="password" id="pin" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN">
+      ${pinError ? `<p><b>${pinError}</b></p>` : ""}
+      <div class="actions"><button data-act="pinSubmit">${db.pinHash ? "Unlock" : "Continue"}</button></div>`;
+    const input = $("pin"); input.focus();
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") pinSubmit(); });
+    return;
+  }
+  draft ??= { ...db.settings };
+  const d = draft;
+  const stepper = (id, label, value, unit) => `<div><p>${label}</p><div class="stepper">
+    <button aria-label="Less" data-act="step:${id}:-1">−</button><span>${value} ${unit}</span><button aria-label="More" data-act="step:${id}:1">+</button></div></div>`;
+  p.innerHTML = `<h2>Therapist plan</h2>
+    <div><p><b>Level</b></p><p class="label">Auto uses the hand measurement.</p>
+    <div class="grid4">${[null, 1, 2, 3].map((l) => `<button class="choice" aria-pressed="${d.levelOverride === l}" data-act="level:${l ?? "auto"}">${l ?? "Auto"}</button>`).join("")}</div></div>
+    ${stepper("startingGoal", "Starting daily goal", d.startingGoal, "reps")}
+    ${stepper("maxGoal", "Highest daily goal", d.maxGoal, "reps")}
+    ${stepper("setSize", "Reps per set", d.setSize, "reps")}
+    ${stepper("restSeconds", "Rest between sets", d.restSeconds, "s")}
+    ${stepper("painHighLimit", "Advise rest when pain before is at least", d.painHighLimit, "of 10")}
+    ${stepper("painRiseLimit", "Warn when pain rises by at least", d.painRiseLimit, "points")}
+    <div class="row"><span>Raise the goal 10% after a full day without fatigue or more pain</span>
+    <button class="choice" style="width:auto" aria-pressed="${d.autoProgress}" data-act="toggleAuto">${d.autoProgress ? "On" : "Off"}</button></div>
+    ${notice ? `<p aria-live="polite"><b>${notice}</b></p>` : ""}
+    <div class="actions"><button data-act="saveSettings">Save</button><button class="text" data-act="resetGoal">Reset today's goal</button></div>`;
+}
+const STEPS = { startingGoal: [10, 20, 400], maxGoal: [10, 20, 400], setSize: [1, 5, 30], restSeconds: [15, 15, 180], painHighLimit: [1, 3, 10], painRiseLimit: [1, 1, 5] };
+
+function pinSubmit() {
+  const pin = $("pin")?.value ?? "";
+  if (!/^\d{4}$/.test(pin)) { pinError = "Enter 4 digits."; return render(); }
+  pinError = "";
+  if (!db.pinHash) {
+    if (pinFirst === null) { pinFirst = pin; return render(); }
+    if (pin !== pinFirst) { pinFirst = null; pinError = "The PINs did not match. Choose a PIN again."; return render(); }
+    db.pinHash = pinHash(pin); save(); therapistUnlocked = true; return render();
+  }
+  if (pinHash(pin) === db.pinHash) { therapistUnlocked = true; draft = null; }
+  else pinError = "That PIN is not right.";
+  render();
+}
+
+// ---- Actions ---------------------------------------------------------
+document.addEventListener("click", (ev) => {
+  const nav = ev.target.closest("[data-go]");
+  if (nav) { notice = ""; return go(nav.dataset.go); }
+  const b = ev.target.closest("[data-act]");
+  if (!b) return;
+  const [act, arg, arg2] = b.dataset.act.split(":");
+  switch (act) {
+    case "today": return go("today");
+    case "measure": return go("measure");
+    case "free": return arg ? openExercise(arg, false) : go("free");
+    case "resetRange": return flow?.resetRange?.();
+    case "hand":
+      Object.assign(flow, { affectedHand: arg, current: arg, other: false });
+      return startMeasureHand();
+    case "measureOther":
+      Object.assign(flow, { other: true, current: flow.affectedHand === "Left" ? "Right" : "Left" });
+      return startMeasureHand();
+    case "skipOther": return finishMeasure(null);
+    case "startPlan": {
+      const o = overview();
+      if (o.painBefore === null) { view = "pain"; flow = { after: false, next: o.plan.next.exercise.id }; return render(); }
+      return openExercise(o.plan.next.exercise.id, true);
+    }
+    case "finishToday": view = "pain"; flow = { after: true }; return render();
+    case "pain": flow.score = Number(arg); return render();
+    case "painSave": return savePain();
+    case "painContinue": return openExercise(flow.next, true);
+    case "exStart": return startExercise();
+    case "exEnd": return flow.end?.();
+    case "next": clearInterval(restTimer); return openExercise(arg, true);
+    case "pinSubmit": return pinSubmit();
+    case "level": draft.levelOverride = arg === "auto" ? null : Number(arg); notice = ""; return render();
+    case "step": {
+      const [step, min, max] = STEPS[arg];
+      draft[arg] = Math.max(min, Math.min(max, draft[arg] + Number(arg2) * step)); notice = ""; return render();
+    }
+    case "toggleAuto": draft.autoProgress = !draft.autoProgress; notice = ""; return render();
+    case "saveSettings": db.settings = { ...draft }; save(); notice = "Saved."; return render();
+    case "resetGoal": db.settings = { ...draft }; db.goal = { goal: draft.startingGoal, date: dayKey() }; save();
+      notice = `Saved. Today's goal is back to ${draft.startingGoal}.`; return render();
+  }
+});
+$("start").addEventListener("click", startCamera);
+render();
 </script>
 </body>
 </html>
