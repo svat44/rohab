@@ -60,6 +60,9 @@ class BaselineController extends ChangeNotifier {
   String? errorMessage;
   BaselineResult? result;
 
+  /// The hand as last seen (null when out of view), for the overlay.
+  final ValueNotifier<HandFrame?> frame = ValueNotifier(null);
+
   HandTracker? _tracker;
   StreamSubscription<HandFrame>? _sub;
   Timer? _ticker;
@@ -167,6 +170,8 @@ class BaselineController extends ChangeNotifier {
   }
 
   void _onFrame(HandFrame f) {
+    if (_disposed) return;
+    frame.value = f.isUsable ? f : null;
     if (!f.isUsable) return;
     _lastSeen = _now;
     // A hint only: the label can be wrong, so measuring goes on.
@@ -190,6 +195,7 @@ class BaselineController extends ChangeNotifier {
   void _onTick() {
     _now += tick;
     final seen = _lastSeen != null && _now - _lastSeen! <= presenceGap;
+    if (!seen && frame.value != null) frame.value = null;
     switch (step) {
       case BaselineStep.handCheck:
         if (!seen) {
@@ -267,6 +273,7 @@ class BaselineController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    frame.dispose();
     _ticker?.cancel();
     final sub = _sub;
     _tracker?.stop().then((_) => sub?.cancel());

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../glove/glove_service.dart';
+import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
 
 /// Shown at the top of every screen: connection status and the STOP button.
@@ -35,7 +36,7 @@ class SafetyBanner extends ConsumerWidget {
             child: ValueListenableBuilder<GloveSnapshot>(
               valueListenable: glove.snapshot,
               builder: (context, s, _) {
-                final (title, detail) = _statusText(s);
+                final (title, detail) = _statusText(s, glove is MockGloveService);
                 final hasFault = s.faults.isNotEmpty;
                 return Semantics(
                   liveRegion: true,
@@ -54,9 +55,10 @@ class SafetyBanner extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Wraps instead of cutting off on narrow phones.
                             Text(title,
                                 style: textTheme.labelLarge,
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis),
                             if (detail != null)
                               Text(
@@ -89,14 +91,17 @@ class SafetyBanner extends ConsumerWidget {
     );
   }
 
-  (String, String?) _statusText(GloveSnapshot s) {
+  (String, String?) _statusText(GloveSnapshot s, bool simulated) {
     if (s.faults.isNotEmpty) {
       return ('Glove vented', 'Fault: ${s.faults.first.label}');
     }
     return switch (s.connection) {
       GloveConnection.disconnected => ('Glove not connected', null),
       GloveConnection.connecting => ('Connecting', null),
-      GloveConnection.connected => ('Connected', s.state.patientLabel),
+      GloveConnection.connected => (
+          simulated ? 'Simulated glove' : 'Connected',
+          s.state.patientLabel
+        ),
     };
   }
 }

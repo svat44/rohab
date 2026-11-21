@@ -144,6 +144,9 @@ class CameraExerciseController extends ChangeNotifier {
   /// saving).
   Future<void> get saved => _saved.future;
 
+  /// The hand as last seen (null when out of view), for the overlay.
+  final ValueNotifier<HandFrame?> frame = ValueNotifier(null);
+
   HandTracker? _tracker;
   StreamSubscription<HandFrame>? _sub;
   Timer? _ticker;
@@ -323,6 +326,8 @@ class CameraExerciseController extends ChangeNotifier {
   // ---- Frames and time -----------------------------------------------------
 
   void _onFrame(HandFrame frame) {
+    if (_disposed) return;
+    this.frame.value = frame.isUsable ? frame : null;
     if (!frame.isUsable) return;
     _lastSeen = _now;
     final lm = frame.measurePoints;
@@ -395,6 +400,7 @@ class CameraExerciseController extends ChangeNotifier {
   void _onTick() {
     _now += tick;
     final seen = _lastSeen != null && _now - _lastSeen! <= presenceGap;
+    if (!seen && frame.value != null) frame.value = null;
 
     switch (step) {
       case FlowStep.handCheck:
@@ -403,7 +409,10 @@ class CameraExerciseController extends ChangeNotifier {
         } else {
           _presentSince ??= _now;
           if (_now - _presentSince! >= handCheckTime) {
-            _range = _loadRange();
+            // Exercises that don't count on the open/closed range skip it.
+            _range = exercise.needsRange
+                ? _loadRange()
+                : const RangeCalibration(min: -300, max: 0);
             if (_range == null) {
               _beginCalibration();
             } else {
@@ -474,6 +483,7 @@ class CameraExerciseController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    frame.dispose();
     _stopCamera();
     super.dispose();
   }

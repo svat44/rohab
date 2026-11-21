@@ -243,9 +243,9 @@ class FingerTouches {
   constructor() { Object.assign(this, { count: 0, next: 0, cand: null, since: null, reg: null }); }
   update(s, t) {
     const d = TIPS.map((tip) => thumbTo(s.points, tip));
-    if (this.reg !== null && d[TIPS.indexOf(this.reg)] > 0.35) this.reg = null;
+    if (this.reg !== null && d[TIPS.indexOf(this.reg)] > 0.32) this.reg = null;
     let touching = null, best = Infinity;
-    d.forEach((v, i) => { if (v < 0.25 && v < best) { best = v; touching = TIPS[i]; } });
+    d.forEach((v, i) => { if (v < 0.2 && v < best) { best = v; touching = TIPS[i]; } });
     if (touching !== this.cand) { this.cand = touching; this.since = touching === null ? null : t; return false; }
     if (touching === null || touching === this.reg || t - this.since < 200) return false;
     this.reg = touching;
@@ -287,7 +287,7 @@ function counterFor(kind) {
     case "holdOpen": return new PostureCycle((s) => s.percent >= 70, (s) => s.percent <= 40, 3000, "Hold it open.", "Now relax your hand.");
     case "cylinder": return new PostureCycle((s) => s.percent >= 15 && s.percent <= 65, (s) => s.percent >= 75, 2000, "Hold the grip.", "Let go and open your hand.");
     case "hook": return new PostureCycle(isHook, (s) => s.percent >= 75, 1000, "Hold the hook.", "Open your hand fully.");
-    case "pinch": return new PostureCycle((s) => thumbTo(s.points, 8) < 0.25, (s) => thumbTo(s.points, 8) > 0.45, 300, "Hold the pinch.", "Move them apart.");
+    case "pinch": return new PostureCycle((s) => thumbTo(s.points, 8) < 0.2, (s) => thumbTo(s.points, 8) > 0.4, 300, "Hold the pinch.", "Move them apart.");
     case "fingerTouches": return new FingerTouches();
     case "fingerLifts": return new FingerLifts();
   }
@@ -704,7 +704,7 @@ function renderMeasure(p, needCamera) {
       <div>${row(`${b.affectedHand} hand (affected)`, b.affected)}${b.other ? row(`${b.affectedHand === "Left" ? "Right" : "Left"} hand`, b.other) : ""}</div>
       ${b.other && rng(b.other) > 0 ? `<p>Your affected hand moves ${Math.round(Math.min(1, rng(b.affected) / rng(b.other)) * 100)}% as far as your other hand.</p>` : ""}
       ${b.cameraLimited ? `<p>Your movement is smaller than the camera can count reliably. Practice with your therapist or the glove as well.</p>` : ""}
-      <p class="label">Range is finger bend from most open to most closed, about 10° either way. Measure again in a week.</p>
+      <p class="label">Range is the total bend of your finger joints, from most open to most closed. Camera numbers are approximate and can be off by 10° or more. Measure again in a week.</p>
       <div class="actions"><button data-act="today">See today's plan</button></div>`;
   }
 }
@@ -850,16 +850,16 @@ function renderExercise(p, needCamera) {
       <button class="text" data-act="finishToday">Finish for today</button>`;
     p.innerHTML = `<div class="label">${setLabel(f)}</div>
       <h2>${s.completed ? "Set complete" : "Set ended"}. ${s.reps} ${unit}.</h2>
-      ${s.reps === 0 ? `<p class="label">Nothing was saved.</p>` : ""}
-      ${f.item && next ? `<p id="rest"><b>Rest for ${db.settings.restSeconds} s.</b></p>` : ""}
-      ${s.rangeMin !== null ? (e.kind === "spread"
+      ${s.reps === 0 ? `<p>Nothing was counted, so nothing was saved. Keep your whole hand inside the camera view, in good light, and move slowly.</p>` : ""}
+      ${f.item && next && s.reps > 0 ? `<p id="rest"><b>Rest for ${db.settings.restSeconds} s.</b></p>` : ""}
+      ${s.reps > 0 && s.rangeMin !== null ? (e.kind === "spread"
         ? `<p>Range: ${Math.round(s.rangeMin)}%–${Math.round(s.rangeMax)}%</p>`
         : `<p>Range of motion: ${fmt(s.rangeMax - s.rangeMin)}</p><p class="label" style="color:var(--text)">Finger bend from ${fmt(s.rangeMin)} (most open) to ${fmt(s.rangeMax)} (most closed).</p>`) : ""}
       ${s.compensated ? `<p>${s.compensated} did not count because the wrist moved. Keep your forearm resting and your wrist still.</p>` : ""}
       ${s.fatigued ? `<p>Your later movements were smaller. Rest before the next set.</p>` : ""}
-      <p class="label">Camera measurements are approximate, about 10° either way per joint.</p>
+      <p class="label">Camera measurements are approximate and can be off by 10° or more.</p>
       <div class="actions">${actions}</div>`;
-    if (f.item && next) {
+    if (f.item && next && s.reps > 0) {
       let left = db.settings.restSeconds;
       clearInterval(restTimer);
       restTimer = setInterval(() => {
@@ -888,7 +888,8 @@ function startExercise() {
     f.presence.update(frame, t);
     if (f.step === "check") {
       if (f.presence.heldFor(t) >= 1000) {
-        range = sessionRanges[spread ? "spread" : "openness"];
+        range = ["fingerTouches", "fingerLifts", "pinch"].includes(e.kind)
+          ? { min: -300, max: 0 } : sessionRanges[spread ? "spread" : "openness"];
         if (range) beginExercise();
         else { Object.assign(f, { step: "calibrate", calPhase: "high", phaseStart: t, high: [], low: [] }); render(); }
       }
@@ -930,7 +931,7 @@ function startExercise() {
     const reps = $("reps"); if (reps) reps.textContent = `${f.reps} of ${f.setSize}`;
     if (cue) cue.textContent = wristCue ? "Wrist moved. That one did not count."
       : swings.fatigued ? "Movements are getting smaller. A rest may help."
-      : counter.hint ?? (spread ? `Spread ${Math.round(pct)}%` : `Open ${Math.round(pct)}% · bend ${Math.round(-value)}°`);
+      : counter.hint ?? (spread ? `Spread ${Math.round(pct)}%` : `Open ${Math.round(pct)}%`);
     if (f.reps >= f.setSize) endExercise(true, { rangeMin, rangeMax, fatigued: swings.fatigued, startedAt });
   };
   f.end = () => endExercise(false, { rangeMin, rangeMax, fatigued: swings.fatigued, startedAt });

@@ -75,6 +75,14 @@ class CameraExercise {
   /// True when the range is measured on spread instead of finger bend.
   bool get usesSpread => kind == ExerciseKind.spread;
 
+  /// Whether counting depends on the person's open/closed range. Finger
+  /// touches, finger lifts and the pinch use fingertip distances and
+  /// relative finger angles instead, so they skip the open/fist step.
+  bool get needsRange =>
+      kind != ExerciseKind.fingerTouches &&
+      kind != ExerciseKind.fingerLifts &&
+      kind != ExerciseKind.pinch;
+
   int setSizeFor(int baseSetSize) =>
       (baseSetSize * setSizeFactor).round().clamp(1, 1000);
 }

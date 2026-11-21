@@ -3,99 +3,116 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../camera/hand_tracker.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/hand_overlay.dart';
 
-/// Camera step: preview in the top 55 %, then content, then one action row.
+/// Camera step. The camera takes all the height the text below it does not
+/// need, and shows the whole image (nothing cropped) with the tracked hand
+/// drawn on it. [overlay] sits on the camera (countdown, warnings); the
+/// text below stays short so it is never pushed off screen.
 class CameraPage extends StatelessWidget {
   const CameraPage({
     super.key,
     required this.tracker,
+    required this.frame,
     required this.stats,
     required this.children,
     required this.action,
-    this.previewShare = 0.55,
+    this.overlay,
   });
 
-  /// Share of the height for the camera: 55 % while exercising; less on
-  /// steps that only need to see the hand, so their text fits.
-  final double previewShare;
-
   final HandTracker? tracker;
+  final ValueListenable<HandFrame?> frame;
   final TrackerStats Function() stats;
   final List<Widget> children;
   final Widget action;
 
+  /// Drawn over the camera, in the top-right corner.
+  final Widget? overlay;
+
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: constraints.maxHeight * previewShare,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
-              child: _Preview(tracker: tracker, stats: stats),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+            child: _Preview(
+                tracker: tracker, frame: frame, stats: stats, overlay: overlay),
           ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                  RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+        ),
+        Flexible(
+          flex: 0,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+                RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                RohabSpace.s24, RohabSpace.s8, RohabSpace.s24, RohabSpace.s16),
-            child: SizedBox(height: RohabSize.touchTarget, child: action),
-          ),
-        ],
-      );
-    });
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              RohabSpace.s24, RohabSpace.s8, RohabSpace.s24, RohabSpace.s16),
+          child: SizedBox(height: RohabSize.touchTarget, child: action),
+        ),
+      ],
+    );
   }
 }
 
-/// Live camera with a plain outline frame showing where to hold the hand.
 class _Preview extends StatelessWidget {
-  const _Preview({required this.tracker, required this.stats});
+  const _Preview({
+    required this.tracker,
+    required this.frame,
+    required this.stats,
+    this.overlay,
+  });
 
   final HandTracker? tracker;
+  final ValueListenable<HandFrame?> frame;
   final TrackerStats Function() stats;
+  final Widget? overlay;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final radius = BorderRadius.circular(RohabShape.radius);
+    final aspect = tracker?.previewAspect ?? 3 / 4;
     return Semantics(
       label: 'Camera view',
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: c.divider, width: RohabShape.border),
-          borderRadius: radius,
-        ),
-        child: ClipRRect(
-          borderRadius: radius,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (tracker case final t?) t.buildPreview(context),
-              Padding(
-                padding: const EdgeInsets.all(RohabSpace.s24),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                        color: c.accent, width: RohabShape.strongBorder),
-                    borderRadius: radius,
-                  ),
-                ),
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: aspect,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: c.divider, width: RohabShape.border),
+              borderRadius: radius,
+            ),
+            child: ClipRRect(
+              borderRadius: radius,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (tracker case final t?) t.buildPreview(context),
+                  HandOverlay(frame: frame),
+                  if (overlay != null)
+                    Positioned(
+                      top: RohabSpace.s8,
+                      right: RohabSpace.s8,
+                      child: overlay!,
+                    ),
+                  if (kDebugMode)
+                    Positioned(
+                      left: RohabSpace.s8,
+                      bottom: RohabSpace.s8,
+                      child: _DebugStats(stats: stats()),
+                    ),
+                ],
               ),
-              if (kDebugMode)
-                Positioned(
-                  left: RohabSpace.s8,
-                  top: RohabSpace.s8,
-                  child: _DebugStats(stats: stats()),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -127,4 +144,3 @@ class _DebugStats extends StatelessWidget {
     );
   }
 }
-

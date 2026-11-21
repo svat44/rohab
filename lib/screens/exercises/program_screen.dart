@@ -101,7 +101,7 @@ class _Today extends StatelessWidget {
         onPressed: () => context.go(o.painBefore == null
             ? Routes.painCheck('before', next: next.exercise.id)
             : Routes.cameraExercise(next.exercise.id)),
-        child: Text(plan.doneTotal == 0 ? 'Start' : 'Continue'),
+        child: Text(plan.setsDoneTotal == 0 ? 'Start' : 'Continue'),
       );
     } else if (o.painAfter == null && o.painBefore != null) {
       primary = FilledButton(
@@ -125,16 +125,16 @@ class _Today extends StatelessWidget {
             style: t.labelMedium),
         const SizedBox(height: RohabSpace.s8),
         Semantics(
-          label: '${plan.doneTotal} of ${plan.plannedTotal} done today',
+          label: '${plan.setsDoneTotal} of ${plan.setsTotal} sets done today',
           excludeSemantics: true,
-          child: Text('${plan.doneTotal} of ${plan.plannedTotal} today',
+          child: Text('${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
               style: t.headlineMedium),
         ),
         const SizedBox(height: RohabSpace.s16),
         LevelBar(
-          value: plan.plannedTotal == 0 ? 0 : plan.doneTotal / plan.plannedTotal,
-          semanticsLabel: 'Today',
-          semanticsValue: '${plan.doneTotal} of ${plan.plannedTotal}',
+          value: plan.setsTotal == 0 ? 0 : plan.setsDoneTotal / plan.setsTotal,
+          semanticsLabel: 'Sets today',
+          semanticsValue: '${plan.setsDoneTotal} of ${plan.setsTotal}',
         ),
         if (painHigh) ...[
           const SizedBox(height: RohabSpace.s16),

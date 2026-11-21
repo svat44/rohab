@@ -278,7 +278,7 @@ void main() {
       final h = await launch(tester, baselineLevel: 2);
       await openProgram(tester);
       expect(find.text('Level 2 · Everyday grips'), findsOneWidget);
-      expect(find.text('0 of 120 today'), findsOneWidget);
+      expect(find.text('0 of 12 sets today'), findsOneWidget);
       expect(find.text('Open and close'), findsOneWidget);
 
       await tap(tester, ProgramScreen.primaryKey); // Start
@@ -512,7 +512,7 @@ void main() {
       await tester.tap(find.text('End exercise'));
       await settle(tester);
       expect(find.text('Set ended. 0 reps.'), findsOneWidget);
-      expect(find.text('Nothing was saved.'), findsOneWidget);
+      expect(find.textContaining('nothing was saved'), findsOneWidget);
       expect(await h.sessions(tester), isEmpty);
       await close(tester, h);
     });

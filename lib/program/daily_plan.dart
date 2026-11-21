@@ -49,6 +49,11 @@ class DailyPlan {
 
   bool get complete => items.every((i) => i.complete);
 
+  /// Sets planned and done today, for display: plain counts, with no
+  /// weighting.
+  int get setsTotal => items.fold(0, (a, i) => a + i.sets);
+  int get setsDoneTotal => items.fold(0, (a, i) => a + i.setsDone);
+
   /// Reps planned today, with holds and rounds counted double; about
   /// [goal], rounded up to whole sets.
   int get plannedTotal =>

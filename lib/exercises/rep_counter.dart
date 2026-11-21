@@ -65,8 +65,8 @@ enum _Phase { waitingForHigh, waitingForLow, waitingForSecondHigh }
 /// of a fingertip for at least [holdTime]. A wrong finger restarts the round.
 class FingerTouchCounter {
   FingerTouchCounter({
-    this.touchDistance = 0.25,
-    this.releaseDistance = 0.35,
+    this.touchDistance = 0.2,
+    this.releaseDistance = 0.32,
     this.holdTime = const Duration(milliseconds: 200),
   }) : assert(releaseDistance >= touchDistance);
 

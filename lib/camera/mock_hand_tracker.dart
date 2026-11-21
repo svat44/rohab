@@ -147,6 +147,9 @@ class MockHandTracker implements HandTracker {
   }
 
   @override
+  double? get previewAspect => started ? 3 / 4 : null;
+
+  @override
   Widget buildPreview(BuildContext context) {
     final c = context.colors;
     return ColoredBox(

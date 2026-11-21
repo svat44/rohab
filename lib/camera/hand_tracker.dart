@@ -83,7 +83,13 @@ abstract class HandTracker {
   /// Stops tracking and releases the camera.
   Future<void> stop();
 
-  /// Live camera image, or a plain stand-in.
+  /// Width / height of the camera image as shown (portrait, so below 1).
+  /// Null until the camera is running.
+  double? get previewAspect;
+
+  /// Live camera image, or a plain stand-in. Fills the box it is given; the
+  /// caller sizes that box to [previewAspect] so the whole image shows (no
+  /// cropping) and the hand overlay lines up with it.
   Widget buildPreview(BuildContext context);
 }
 

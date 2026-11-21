@@ -172,20 +172,20 @@ class MediaPipeHandTracker implements HandTracker {
       };
 
   @override
+  double? get previewAspect {
+    final size = _camera?.value.previewSize;
+    if (size == null || size.height == 0) return null;
+    // previewSize is landscape; the app is portrait.
+    return size.height / size.width;
+  }
+
+  @override
   Widget buildPreview(BuildContext context) {
     final camera = _camera;
     if (camera == null || !camera.value.isInitialized) {
       return const SizedBox.expand();
     }
-    return FittedBox(
-      fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
-      child: SizedBox(
-        width: camera.value.previewSize?.height ?? 240,
-        height: camera.value.previewSize?.width ?? 320,
-        child: CameraPreview(camera),
-      ),
-    );
+    return CameraPreview(camera);
   }
 
   @override

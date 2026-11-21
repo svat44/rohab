@@ -7,13 +7,14 @@ import '../app/providers.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
 import 'bottom_nav.dart';
+import 'immersive.dart';
 import 'debug_presets_sheet.dart';
 import 'safety_banner.dart';
 
 /// Frame for every screen: STOP banner, "Rohab" wordmark, screen title,
 /// screen body, bottom navigation. Settings opens from the gear and keeps
 /// the banner, so STOP is reachable everywhere.
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
@@ -33,10 +34,10 @@ class AppShell extends StatefulWidget {
   static const settingsBranch = 4;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   static const _tabs = [
     NavDestination('Home', Icons.home_outlined),
     NavDestination('Calibrate', Icons.tune),
@@ -65,6 +66,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final immersive = ref.watch(immersiveProvider);
     return PopScope(
       canPop: !_settingsOpen,
       onPopInvokedWithResult: (didPop, _) {
@@ -77,20 +79,23 @@ class _AppShellState extends State<AppShell> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SafetyBanner(),
-              _Header(
-                title: AppShell.titles[_shell.currentIndex],
-                settingsOpen: _settingsOpen,
-                onToggleSettings: _toggleSettings,
-              ),
+              if (!immersive)
+                _Header(
+                  title: AppShell.titles[_shell.currentIndex],
+                  settingsOpen: _settingsOpen,
+                  onToggleSettings: _toggleSettings,
+                ),
               Expanded(child: _shell),
             ],
           ),
         ),
-        bottomNavigationBar: BottomNav(
-          destinations: _tabs,
-          selectedIndex: _settingsOpen ? null : _shell.currentIndex,
-          onSelected: _goTab,
-        ),
+        bottomNavigationBar: immersive
+            ? null
+            : BottomNav(
+                destinations: _tabs,
+                selectedIndex: _settingsOpen ? null : _shell.currentIndex,
+                onSelected: _goTab,
+              ),
       ),
     );
   }

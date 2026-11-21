@@ -95,8 +95,7 @@ class SettingsScreen extends ConsumerWidget {
         const SizedBox(height: RohabSpace.s16),
         Text(
           'Grip pressure is ${kTargetPressureKpa.round()} kPa, never above '
-          '${kHardLimitKpa.round()} kPa. Session length and reminders come in '
-          'a later update.',
+          '${kHardLimitKpa.round()} kPa.',
           style: t.bodyLarge,
         ),
       ],

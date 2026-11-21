@@ -67,9 +67,9 @@ abstract class ExerciseCounter {
           ),
         ExerciseKind.pinch => PostureCycleCounter(
             inTarget: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) < 0.25,
+                HandMetrics.thumbTo(s.points, HandIndex.indexTip) < 0.2,
             released: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) > 0.45,
+                HandMetrics.thumbTo(s.points, HandIndex.indexTip) > 0.4,
             hold: const Duration(milliseconds: 300),
             holdHint: 'Hold the pinch.',
             releaseHint: 'Move them apart.',

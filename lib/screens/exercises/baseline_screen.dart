@@ -12,6 +12,7 @@ import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
+import '../../widgets/immersive.dart';
 import 'camera_layout.dart';
 import 'program_screen.dart';
 
@@ -30,7 +31,7 @@ class BaselineScreen extends ConsumerStatefulWidget {
 }
 
 class _BaselineScreenState extends ConsumerState<BaselineScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, ImmersiveScreen<BaselineScreen> {
   late final BaselineController _c;
 
   @override
@@ -57,6 +58,7 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    clearImmersive();
     _c.dispose();
     super.dispose();
   }
@@ -69,6 +71,7 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
 
   Widget _step(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    setImmersive(true);
     final back = TextButton(
         key: BaselineScreen.secondaryKey, onPressed: _back, child: const Text('Back'));
     String hand(Handedness h) => BaselineController.handName(h);
@@ -153,8 +156,8 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
       case BaselineStep.handCheck:
         return CameraPage(
           tracker: _c.tracker,
+          frame: _c.frame,
           stats: () => _c.stats,
-          previewShare: 0.4,
           action: TextButton(
               key: BaselineScreen.secondaryKey,
               onPressed: _back,
@@ -175,8 +178,21 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
         final open = _c.phase == MeasurePhase.open;
         return CameraPage(
           tracker: _c.tracker,
+          frame: _c.frame,
           stats: () => _c.stats,
-          previewShare: 0.4,
+          overlay: DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(RohabShape.radius),
+              border: Border.all(
+                  color: context.colors.divider, width: RohabShape.border),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: RohabSpace.s16, vertical: RohabSpace.s8),
+              child: CountdownNumber(seconds: _c.secondsLeft),
+            ),
+          ),
           action: TextButton(
               key: BaselineScreen.secondaryKey,
               onPressed: _back,
@@ -197,9 +213,10 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
                 style: t.titleLarge,
               ),
             ),
-            const SizedBox(height: RohabSpace.s8),
-            CountdownNumber(seconds: _c.secondsLeft),
-            if (_c.handHint != null) Text(_c.handHint!, style: t.labelLarge),
+            if (_c.handHint != null) ...[
+              const SizedBox(height: RohabSpace.s8),
+              Text(_c.handHint!, style: t.labelLarge),
+            ],
           ],
         );
       case BaselineStep.otherHandPrompt:
@@ -262,9 +279,9 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
             ],
             const SizedBox(height: RohabSpace.s16),
             Text(
-              'Range is finger bend from most open to most closed, '
-              'about 10° either way. Rohab will ask you to measure again in '
-              'a week.',
+              'Range is the total bend of your finger joints, from most open '
+              'to most closed. Camera numbers are approximate and can be off '
+              'by 10° or more. Rohab will ask you to measure again in a week.',
               style: t.labelMedium,
             ),
           ],
@@ -343,7 +360,8 @@ class _Page extends StatelessWidget {
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+              padding: const EdgeInsets.fromLTRB(
+                  RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
               children: children,
             ),
           ),
