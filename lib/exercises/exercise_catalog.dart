@@ -48,6 +48,8 @@ class CameraExercise {
     required this.steps,
     this.object,
     this.setSizeFactor = 1,
+    this.repHigh = 80,
+    this.repLow = 20,
   });
 
   /// Stable id stored with each session. Never rename.
@@ -64,6 +66,13 @@ class CameraExercise {
 
   /// Numbered instructions, at most 4 (checked in tests).
   final List<String> steps;
+
+  /// Open/close style exercises count a rep when the movement reaches
+  /// [repHigh] percent of the person's range, then [repLow], then [repHigh]
+  /// again. Per exercise so a gentler exercise can use wider bands.
+  /// Hold and posture exercises ignore these.
+  final double repHigh;
+  final double repLow;
 
   /// Something to hold, if needed.
   final String? object;
@@ -102,6 +111,8 @@ class ExerciseCatalog {
     title: 'Open and close, gently',
     description: 'Open your hand as far as you can, then close it.',
     repUnit: 'reps',
+    repHigh: 70,
+    repLow: 30,
     steps: [
       _rest,
       'Keep your wrist still.',

@@ -32,6 +32,7 @@ class MediaPipeHandTracker implements HandTracker {
   int _windowStart = 0;
   int _windowCount = 0;
   double _fps = 0;
+  int _resultsTotal = 0;
 
   @override
   Stream<HandFrame> get frames => _frames.stream;
@@ -40,6 +41,7 @@ class MediaPipeHandTracker implements HandTracker {
   TrackerStats get stats => TrackerStats(
         framesPerSecond: _fps,
         droppedFrames: _landmarker?.droppedFrames ?? 0,
+        resultsTotal: _resultsTotal,
       );
 
   @override
@@ -137,6 +139,7 @@ class MediaPipeHandTracker implements HandTracker {
 
   void _onResult(HandLandmarkerResult result) {
     final now = _clock.elapsedMilliseconds;
+    _resultsTotal++;
     _windowCount++;
     if (now - _windowStart >= 1000) {
       _fps = _windowCount * 1000 / (now - _windowStart);

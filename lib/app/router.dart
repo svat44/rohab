@@ -1,11 +1,13 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' show Widget;
 
+import '../debug/test_protocol_screen.dart';
 import '../screens/calibration/calibration_screen.dart';
 import '../screens/exercises/camera_exercise_flow.dart';
 import '../screens/exercises/exercises_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/progress_screen.dart';
+import '../screens/progress/progress_screen.dart';
 import '../screens/exercises/baseline_screen.dart';
 import '../screens/exercises/pain_check_screen.dart';
 import '../screens/exercises/program_screen.dart';
@@ -20,6 +22,7 @@ class Routes {
   static const exercises = '/exercises';
   static const cameraExercises = '/exercises/camera';
   static const allCameraExercises = '/exercises/camera/all';
+  static const testProtocol = '/exercises/camera/test-protocol';
   static const baseline = '/exercises/camera/baseline';
   static String cameraExercise(String id) => '/exercises/camera/$id';
   static String painCheck(String phase, {String? next}) =>
@@ -57,6 +60,14 @@ GoRouter buildRouter() => GoRouter(
                           pageBuilder: (context, state) => const NoTransitionPage(
                               child: CameraExerciseListScreen()),
                         ),
+                        // Debug builds only; opened from the debug menu.
+                        if (kDebugMode)
+                          GoRoute(
+                            path: 'test-protocol',
+                            pageBuilder: (context, state) => NoTransitionPage(
+                                key: state.pageKey,
+                                child: const TestProtocolScreen()),
+                          ),
                         GoRoute(
                           path: 'baseline',
                           pageBuilder: (context, state) => NoTransitionPage(

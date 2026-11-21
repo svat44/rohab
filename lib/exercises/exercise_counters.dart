@@ -38,11 +38,16 @@ abstract class ExerciseCounter {
   String? get hint => null;
 
   /// Builds the right counter for [kind].
-  static ExerciseCounter forKind(ExerciseKind kind) => switch (kind) {
-        ExerciseKind.openCloseGentle =>
-          _Hysteresis(HysteresisRepCounter(high: 70, low: 30)),
-        ExerciseKind.openClose || ExerciseKind.spread =>
-          _Hysteresis(HysteresisRepCounter()),
+  ///
+  /// [high] and [low] set the bands of the open/close style exercises (see
+  /// [CameraExercise.repHigh]); without them each kind uses its default.
+  static ExerciseCounter forKind(ExerciseKind kind,
+          {double? high, double? low}) =>
+      switch (kind) {
+        ExerciseKind.openCloseGentle => _Hysteresis(
+            HysteresisRepCounter(high: high ?? 70, low: low ?? 30)),
+        ExerciseKind.openClose || ExerciseKind.spread => _Hysteresis(
+            HysteresisRepCounter(high: high ?? 80, low: low ?? 20)),
         ExerciseKind.holdOpen => PostureCycleCounter(
             inTarget: (s) => s.percent >= 70,
             released: (s) => s.percent <= 40,

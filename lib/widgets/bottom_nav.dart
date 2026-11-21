@@ -54,16 +54,23 @@ class BottomNav extends StatelessWidget {
                             color: i == selectedIndex ? c.accent : c.secondary,
                           ),
                           const SizedBox(height: RohabSpace.s8 / 2),
-                          Text(
-                            destinations[i].label,
-                            maxLines: 1,
-                            overflow: TextOverflow.visible,
-                            softWrap: false,
-                            style: label.copyWith(
-                              color: i == selectedIndex ? c.accent : c.secondary,
-                              fontWeight: i == selectedIndex
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
+                          // Shrinks (never below 16sp at the default size)
+                          // rather than running into the next label.
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              destinations[i].label,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              style: label.copyWith(
+                                color: i == selectedIndex
+                                    ? c.accent
+                                    : c.secondary,
+                                fontWeight: i == selectedIndex
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],

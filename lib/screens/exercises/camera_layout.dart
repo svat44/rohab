@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../camera/hand_tracker.dart';
+import '../../debug/diagnostics.dart';
+import '../../debug/diagnostics_overlay.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/hand_overlay.dart';
 
@@ -18,7 +20,11 @@ class CameraPage extends StatelessWidget {
     required this.children,
     required this.action,
     this.overlay,
+    this.diagnostics,
   });
+
+  /// Debug builds only: live tracking numbers instead of the plain stats.
+  final DiagnosticsCollector? diagnostics;
 
   final HandTracker? tracker;
   final ValueListenable<HandFrame?> frame;
@@ -39,7 +45,11 @@ class CameraPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(
                 RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
             child: _Preview(
-                tracker: tracker, frame: frame, stats: stats, overlay: overlay),
+                tracker: tracker,
+                frame: frame,
+                stats: stats,
+                overlay: overlay,
+                diagnostics: diagnostics),
           ),
         ),
         Flexible(
@@ -69,12 +79,14 @@ class _Preview extends StatelessWidget {
     required this.frame,
     required this.stats,
     this.overlay,
+    this.diagnostics,
   });
 
   final HandTracker? tracker;
   final ValueListenable<HandFrame?> frame;
   final TrackerStats Function() stats;
   final Widget? overlay;
+  final DiagnosticsCollector? diagnostics;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +120,9 @@ class _Preview extends StatelessWidget {
                     Positioned(
                       left: RohabSpace.s8,
                       bottom: RohabSpace.s8,
-                      child: _DebugStats(stats: stats()),
+                      child: diagnostics != null
+                          ? DiagnosticsOverlay(collector: diagnostics!)
+                          : _DebugStats(stats: stats()),
                     ),
                 ],
               ),

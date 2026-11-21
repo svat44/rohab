@@ -84,7 +84,8 @@ class MockHandTracker implements HandTracker {
   Stream<HandFrame> get frames => _frames.stream;
 
   @override
-  TrackerStats get stats => TrackerStats(framesPerSecond: fps.toDouble());
+  TrackerStats get stats =>
+      TrackerStats(framesPerSecond: fps.toDouble(), resultsTotal: _frameCount);
 
   @override
   Future<void> start() async {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +8,14 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/providers.dart';
 import '../../app/router.dart';
+import '../../debug/diagnostics.dart';
+import '../../debug/diagnostics_overlay.dart';
 import '../../exercises/camera_exercise_controller.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../exercises/exercise_providers.dart';
 import '../../program/daily_plan.dart';
 import '../../program/program_providers.dart';
+import '../progress/progress_data.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
@@ -40,6 +44,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
     with WidgetsBindingObserver, ImmersiveScreen<CameraExerciseFlow> {
   late final CameraExercise _exercise;
   late final CameraExerciseController _controller;
+  DiagnosticsCollector? _diagnostics;
 
   /// This exercise in today's plan, or null for free practice.
   PlanItem? _item;
@@ -60,8 +65,12 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
       _setNumber = (item.setsDone + 1).clamp(1, item.sets);
     }
     final ranges = ref.read(cameraSessionRangesProvider.notifier);
+    if (kDebugMode && ref.read(diagnosticsEnabledProvider)) {
+      _diagnostics = DiagnosticsCollector(log: true);
+    }
     _controller = CameraExerciseController(
       exercise: _exercise,
+      diagnostics: _diagnostics,
       trackerFactory: ref.read(handTrackerFactoryProvider),
       permission: ref.read(cameraPermissionProvider),
       repository: ref.read(exerciseSessionRepositoryProvider),
@@ -79,7 +88,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
     );
     // Refresh the plan once the set is saved, so "next" is up to date.
     _controller.saved.then((_) {
-      if (mounted) ref.invalidate(programOverviewProvider);
+      if (mounted) {
+        ref.invalidate(programOverviewProvider);
+        ref.invalidate(progressDataProvider);
+      }
     });
     WidgetsBinding.instance.addObserver(this);
   }
@@ -95,6 +107,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
     WidgetsBinding.instance.removeObserver(this);
     clearImmersive();
     _controller.dispose(); // stops the camera
+    _diagnostics?.dispose();
     super.dispose();
   }
 
@@ -200,6 +213,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         return CameraPage(
           tracker: c.tracker,
           frame: c.frame,
+          diagnostics: _diagnostics,
           stats: () => c.stats,
           action: cancel,
           children: [
@@ -217,6 +231,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         return CameraPage(
           tracker: c.tracker,
           frame: c.frame,
+          diagnostics: _diagnostics,
           stats: () => c.stats,
           action: cancel,
           overlay: _CountdownBadge(seconds: c.secondsLeft),
@@ -227,6 +242,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         return CameraPage(
           tracker: c.tracker,
           frame: c.frame,
+          diagnostics: _diagnostics,
           stats: () => c.stats,
           action: Row(
             children: [
@@ -251,6 +267,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         return CameraPage(
           tracker: c.tracker,
           frame: c.frame,
+          diagnostics: _diagnostics,
           stats: () => c.stats,
           action: _TextAction(label: 'End exercise', onPressed: c.endExercise),
           children: [_ExerciseReadout(controller: c, exercise: _exercise)],

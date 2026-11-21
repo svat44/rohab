@@ -153,3 +153,22 @@ dropped frames in the top-left corner.
    "Hold your hand inside the frame." and no rep is counted.
 4. Repeat with the other hand, then try Finger touches and Spread fingers.
 5. Note fps, dropped frames, any missed or extra reps, and the phone model.
+
+## Camera test protocol (debug builds, on a phone)
+
+Long-press the "Rohab" title to open the debug menu.
+
+- **Diagnostics overlay**: turn it on, then start any exercise. It shows
+  FPS, the share of frames with confidence of at least 0.6 over the last
+  10 s, the current dropout length, openness and rep state, and logs the
+  same line to the console about once a second. No landmarks, images or
+  video are stored or logged.
+- **Test protocol**: runs three poses (full open/close, limited range,
+  curled hand) through the real exercise flow, 30 s of counting each, and
+  prints a table: average FPS, detection %, dropouts over 0.5 s, reps, and
+  whether 10 reps fit in 60 s (projected from the 30 s run). "OK" needs
+  FPS >= 15, detection >= 90 %, at most 2 dropouts and 10 reps per 60 s.
+  Those limits are this project's choice, not clinical values.
+
+`test/pose_protocol_sim_test.dart` runs the same table with a scripted hand.
+It checks the counting and calibration logic only, not camera detection.

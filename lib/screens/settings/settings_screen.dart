@@ -4,22 +4,53 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/providers.dart';
 import '../../app/router.dart';
-import '../../config/pressure_limits.dart';
+import '../../config/app_info.dart';
+import '../../exercises/exercise_providers.dart';
 import '../../glove/glove_service.dart';
+import '../../settings/settings_controller.dart';
 import '../../theme/app_theme.dart';
+import '../progress/progress_data.dart';
 
-/// Settings: the glove connection and the therapist plan.
-class SettingsScreen extends ConsumerWidget {
+/// Settings: the glove connection, the therapist plan, text size, deleting
+/// saved sessions, and About.
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   static const therapistKey = Key('settings-therapist');
   static const disconnectKey = Key('settings-disconnect');
+  static Key textSizeKey(TextSize s) => Key('settings-text-${s.name}');
+  static const clearKey = Key('settings-clear');
+  static const confirmDeleteKey = Key('settings-confirm-delete');
+  static const cancelDeleteKey = Key('settings-cancel-delete');
+  static const clearedKey = Key('settings-cleared');
+  static const aboutKey = Key('settings-about');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _confirming = false;
+  bool _cleared = false;
+
+  Future<void> _delete() async {
+    await ref.read(exerciseSessionRepositoryProvider).deleteAll();
+    ref.invalidate(progressDataProvider);
+    if (mounted) {
+      setState(() {
+        _confirming = false;
+        _cleared = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final c = context.colors;
     final glove = ref.watch(gloveServiceProvider);
+    final size = ref.watch(textSizeProvider);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(
           RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
@@ -54,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   if (canDisconnect)
                     TextButton(
-                      key: disconnectKey,
+                      key: SettingsScreen.disconnectKey,
                       onPressed: glove.disconnect,
                       child: const Text('Disconnect'),
                     ),
@@ -65,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         const Divider(),
         InkWell(
-          key: therapistKey,
+          key: SettingsScreen.therapistKey,
           onTap: () => context.go(Routes.therapist),
           child: ConstrainedBox(
             constraints:
@@ -79,7 +110,8 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       Text('Therapist plan', style: t.labelLarge),
                       const SizedBox(height: RohabSpace.s8 / 2),
-                      Text('Level, daily goal, sets and pain limits. '
+                      Text(
+                          'Level, daily goal, sets and pain limits. '
                           'Needs the therapist PIN.',
                           style: t.labelMedium),
                     ],
@@ -92,13 +124,186 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         const Divider(),
-        const SizedBox(height: RohabSpace.s16),
+        const SizedBox(height: RohabSpace.s24),
+        Text('Text size', style: t.labelLarge),
+        const SizedBox(height: RohabSpace.s8),
+        Row(
+          children: [
+            for (final s in TextSize.values) ...[
+              if (s != TextSize.values.first)
+                const SizedBox(width: RohabSpace.s8),
+              Expanded(
+                child: _Segment(
+                  key: SettingsScreen.textSizeKey(s),
+                  label: s.label,
+                  selected: s == size,
+                  onTap: () => ref.read(textSizeProvider.notifier).set(s),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: RohabSpace.s24),
+        const Divider(),
+        if (_confirming)
+          _ConfirmDelete(
+            onDelete: _delete,
+            onCancel: () => setState(() => _confirming = false),
+          )
+        else ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: SettingsScreen.clearKey,
+                onPressed: () => setState(() {
+                  _confirming = true;
+                  _cleared = false;
+                }),
+                style: TextButton.styleFrom(foregroundColor: c.danger),
+                child: const Text('Clear all data'),
+              ),
+            ),
+          ),
+          if (_cleared)
+            Semantics(
+              liveRegion: true,
+              child: Text('All saved sessions were deleted.',
+                  key: SettingsScreen.clearedKey, style: t.labelMedium),
+            ),
+        ],
+        const Divider(),
+        const SizedBox(height: RohabSpace.s24),
+        Text('About', style: t.labelLarge),
+        const SizedBox(height: RohabSpace.s8),
+        Text('Rohab version $kAppVersion',
+            key: SettingsScreen.aboutKey, style: t.bodyLarge),
+        const SizedBox(height: RohabSpace.s8),
         Text(
-          'Grip pressure is ${kTargetPressureKpa.round()} kPa, never above '
-          '${kHardLimitKpa.round()} kPa.',
+          'Rohab is not a medical device. Ask your therapist before changing '
+          'your exercises.',
           style: t.bodyLarge,
         ),
       ],
+    );
+  }
+}
+
+class _Segment extends StatelessWidget {
+  const _Segment({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final radius = BorderRadius.circular(RohabShape.radius);
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected ? c.accent : c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(
+              color: selected ? c.accent : c.divider, width: RohabShape.border),
+        ),
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+            child: Padding(
+              padding: const EdgeInsets.all(RohabSpace.s8),
+              child: Center(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: selected ? c.onAccent : c.text,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Confirmation, shown in the page rather than as a pop-up window: a
+/// pop-up would cover the STOP banner.
+class _ConfirmDelete extends StatelessWidget {
+  const _ConfirmDelete({required this.onDelete, required this.onCancel});
+
+  final VoidCallback onDelete;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: RohabSpace.s16),
+        padding: const EdgeInsets.all(RohabSpace.s16),
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border.all(color: c.divider, width: RohabShape.border),
+          borderRadius: BorderRadius.circular(RohabShape.radius),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Delete all saved sessions? This cannot be undone.',
+                style: t.bodyLarge),
+            const SizedBox(height: RohabSpace.s16),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: RohabSize.touchTarget,
+                    child: TextButton(
+                      key: SettingsScreen.confirmDeleteKey,
+                      onPressed: onDelete,
+                      style: TextButton.styleFrom(
+                        foregroundColor: c.onDanger,
+                        backgroundColor: c.danger,
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(RohabShape.radius)),
+                      ),
+                      child: const Text('Delete'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: RohabSpace.s8),
+                Expanded(
+                  child: SizedBox(
+                    height: RohabSize.touchTarget,
+                    child: TextButton(
+                      key: SettingsScreen.cancelDeleteKey,
+                      onPressed: onCancel,
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

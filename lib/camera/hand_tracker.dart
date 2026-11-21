@@ -57,7 +57,15 @@ class HandFrame {
 }
 
 class TrackerStats {
-  const TrackerStats({this.framesPerSecond = 0, this.droppedFrames = 0});
+  const TrackerStats({
+    this.framesPerSecond = 0,
+    this.droppedFrames = 0,
+    this.resultsTotal = 0,
+  });
+
+  /// Every result the tracker produced since it started, with a hand in it
+  /// or not. Diagnostics divides confident frames by this.
+  final int resultsTotal;
 
   /// Frames processed per second over the last second.
   final double framesPerSecond;

@@ -41,11 +41,56 @@ class ExerciseSessionRecord {
   final int? level;
 }
 
-/// Saves and reads exercise sessions. Progress (next session) reads it.
+/// Sessions and reps in the last 7 days.
+class WeeklySummary {
+  const WeeklySummary({required this.sessions, required this.reps});
+
+  final int sessions;
+  final int reps;
+}
+
+/// Saves and reads exercise sessions. Progress reads it.
 abstract class ExerciseSessionRepository {
   Future<int> save(ExerciseSessionRecord record);
 
+  /// Every session, oldest first.
   Future<List<ExerciseSessionRow>> all();
+
+  /// Every session, oldest first. Same as [all]; named for the Progress
+  /// screen.
+  Future<List<ExerciseSessionRow>> allSessions() => all();
+
+  /// The newest [limit] sessions of one exercise, newest first.
+  Future<List<ExerciseSessionRow>> sessionsFor(String exerciseId,
+      {int limit = 10}) async {
+    final rows = [
+      for (final r in await all())
+        if (r.exerciseId == exerciseId) r,
+    ]..sort(_newestFirst);
+    return rows.take(limit).toList();
+  }
+
+  /// Sessions and reps started in the 7 days up to [now].
+  Future<WeeklySummary> weeklySummary({DateTime? now}) async {
+    final end = now ?? DateTime.now();
+    final start = end.subtract(const Duration(days: 7));
+    var sessions = 0, reps = 0;
+    for (final r in await all()) {
+      if (r.startedAt.isAfter(start) && !r.startedAt.isAfter(end)) {
+        sessions++;
+        reps += r.reps;
+      }
+    }
+    return WeeklySummary(sessions: sessions, reps: reps);
+  }
+
+  /// Deletes every saved session. Nothing else is touched.
+  Future<void> deleteAll();
+
+  static int _newestFirst(ExerciseSessionRow a, ExerciseSessionRow b) {
+    final c = b.startedAt.compareTo(a.startedAt);
+    return c != 0 ? c : b.id.compareTo(a.id);
+  }
 
   /// Sessions started on the local day of [day].
   Future<List<ExerciseSessionRow>> on(DateTime day) async {
@@ -100,6 +145,21 @@ class DriftExerciseSessionRepository extends ExerciseSessionRepository {
   Future<List<ExerciseSessionRow>> all() => (_db.select(_db.exerciseSessions)
         ..orderBy([(s) => OrderingTerm.asc(s.startedAt)]))
       .get();
+
+  @override
+  Future<List<ExerciseSessionRow>> sessionsFor(String exerciseId,
+          {int limit = 10}) =>
+      (_db.select(_db.exerciseSessions)
+            ..where((s) => s.exerciseId.equals(exerciseId))
+            ..orderBy([
+              (s) => OrderingTerm.desc(s.startedAt),
+              (s) => OrderingTerm.desc(s.id),
+            ])
+            ..limit(limit))
+          .get();
+
+  @override
+  Future<void> deleteAll() => _db.delete(_db.exerciseSessions).go();
 }
 
 /// Keeps sessions in memory only. Used where there is no SQLite (the web
@@ -132,5 +192,12 @@ class InMemoryExerciseSessionRepository extends ExerciseSessionRepository {
   }
 
   @override
-  Future<List<ExerciseSessionRow>> all() async => List.of(_rows);
+  Future<List<ExerciseSessionRow>> all() async => List.of(_rows)
+    ..sort((a, b) {
+      final c = a.startedAt.compareTo(b.startedAt);
+      return c != 0 ? c : a.id.compareTo(b.id);
+    });
+
+  @override
+  Future<void> deleteAll() async => _rows.clear();
 }

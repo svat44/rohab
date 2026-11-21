@@ -8,7 +8,7 @@ import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
 import 'bottom_nav.dart';
 import 'immersive.dart';
-import 'debug_presets_sheet.dart';
+import '../debug/debug_menu.dart';
 import 'safety_banner.dart';
 
 /// Frame for every screen: STOP banner, "Rohab" wordmark, screen title,
@@ -117,7 +117,6 @@ class _Header extends ConsumerWidget {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
     final glove = ref.watch(gloveServiceProvider);
-    final presets = kDebugMode && glove is MockGloveService;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -131,8 +130,9 @@ class _Header extends ConsumerWidget {
                 child: GestureDetector(
                   key: AppShell.wordmarkKey,
                   behavior: HitTestBehavior.opaque,
-                  onLongPress: presets
-                      ? () => showDebugPresets(context, glove)
+                  onLongPress: kDebugMode
+                      ? () => showDebugMenu(context,
+                          mockGlove: glove is MockGloveService ? glove : null)
                       : null,
                   child: Text(
                     RohabTokens.name,

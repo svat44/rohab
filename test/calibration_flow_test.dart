@@ -35,7 +35,9 @@ Future<void> openCalibrationAndStart(WidgetTester tester) async {
 
 Future<void> choosePreset(WidgetTester tester, MockEmgPreset preset) async {
   await tester.longPress(find.byKey(AppShell.wordmarkKey));
-  await tester.pump(const Duration(milliseconds: 400)); // sheet slides in
+  await tester.pump(const Duration(milliseconds: 400)); // menu slides in
+  await tester.tap(find.byKey(const Key('debug-grip')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key('preset-${preset.name}')));
   await tester.pump();
   await tester.tap(find.text('Close'));

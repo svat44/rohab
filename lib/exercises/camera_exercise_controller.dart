@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../camera/camera_permission.dart';
 import '../camera/hand_tracker.dart';
+import '../debug/diagnostics.dart';
 import '../data/exercise_session_repository.dart';
 import 'exercise_catalog.dart';
 import 'exercise_counters.dart';
@@ -82,10 +83,23 @@ class CameraExerciseController extends ChangeNotifier {
     required this._loadRange,
     required this._saveRange,
     required this.setSize,
+    this.diagnostics,
     this.level,
     DateTime Function()? wallClock,
     this.onRepCounted,
-  }) : _wallClock = wallClock ?? DateTime.now;
+  }) : _wallClock = wallClock ?? DateTime.now {
+    diagnostics?.extra = _diagnosticsText;
+  }
+
+  /// Debug builds only: counts and timings, never landmarks or video.
+  final DiagnosticsCollector? diagnostics;
+
+  /// Tick-clock time since the camera opened. For diagnostics and tests.
+  Duration get now => _now;
+
+  String _diagnosticsText() =>
+      'open=${percent.round()}% reps=$reps/$setSize step=${step.name}'
+      '${hint == null ? '' : ' "$hint"'}';
 
   /// Reps (or holds, or rounds) in this set.
   final int setSize;
@@ -266,7 +280,8 @@ class CameraExerciseController extends ChangeNotifier {
     handLost = false;
     _rangeMin = null;
     _rangeMax = null;
-    _counter = ExerciseCounter.forKind(exercise.kind);
+    _counter = ExerciseCounter.forKind(exercise.kind,
+        high: exercise.repHigh, low: exercise.repLow);
     _wrist.reset();
     wristCue = false;
     compensatedReps = 0;
@@ -328,6 +343,7 @@ class CameraExerciseController extends ChangeNotifier {
   void _onFrame(HandFrame frame) {
     if (_disposed) return;
     this.frame.value = frame.isUsable ? frame : null;
+    diagnostics?.onFrame(frame, _now);
     if (!frame.isUsable) return;
     _lastSeen = _now;
     final lm = frame.measurePoints;
@@ -401,6 +417,7 @@ class CameraExerciseController extends ChangeNotifier {
     _now += tick;
     final seen = _lastSeen != null && _now - _lastSeen! <= presenceGap;
     if (!seen && frame.value != null) frame.value = null;
+    diagnostics?.tick(_now, _tracker?.stats.resultsTotal ?? 0);
 
     switch (step) {
       case FlowStep.handCheck:
