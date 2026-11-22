@@ -6,6 +6,8 @@ import '../app/providers.dart';
 import '../app/router.dart';
 import '../glove/glove_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/level_bar.dart';
+import '../widgets/rohab_widgets.dart';
 
 /// Connect to the glove, start and end a session, and follow it: reps
 /// first, then what the hand is doing, then pressure as a detail.
@@ -89,6 +91,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Expanded(
               child: ListView(
+                // A short list: build every card, so none is missing when
+                // large text pushes it below the fold.
+                scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
                 padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
                 children: [
                   const SizedBox(height: RohabSpace.s8),
@@ -97,7 +102,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _CalibrationNeededRow(
                       onCalibrate: () => context.go(Routes.calibration),
                     ),
-                    const Divider(),
                     const SizedBox(height: RohabSpace.s16),
                   ],
                   // Only after a session ends; cleared when the next starts.
@@ -110,17 +114,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: RohabSpace.s24),
                   ],
-                  _RepsReadout(
-                    reps: s.sessionActive || _summary != null
-                        ? s.reps - _repsAtStart
-                        : null,
+                  // The reps and what the hand is doing share one hero card.
+                  RohabCard(
+                    tint: true,
+                    padding: const EdgeInsets.all(RohabSpace.s24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _RepsReadout(
+                          reps: s.sessionActive || _summary != null
+                              ? s.reps - _repsAtStart
+                              : null,
+                        ),
+                        const SizedBox(height: RohabSpace.s16),
+                        _HandState(snapshot: s),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: RohabSpace.s16),
-                  _HandState(snapshot: s),
-                  const SizedBox(height: RohabSpace.s24),
-                  const Divider(),
-                  _PressureRow(snapshot: s),
-                  const Divider(),
+                  RohabCard(child: _PressureRow(snapshot: s)),
                   const SizedBox(height: RohabSpace.s24),
                 ],
               ),
@@ -218,23 +230,44 @@ class _PressureRow extends StatelessWidget {
               '${s.targetKpa.toStringAsFixed(0)} kilopascals'
           : 'Pressure unavailable',
       excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-        child: Row(
-          children: [
-            Expanded(child: Text('Pressure', style: t.bodyLarge)),
-            Text(
-              s.isConnected ? s.pressureKpa.toStringAsFixed(1) : '–',
-              key: HomeScreen.pressureKey,
-              style: t.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontFeatures: const [FontFeature.tabularFigures()],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const IconBadge(Icons.compress, size: 40),
+              const SizedBox(width: RohabSpace.s16),
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text('Pressure  ', style: t.bodyLarge),
+                    Text(
+                      s.isConnected ? s.pressureKpa.toStringAsFixed(1) : '–',
+                      key: HomeScreen.pressureKey,
+                      style: t.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    Text(' of ${s.targetKpa.toStringAsFixed(0)} kPa',
+                        style: t.bodyLarge?.copyWith(color: c.secondary)),
+                  ],
+                ),
               ),
-            ),
-            Text(' of ${s.targetKpa.toStringAsFixed(0)} kPa',
-                style: t.bodyLarge?.copyWith(color: c.secondary)),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: RohabSpace.s16),
+          LevelBar(
+            value: s.isConnected && s.targetKpa > 0
+                ? s.pressureKpa / s.targetKpa
+                : 0,
+            semanticsLabel: 'Pressure',
+            semanticsValue: s.isConnected
+                ? '${s.pressureKpa.toStringAsFixed(0)} kilopascals'
+                : 'unavailable',
+          ),
+        ],
       ),
     );
   }
@@ -248,13 +281,23 @@ class _CalibrationNeededRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return ConstrainedBox(
+    return RohabCard(
       key: HomeScreen.calibrationNeededKey,
-      constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: Text('Calibration needed', style: t.bodyLarge)),
-          TextButton(onPressed: onCalibrate, child: const Text('Calibrate')),
+          Row(
+            children: [
+              const IconBadge(Icons.tune, size: 40),
+              const SizedBox(width: RohabSpace.s16),
+              Expanded(child: Text('Calibration needed', style: t.bodyLarge)),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+                onPressed: onCalibrate, child: const Text('Calibrate')),
+          ),
         ],
       ),
     );
@@ -274,8 +317,9 @@ class _FaultNotice extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: RohabSpace.s24),
       padding: const EdgeInsets.all(RohabSpace.s16),
       decoration: BoxDecoration(
-        border: Border.all(color: c.danger),
-        borderRadius: BorderRadius.circular(RohabShape.radius),
+        color: c.surface,
+        border: Border.all(color: c.danger, width: RohabShape.strongBorder),
+        borderRadius: BorderRadius.circular(RohabShape.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

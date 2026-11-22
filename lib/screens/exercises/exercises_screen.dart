@@ -7,6 +7,8 @@ import '../../app/router.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../glove/glove_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/rohab_widgets.dart';
+import 'program_screen.dart';
 
 /// Choose how to exercise: with the phone's camera, or (later) the glove.
 class ExercisesScreen extends ConsumerWidget {
@@ -27,6 +29,7 @@ class ExercisesScreen extends ConsumerWidget {
           _PathRow(
             key: cameraKey,
             title: 'Camera',
+            icon: Icons.photo_camera_outlined,
             description: "Practice with your phone's camera. No glove needed.",
             onTap: () => context.go(Routes.cameraExercises),
           ),
@@ -34,6 +37,7 @@ class ExercisesScreen extends ConsumerWidget {
           _PathRow(
             key: gloveKey,
             title: 'With glove',
+            icon: Icons.sports_handball_outlined,
             // Glove exercises are not built yet, so this stays disabled
             // even when a glove is connected.
             description: s.isConnected
@@ -51,11 +55,13 @@ class _PathRow extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
+    required this.icon,
     this.onTap,
   });
 
   final String title;
   final String description;
+  final IconData icon;
   final VoidCallback? onTap;
 
   @override
@@ -63,51 +69,39 @@ class _PathRow extends StatelessWidget {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
     final enabled = onTap != null;
-    final radius = BorderRadius.circular(RohabShape.radius);
     return Semantics(
       button: true,
       enabled: enabled,
-      child: Material(
-        color: c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: BorderSide(color: c.divider, width: RohabShape.border),
-        ),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints:
-                const BoxConstraints(minHeight: RohabSize.touchTarget * 1.5),
-            child: Padding(
-              padding: const EdgeInsets.all(RohabSpace.s24),
-              child: Row(
+      child: RohabCard(
+        onTap: onTap,
+        minHeight: RohabSize.touchTarget * 1.5,
+        padding: const EdgeInsets.all(RohabSpace.s16),
+        child: Row(
+          children: [
+            Opacity(opacity: enabled ? 1 : 0.5, child: IconBadge(icon, size: 64)),
+            const SizedBox(width: RohabSpace.s16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: t.labelLarge?.copyWith(
-                              color: enabled ? c.text : c.secondary),
-                        ),
-                        const SizedBox(height: RohabSpace.s8),
-                        Text(
-                          description,
-                          style: t.labelMedium?.copyWith(
-                              color: enabled ? c.text : c.secondary),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    title,
+                    style: t.labelLarge
+                        ?.copyWith(color: enabled ? c.text : c.secondary),
                   ),
-                  if (enabled)
-                    Icon(Icons.chevron_right,
-                        size: RohabSize.icon, color: c.secondary),
+                  const SizedBox(height: RohabSpace.s8 / 2),
+                  Text(
+                    description,
+                    style: t.labelMedium
+                        ?.copyWith(color: enabled ? c.text : c.secondary),
+                  ),
                 ],
               ),
             ),
-          ),
+            if (enabled)
+              Icon(Icons.chevron_right,
+                  size: RohabSize.icon, color: c.secondary),
+          ],
         ),
       ),
     );
@@ -142,44 +136,47 @@ class CameraExerciseListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: RohabSpace.s8),
-              Text('Practice any exercise', style: t.labelLarge),
+              Text('Practice any exercise', style: t.headlineMedium),
               const SizedBox(height: RohabSpace.s8),
               Text("Sets of exercises in today's plan count toward it.",
                   style: t.labelMedium),
-              const SizedBox(height: RohabSpace.s16),
-              const Divider(),
-              for (final e in ExerciseCatalog.all) ...[
-                InkWell(
-                  key: rowKey(e.id),
-                  onTap: () => context.go(Routes.cameraExercise(e.id)),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                        minHeight: RohabSize.touchTarget * 1.5),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: RohabSpace.s16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(e.title, style: t.labelLarge),
+              for (final level in [1, 2, 3]) ...[
+                SectionTitle(
+                  'Level $level · ${ProgramScreen.levelNames[level]}',
+                ),
+                for (final e in ExerciseCatalog.forLevel(level)) ...[
+                  RohabCard(
+                    key: rowKey(e.id),
+                    onTap: () => context.go(Routes.cameraExercise(e.id)),
+                    minHeight: RohabSize.touchTarget * 1.5,
+                    child: Row(
+                      children: [
+                        IconBadge(exerciseIcon(e.kind)),
+                        const SizedBox(width: RohabSpace.s16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(e.title, style: t.labelLarge),
+                              const SizedBox(height: RohabSpace.s8 / 2),
+                              Text(e.description,
+                                  style: t.labelMedium
+                                      ?.copyWith(color: c.text)),
+                              if (e.target != null) ...[
                                 const SizedBox(height: RohabSpace.s8),
-                                Text(e.description,
-                                    style: t.labelMedium
-                                        ?.copyWith(color: c.text)),
+                                InfoChip(e.target!,
+                                    icon: Icons.repeat),
                               ],
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: RohabSpace.s16),
-                          Text('Level ${e.level}', style: t.bodyLarge),
-                        ],
-                      ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            size: RohabSize.icon, color: c.secondary),
+                      ],
                     ),
                   ),
-                ),
-                const Divider(),
+                  const SizedBox(height: RohabSpace.s16),
+                ],
               ],
             ],
           ),

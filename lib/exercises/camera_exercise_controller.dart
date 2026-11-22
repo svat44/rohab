@@ -111,6 +111,9 @@ class CameraExerciseController extends ChangeNotifier {
   static const handCheckTime = Duration(seconds: 1);
   static const presenceGap = Duration(milliseconds: 300);
   static const lostAfter = Duration(seconds: 2);
+
+  /// No hand this long on the hand check: show tips instead of waiting.
+  static const handCheckHelpAfter = Duration(seconds: 6);
   static const calibratePhaseTime = Duration(seconds: 3);
   static const calibrateSettle = Duration(milliseconds: 500);
 
@@ -149,6 +152,11 @@ class CameraExerciseController extends ChangeNotifier {
 
   /// The hand has been out of view for over 2 s; counting is paused.
   bool handLost = false;
+
+  /// On the hand check: still no hand after [handCheckHelpAfter], so the
+  /// screen explains what to try (distance, light, whole hand in view).
+  bool needsHandHelp = false;
+  Duration _handCheckStart = Duration.zero;
   String? errorMessage;
   DoneSummary? summary;
 
@@ -255,6 +263,8 @@ class CameraExerciseController extends ChangeNotifier {
     _ticker ??= Timer.periodic(tick, (_) => _onTick());
     _lastSeen = null;
     _presentSince = null;
+    needsHandHelp = false;
+    _handCheckStart = _now;
     _go(FlowStep.handCheck);
   }
 
@@ -300,12 +310,15 @@ class CameraExerciseController extends ChangeNotifier {
     }
 
     final unit = exercise.usesSpread ? '%' : 'deg';
+    // Finger-bend range means nothing when the wrist or the whole hand is
+    // what moves: report no range at all.
+    final reportRange = exercise.reportsRange && reps > 0;
     summary = DoneSummary(
       reps: reps,
       target: setSize,
       completed: completed,
-      rangeMin: _rangeMin,
-      rangeMax: _rangeMax,
+      rangeMin: reportRange ? _rangeMin : null,
+      rangeMax: reportRange ? _rangeMax : null,
       unit: unit,
       avgAmplitude: avg((r) => r.amplitude),
       avgPeakSpeed: avg((r) => r.peakSpeed),
@@ -322,8 +335,8 @@ class CameraExerciseController extends ChangeNotifier {
         mode: 'camera',
         reps: reps,
         targetReps: setSize,
-        rangeMin: _rangeMin,
-        rangeMax: _rangeMax,
+        rangeMin: s.rangeMin,
+        rangeMax: s.rangeMax,
         metricUnit: s.unit,
         avgAmplitude: s.avgAmplitude,
         avgPeakSpeed: s.avgPeakSpeed,
@@ -379,10 +392,11 @@ class CameraExerciseController extends ChangeNotifier {
         }
         _wrist.update(lm);
         final counted = _counter!.update(
-            HandSample(points: lm, angles: angles, percent: p),
+            HandSample(
+                points: lm, angles: angles, percent: p, image: frame.points),
             frame.timestamp);
         hint = _counter!.hint;
-        if (counted && _wrist.moved) {
+        if (counted && _wrist.moved && !exercise.movesWrist) {
           // Made by bending the wrist (tenodesis), not the fingers.
           _recorder.close();
           compensatedReps++;
@@ -421,6 +435,11 @@ class CameraExerciseController extends ChangeNotifier {
 
     switch (step) {
       case FlowStep.handCheck:
+        final help = !seen && _now - _handCheckStart >= handCheckHelpAfter;
+        if (help != needsHandHelp) {
+          needsHandHelp = help;
+          notifyListeners();
+        }
         if (!seen) {
           _presentSince = null;
         } else {

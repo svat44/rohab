@@ -108,6 +108,39 @@ class HandMetrics {
   static double thumbTo(List<Point3> lm, int fingertip) =>
       normalizedDistance(lm, HandIndex.thumbTip, fingertip);
 
+  /// Which way the palm faces along the camera axis: about +1 or -1 when
+  /// it faces the camera or away from it, 0 when edge-on. Flips sign when
+  /// the hand turns over. Which sign is "palm toward camera" depends on the
+  /// hand, so callers compare against where they started.
+  static double palmFacing(List<Point3> lm) {
+    _check(lm);
+    final n = _cross(lm[HandIndex.indexMcp] - lm[HandIndex.wrist],
+        lm[HandIndex.pinkyMcp] - lm[HandIndex.wrist]);
+    final l = n.length;
+    return l == 0 ? 0 : n.z / l;
+  }
+
+  /// Height of each fingertip (index to pinky) above the palm's plane, in
+  /// palm widths, positive on the side the palm normal points to.
+  static List<double> palmHeights(List<Point3> lm) {
+    _check(lm);
+    final wrist = lm[HandIndex.wrist];
+    final n = _cross(lm[HandIndex.indexMcp] - wrist, lm[HandIndex.pinkyMcp] - wrist);
+    final l = n.length;
+    final palm = palmWidth(lm);
+    if (l == 0 || palm == 0) return const [0, 0, 0, 0];
+    return [
+      for (final tip in HandIndex.fingertips)
+        (lm[tip] - wrist).dot(n) / l / palm,
+    ];
+  }
+
+  static Point3 _cross(Point3 a, Point3 b) => Point3(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x,
+      );
+
   /// Maps [raw] into 0-100 % of the user's calibrated range.
   static double percentOfRange(double raw, double min, double max) {
     final span = max - min;

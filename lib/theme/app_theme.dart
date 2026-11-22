@@ -21,6 +21,7 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get accentSoft => palette.accentSoft;
   Color get danger => palette.danger;
   Color get onDanger => palette.onDanger;
+  Color get shadow => palette.shadow;
 
   @override
   AppColors copyWith() => this;
@@ -117,6 +118,30 @@ ThemeData buildTheme(Brightness brightness) {
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(RohabShape.radius)),
       ),
+    ),
+    cardTheme: CardThemeData(
+      color: p.surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(RohabShape.card),
+        side: BorderSide(color: p.divider),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: p.accent,
+        minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
+        side: BorderSide(color: p.accent, width: RohabShape.strongBorder),
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        textStyle: text.labelLarge,
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStatePropertyAll(p.surface),
+      trackColor: WidgetStateProperty.resolveWith((s) =>
+          s.contains(WidgetState.selected) ? p.accent : p.secondary),
+      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

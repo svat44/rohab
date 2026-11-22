@@ -91,7 +91,7 @@ class _Preview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final radius = BorderRadius.circular(RohabShape.radius);
+    final radius = BorderRadius.circular(RohabShape.card);
     final aspect = tracker?.previewAspect ?? 3 / 4;
     return Semantics(
       label: 'Camera view',
@@ -100,7 +100,7 @@ class _Preview extends StatelessWidget {
           aspectRatio: aspect,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: c.divider, width: RohabShape.border),
+              border: Border.all(color: c.accent, width: RohabShape.strongBorder),
               borderRadius: radius,
             ),
             child: ClipRRect(

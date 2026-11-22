@@ -80,18 +80,22 @@ void main() {
   });
 
   group('daily plan', () {
-    test('level 1 plans both level-1 exercises', () {
+    test('level 1 plans three level-1 exercises, rotating by day', () {
       final p = DailyPlan.build(
-          level: 1, goal: 100, settings: s, dayNumber: 0, doneById: {});
+          level: 1, goal: 90, settings: s, dayNumber: 0, doneById: {});
       expect(p.items.map((i) => i.exercise.level).toSet(), {1});
-      expect(p.items, hasLength(2));
+      expect(p.items, hasLength(3));
       // Holds use half-size sets and count double toward the goal.
       final hold = p.items.firstWhere((i) => i.exercise.id == 'hold_open');
       expect(hold.setSize, 5);
-      expect(p.plannedTotal, 100);
+      expect(p.plannedTotal, 90);
+      final next = DailyPlan.build(
+          level: 1, goal: 90, settings: s, dayNumber: 1, doneById: {});
+      expect(next.items.map((i) => i.exercise.id),
+          isNot(equals(p.items.map((i) => i.exercise.id))));
     });
 
-    test('level 2 rotates three of four exercises by day', () {
+    test('level 2 rotates three of its exercises by day', () {
       final a = DailyPlan.build(
           level: 2, goal: 90, settings: s, dayNumber: 0, doneById: {});
       final b = DailyPlan.build(

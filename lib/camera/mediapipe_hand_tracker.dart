@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mediapipe_vision/mediapipe_vision.dart';
 
 import '../exercises/hand_metrics.dart';
+import 'frame_geometry.dart';
 import 'hand_tracker.dart';
 
 /// Front camera + Google's MediaPipe Hand Landmarker (package
@@ -25,8 +26,8 @@ class MediaPipeHandTracker implements HandTracker {
   HandLandmarker? _landmarker;
   StreamSubscription<HandLandmarkerResult>? _results;
   int _lastTimestamp = -1;
-  int _rotation = 0;
-  double _aspect = 1;
+  int _sensorOrientation = 0;
+  FrameGeometry? _geometry;
 
   // Stats: results per second, measured over 1 s windows.
   int _windowStart = 0;
@@ -90,10 +91,7 @@ class MediaPipeHandTracker implements HandTracker {
           'The camera could not start. Close other apps that use it and try again.');
     }
     _camera = camera;
-    // Portrait app: rotate sensor frames upright.
-    // TODO(device): confirm on a real iPhone and Android phone that
-    // fingertips come out above the wrist with this rotation.
-    _rotation = front.sensorOrientation;
+    _sensorOrientation = front.sensorOrientation;
     _clock
       ..reset()
       ..start();
@@ -105,13 +103,19 @@ class MediaPipeHandTracker implements HandTracker {
     if (landmarker == null) return;
     final now = _clock.elapsedMilliseconds;
     _lastTimestamp = now > _lastTimestamp ? now : _lastTimestamp + 1;
-    final rotated = _rotation % 180 != 0;
-    _aspect = rotated ? image.height / image.width : image.width / image.height;
+    // iOS frames arrive upright and mirrored, Android frames raw; see
+    // FrameGeometry. Worked out per frame so a rotated buffer is caught.
+    final geometry = _geometry = FrameGeometry.forFrame(
+      isIOS: Platform.isIOS,
+      sensorOrientation: _sensorOrientation,
+      width: image.width,
+      height: image.height,
+    );
     try {
       landmarker.detectAsync(
         VisionImage.deferred(() => _toVisionImage(image)),
         timestampMilliseconds: _lastTimestamp,
-        rotationDegrees: _rotation,
+        rotationDegrees: geometry.rotationDegrees,
       );
     } on Object {
       // A frame MediaPipe rejects is skipped; the next one is tried.
@@ -151,14 +155,18 @@ class MediaPipeHandTracker implements HandTracker {
     final world = result.handWorldLandmarks.isEmpty
         ? null
         : result.handWorldLandmarks.first;
+    final geometry = _geometry;
+    if (geometry == null) return;
     final category =
         result.handedness.isEmpty ? null : result.handedness.first.firstOrNull;
     _frames.add(HandFrame(
       landmarks: [for (final p in hand) Point3(p.x, p.y, p.z)],
-      handedness: _userHand(category?.categoryName),
+      handedness:
+          _userHand(category?.categoryName, geometry.alreadyMirrored),
       confidence: category?.score ?? 0,
       timestamp: Duration(milliseconds: result.timestampMilliseconds ?? now),
-      aspectRatio: _aspect,
+      aspectRatio: geometry.aspect,
+      mirrored: geometry.alreadyMirrored,
       worldLandmarks:
           world == null ? null : [for (final p in world) Point3(p.x, p.y, p.z)],
     ));
@@ -168,14 +176,20 @@ class MediaPipeHandTracker implements HandTracker {
   /// mirrored, which camera frames are not (only the preview is). Checked
   /// on MediaPipe's sample photos with tools/camera-test: with these labels
   /// both hands read a fist as positive flexion.
-  static Handedness _userHand(String? label) => switch (label) {
-        'Left' => Handedness.left,
-        'Right' => Handedness.right,
+  ///
+  /// A mirrored frame (iOS front camera) swaps the two labels.
+  static Handedness _userHand(String? label, bool mirrored) => switch (label) {
+        'Left' => mirrored ? Handedness.right : Handedness.left,
+        'Right' => mirrored ? Handedness.left : Handedness.right,
         _ => Handedness.unknown,
       };
 
   @override
   double? get previewAspect {
+    // Once frames flow, size the view by the analysed image itself so the
+    // drawn hand cannot drift from it when preview and analysis differ.
+    final g = _geometry;
+    if (g != null) return g.aspect;
     final size = _camera?.value.previewSize;
     if (size == null || size.height == 0) return null;
     // previewSize is landscape; the app is portrait.

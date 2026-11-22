@@ -49,6 +49,7 @@ lib/
     ble_protocol.dart             Placeholder UUIDs and opcodes from the spec
   camera/
     hand_tracker.dart             HandTracker interface and HandFrame
+    frame_geometry.dart           Pure Dart: per-platform frame rotation, mirroring and aspect
     mediapipe_hand_tracker.dart   Front camera + MediaPipe, live-stream mode
     mock_hand_tracker.dart        Scripted hand for tests and the web preview
     camera_permission.dart        Camera permission behind an interface
@@ -57,7 +58,7 @@ lib/
     movement_quality.dart         One Euro filter, SPARC smoothness, per-rep stats, fatigue
     hand_metrics.dart             Pure Dart: palm-normalized distances, spread, ranges
     rep_counter.dart              Hysteresis reps and finger-touch rounds
-    exercise_catalog.dart         The three camera exercises
+    exercise_catalog.dart         The 17 camera exercises, in three levels
     camera_exercise_controller.dart  Steps, timing, counting, saving
     exercise_providers.dart       Tracker, permission, database, session ranges
   data/
@@ -77,6 +78,7 @@ lib/
   widgets/
     app_shell.dart                STOP banner + wordmark + title + page + bottom nav
     safety_banner.dart            Connection status and STOP
+    rohab_widgets.dart            RohabCard, IconBadge, InfoChip, SectionTitle, exercise icons
     level_bar.dart                Flat 0-100 % bar with markers (openness, EMG, later glove)
     effort_bar.dart               Live EMG bar built on LevelBar
     countdown_number.dart         Large plain countdown
@@ -113,10 +115,22 @@ Built from `docs/rehab-science.md`:
 1. **Measure hands** (`lib/program/baseline*.dart`): open and close each
    hand twice; finger bend in degrees, affected hand against the other.
    Sets the level and is suggested again after 7 days.
-2. **Levels** (`lib/exercises/exercise_catalog.dart`): 1 opening the hand
-   (gentle open/close, hold open); 2 everyday grips (open/close, cup grip,
-   hook grip, pinch); 3 single fingers (finger touches, one finger at a
-   time, spread).
+2. **Levels** (`lib/exercises/exercise_catalog.dart`). The exercises are the
+   standard no-equipment hand exercises therapists give after stroke, plus
+   graded grasps:
+   - 1, opening and stretching: open and close gently, open wide and hold
+     (3 s), hand squeezes (5 s), thumb extension (5 s), wrist stretch,
+     finger stretch with the other hand's help (5 s).
+   - 2, everyday grips and forearm: open and close, cup grip, hook grip,
+     pinch, wrist rotation (palm up and back), hand slide.
+   - 3, single fingers: finger tapping / thumb opposition, one finger at a
+     time, spread fingers, tabletop finger lift, finger walking.
+
+   Each counter is pure Dart in `exercise_counters.dart` and tested in
+   `test/therapist_exercises_test.dart` with a synthetic hand. The camera
+   only sees the hand, so the finger stretch (the other hand does the work)
+   is counted as a held, straight hand, and the wrist exercises turn off the
+   "wrist moved" rule and the finger-range readout.
 3. **Daily plan** (`lib/program/daily_plan.dart`): a rep goal (starts at
    100, max 300) split into sets with rest; exercises rotate by day. The
    goal rises 10 % after a full day without fatigue or more pain, and drops
@@ -127,6 +141,19 @@ Built from `docs/rehab-science.md`:
    rest; a rise of 2 or more lowers the next goal.
 6. **Therapist plan** (Settings, 4-digit PIN): level override, goals, set
    size, rest, pain limits, automatic progression.
+
+## Camera orientation (why the hand was drawn off the real hand)
+
+The `camera` plugin delivers frames differently per platform, read from its
+sources (see `lib/camera/frame_geometry.dart`): on **iOS** the front-camera
+frames arrive already upright and already mirrored, on **Android** they are
+the raw, unmirrored sensor buffer. Rotating iOS frames by the sensor angle,
+and flipping x again when drawing, made MediaPipe see a sideways hand
+(tracking almost never started) and drew the skeleton mirrored. The tracker
+now rotates and mirrors per platform, labels the hand accordingly, sizes the
+camera view by the analysed image, and the app is locked to portrait
+(`main.dart`, Info.plist, AndroidManifest). Not yet confirmed on a physical
+phone; checking it is step 3 of "Testing camera exercises on a phone".
 
 ## Hand tracking test page
 
@@ -151,7 +178,9 @@ dropped frames in the top-left corner.
 3. Check: the hand check passes within a couple of seconds; fps stays at 15
    or more; reps count once per open-close; covering the camera for 3 s shows
    "Hold your hand inside the frame." and no rep is counted.
-4. Repeat with the other hand, then try Finger touches and Spread fingers.
+4. Move the hand to the left of the frame: the drawn skeleton must stay on
+   the hand, on the same side (this is the mirroring check). Repeat with the
+   other hand, then try Finger tapping and Spread fingers.
 5. Note fps, dropped frames, any missed or extra reps, and the phone model.
 
 ## Camera test protocol (debug builds, on a phone)

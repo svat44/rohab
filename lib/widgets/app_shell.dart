@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app/providers.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
+import 'rohab_widgets.dart';
 import 'bottom_nav.dart';
 import 'immersive.dart';
 import '../debug/debug_menu.dart';
@@ -134,9 +135,17 @@ class _Header extends ConsumerWidget {
                       ? () => showDebugMenu(context,
                           mockGlove: glove is MockGloveService ? glove : null)
                       : null,
-                  child: Text(
-                    RohabTokens.name,
-                    style: t.labelLarge,
+                  child: Row(
+                    children: [
+                      const IconBadge(Icons.back_hand_outlined,
+                          size: 40, solid: true),
+                      const SizedBox(width: RohabSpace.s8 + 4),
+                      Text(
+                        RohabTokens.name,
+                        style: t.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                      ),
+                    ],
                   ),
                 ),
               ),

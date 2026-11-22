@@ -5,8 +5,8 @@ import '../camera/hand_tracker.dart';
 import '../theme/app_theme.dart';
 
 /// Draws the tracked hand (21 landmarks) over the camera, so the person
-/// can see what Rohab sees. Mirrored, because the front-camera preview is
-/// shown as a mirror.
+/// can see what Rohab sees. The front-camera preview is a mirror; see
+/// [HandFrame.mirrored] for how x is mapped onto it.
 class HandOverlay extends StatelessWidget {
   const HandOverlay({super.key, required this.frame});
 
@@ -45,8 +45,13 @@ class _HandPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final f = frame;
     if (f == null || f.landmarks.length < 21) return;
-    Offset at(int i) => Offset(
-        (1 - f.landmarks[i].x) * size.width, f.landmarks[i].y * size.height);
+    // The preview is a mirror. Landmarks from an unmirrored frame need an x
+    // flip to sit on it; landmarks from an already mirrored frame do not.
+    Offset at(int i) {
+      final x = f.landmarks[i].x;
+      return Offset((f.mirrored ? x : 1 - x) * size.width,
+          f.landmarks[i].y * size.height);
+    }
     // A light outline under the line keeps it visible on any background.
     final under = Paint()
       ..color = outline

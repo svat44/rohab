@@ -14,6 +14,7 @@ class HandFrame {
     required this.timestamp,
     this.aspectRatio = 1,
     this.worldLandmarks,
+    this.mirrored = false,
   });
 
   /// Frames below this confidence are ignored.
@@ -36,6 +37,11 @@ class HandFrame {
   /// Image width / height after rotation. Needed because x and y are
   /// normalized separately.
   final double aspectRatio;
+
+  /// The camera frame was already a mirror image when it was analysed (iOS
+  /// front camera), so [landmarks] already sit on the mirrored preview.
+  /// When false (Android), x must be flipped to draw on the preview.
+  final bool mirrored;
 
   /// 21 landmarks in meters, origin near the middle of the hand (MediaPipe
   /// world landmarks). Joint angles come from these: unlike image

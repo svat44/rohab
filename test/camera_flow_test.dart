@@ -535,7 +535,7 @@ void main() {
     });
 
     test('every catalog exercise has a counter', () {
-      expect(ExerciseCatalog.all, hasLength(9));
+      expect(ExerciseCatalog.all, hasLength(17));
     });
   });
 

@@ -22,6 +22,7 @@ import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
 import '../../widgets/level_bar.dart';
 import '../../widgets/photo_slot.dart';
+import '../../widgets/rohab_widgets.dart';
 import 'camera_layout.dart';
 
 /// One camera exercise, steps 1-5: instructions, hand check, range
@@ -145,19 +146,55 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           children: [
             // Steps first so they are visible without scrolling; the photo
             // follows.
-            Text(_setLabel, style: t.labelMedium),
-            const SizedBox(height: RohabSpace.s8),
-            Text(_exercise.title, style: t.headlineMedium),
-            const SizedBox(height: RohabSpace.s16),
-            for (var i = 0; i < _exercise.steps.length; i++)
-              _NumberedStep(number: i + 1, text: _exercise.steps[i]),
-            if (_exercise.object != null) ...[
-              Text('You need: ${_exercise.object}.', style: t.labelLarge),
-              const SizedBox(height: RohabSpace.s8),
+            Row(
+              children: [
+                IconBadge(exerciseIcon(_exercise.kind), size: 64, solid: true),
+                const SizedBox(width: RohabSpace.s16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_setLabel, style: t.labelMedium),
+                      const SizedBox(height: RohabSpace.s8 / 2),
+                      Text(_exercise.title, style: t.headlineMedium),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_exercise.target != null) ...[
+              const SizedBox(height: RohabSpace.s16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InfoChip(_exercise.target!, icon: Icons.repeat),
+              ),
             ],
-            const SizedBox(height: RohabSpace.s24),
+            const SizedBox(height: RohabSpace.s16),
+            RohabCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < _exercise.steps.length; i++)
+                    _NumberedStep(
+                      number: i + 1,
+                      text: _exercise.steps[i],
+                      last: i == _exercise.steps.length - 1,
+                    ),
+                ],
+              ),
+            ),
+            if (_exercise.object != null) ...[
+              const SizedBox(height: RohabSpace.s16),
+              Text('You need: ${_exercise.object}.', style: t.labelLarge),
+            ],
+            const SizedBox(height: RohabSpace.s16),
+            Text(
+              'Take your time. Stop if anything hurts.',
+              style: t.labelMedium,
+            ),
+            const SizedBox(height: RohabSpace.s16),
             PhotoSlot(caption: '${_exercise.title}, right hand shown.'),
-            const SizedBox(height: RohabSpace.s24),
+            const SizedBox(height: RohabSpace.s16),
           ],
         );
 
@@ -218,6 +255,15 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           action: cancel,
           children: [
             _Instruction('Hold your hand inside the frame.'),
+            if (c.needsHandHelp) ...[
+              const SizedBox(height: RohabSpace.s8),
+              Text(
+                'We cannot see your hand yet. Move the phone back a little '
+                'so your whole hand fits, face a light, and keep the '
+                'camera still.',
+                style: t.labelMedium?.copyWith(color: context.colors.text),
+              ),
+            ],
           ],
         );
 
@@ -461,6 +507,9 @@ class _ExerciseReadout extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final c = controller;
     final measure = exercise.usesSpread ? 'Spread' : 'Openness';
+    // The openness bar only makes sense when the fingers are the thing
+    // being trained; wrist and whole-hand exercises show guidance instead.
+    final showBar = exercise.reportsRange;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -490,6 +539,7 @@ class _ExerciseReadout extends StatelessWidget {
         // layout doesn't jump when the hand is lost.
         SizedBox(
           height: RohabType.label * 1.25 + RohabSpace.s8 + LevelBar.barHeight,
+          // (kept the same for every exercise so the layout never jumps)
           child: c.handLost
               ? Align(
                   alignment: Alignment.centerLeft,
@@ -506,18 +556,22 @@ class _ExerciseReadout extends StatelessWidget {
                           ? 'Wrist moved. That one did not count.'
                           : c.suggestRest
                               ? 'Movements are getting smaller. A rest may help.'
-                              : c.hint ?? '$measure ${c.percent.round()}%',
+                              : c.hint ??
+                                  (showBar
+                                      ? '$measure ${c.percent.round()}%'
+                                      : 'Keep going.'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: t.labelMedium
                           ?.copyWith(color: context.colors.text),
                     ),
                     const SizedBox(height: RohabSpace.s8),
-                    LevelBar(
-                      value: c.percent / 100,
-                      semanticsLabel: measure,
-                      semanticsValue: '${c.percent.round()} percent',
-                    ),
+                    if (showBar)
+                      LevelBar(
+                        value: c.percent / 100,
+                        semanticsLabel: measure,
+                        semanticsValue: '${c.percent.round()} percent',
+                      ),
                   ],
                 ),
         ),
@@ -527,23 +581,33 @@ class _ExerciseReadout extends StatelessWidget {
 }
 
 class _NumberedStep extends StatelessWidget {
-  const _NumberedStep({required this.number, required this.text});
+  const _NumberedStep(
+      {required this.number, required this.text, this.last = false});
 
   final int number;
   final String text;
+  final bool last;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final c = context.colors;
     return Padding(
-      padding: const EdgeInsets.only(bottom: RohabSpace.s16),
+      padding: EdgeInsets.only(bottom: last ? 0 : RohabSpace.s16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
+          Container(
             width: RohabSpace.s32,
-            child: Text('$number.', style: t.labelLarge),
+            height: RohabSpace.s32,
+            alignment: Alignment.center,
+            decoration:
+                BoxDecoration(color: c.accentSoft, shape: BoxShape.circle),
+            child: Text('$number',
+                style: t.labelMedium
+                    ?.copyWith(color: c.accent, fontWeight: FontWeight.w700)),
           ),
+          const SizedBox(width: RohabSpace.s16),
           Expanded(child: Text(text, style: t.bodyLarge)),
         ],
       ),
@@ -627,8 +691,24 @@ String _zeroRepAdvice(CameraExercise e) {
     ExerciseKind.fingerLifts =>
       'Straighten one finger at a time while the others stay bent, index '
           'first. $common',
-    ExerciseKind.holdOpen || ExerciseKind.cylinder || ExerciseKind.hook =>
+    ExerciseKind.holdOpen ||
+    ExerciseKind.cylinder ||
+    ExerciseKind.hook ||
+    ExerciseKind.squeeze ||
+    ExerciseKind.thumbExtension ||
+    ExerciseKind.assistedExtension =>
       'Hold the position until the screen says to let go. $common',
+    ExerciseKind.wristStretch =>
+      'Keep your forearm still and bend only your wrist, then back to '
+          'straight. $common',
+    ExerciseKind.wristRotation =>
+      'Turn your palm all the way over, then all the way back. $common',
+    ExerciseKind.handSlide =>
+      'Slide your hand a hand-width forward, then back to where it '
+          'started. $common',
+    ExerciseKind.flatFingerLifts || ExerciseKind.fingerWalking =>
+      'Lift one finger clearly off the table at a time, index first, '
+          'and lower it before the next. $common',
     _ => 'Open and close slowly and fully. $common',
   };
 }

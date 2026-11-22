@@ -8,6 +8,7 @@ import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/level_bar.dart';
+import '../../widgets/rohab_widgets.dart';
 
 /// Today's camera practice: level, rep goal, the planned exercises in sets,
 /// and the next step.
@@ -121,20 +122,39 @@ class _Today extends StatelessWidget {
       top: back,
       primary: primary,
       children: [
-        Text('Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
-            style: t.labelMedium),
-        const SizedBox(height: RohabSpace.s8),
-        Semantics(
-          label: '${plan.setsDoneTotal} of ${plan.setsTotal} sets done today',
-          excludeSemantics: true,
-          child: Text('${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
-              style: t.headlineMedium),
-        ),
-        const SizedBox(height: RohabSpace.s16),
-        LevelBar(
-          value: plan.setsTotal == 0 ? 0 : plan.setsDoneTotal / plan.setsTotal,
-          semanticsLabel: 'Sets today',
-          semanticsValue: '${plan.setsDoneTotal} of ${plan.setsTotal}',
+        RohabCard(
+          tint: true,
+          padding: const EdgeInsets.all(RohabSpace.s24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InfoChip(
+                  'Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
+                  icon: Icons.stairs_outlined,
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: RohabSpace.s16),
+              Semantics(
+                label:
+                    '${plan.setsDoneTotal} of ${plan.setsTotal} sets done today',
+                excludeSemantics: true,
+                child: Text(
+                    '${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
+                    style: t.headlineMedium),
+              ),
+              const SizedBox(height: RohabSpace.s16),
+              LevelBar(
+                value: plan.setsTotal == 0
+                    ? 0
+                    : plan.setsDoneTotal / plan.setsTotal,
+                semanticsLabel: 'Sets today',
+                semanticsValue: '${plan.setsDoneTotal} of ${plan.setsTotal}',
+              ),
+            ],
+          ),
         ),
         if (painHigh) ...[
           const SizedBox(height: RohabSpace.s16),
@@ -152,13 +172,11 @@ class _Today extends StatelessWidget {
             style: t.bodyLarge,
           ),
         ],
-        const SizedBox(height: RohabSpace.s24),
-        const Divider(),
+        const SectionTitle("Today's exercises"),
         for (final item in plan.items) ...[
           _PlanRow(item: item, isNext: identical(item, next)),
-          const Divider(),
+          const SizedBox(height: RohabSpace.s16),
         ],
-        const SizedBox(height: RohabSpace.s8),
         if (o.recheckDue)
           _InlineAction(
             key: ProgramScreen.measureKey,
@@ -205,35 +223,31 @@ class _PlanRow extends StatelessWidget {
     return Semantics(
       label: '${item.exercise.title}. $status.${isNext ? ' Next.' : ''}',
       excludeSemantics: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: RohabSpace.s8),
-          child: Row(
-            children: [
-              SizedBox(
-                width: RohabSpace.s32,
-                child: item.complete
-                    ? Icon(Icons.check, color: c.accent, size: RohabSize.icon)
-                    : null,
+      child: RohabCard(
+        minHeight: RohabSize.touchTarget,
+        child: Row(
+          children: [
+            IconBadge(
+              item.complete ? Icons.check : exerciseIcon(item.exercise.kind),
+              solid: item.complete || isNext,
+            ),
+            const SizedBox(width: RohabSpace.s16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.exercise.title,
+                      style: isNext
+                          ? t.labelLarge
+                          : t.bodyLarge?.copyWith(
+                              color: item.complete ? c.secondary : c.text)),
+                  const SizedBox(height: RohabSpace.s8 / 2),
+                  Text(status, style: t.labelMedium),
+                ],
               ),
-              const SizedBox(width: RohabSpace.s8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.exercise.title,
-                        style: isNext
-                            ? t.labelLarge
-                            : t.bodyLarge?.copyWith(
-                                color: item.complete ? c.secondary : c.text)),
-                    const SizedBox(height: RohabSpace.s8 / 2),
-                    Text(status, style: t.labelMedium),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            if (isNext) const InfoChip('Next', filled: true),
+          ],
         ),
       ),
     );

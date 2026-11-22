@@ -25,6 +25,7 @@ class RohabPalette {
     required this.accentSoft,
     required this.danger,
     required this.onDanger,
+    required this.shadow,
   });
 
   final Color background;
@@ -40,33 +41,40 @@ class RohabPalette {
   final Color danger;
   final Color onDanger;
 
+  /// Soft card shadow.
+  final Color shadow;
+
+  /// Calm clinical palette: a cool mist background, white cards, deep teal
+  /// for the one accent, slate text. Contrast (WCAG): text on background
+  /// 14:1, secondary on background 6.3:1, white on accent 6.1:1.
   static const light = RohabPalette(
-    background: Color(0xFFFAFAF9),
+    background: Color(0xFFF2F7F7),
     surface: Color(0xFFFFFFFF),
-    text: Color(0xFF1C1C1E),
-    secondary: Color(0xFF6B7280),
-    divider: Color(0xFFE5E7EB),
-    accent: Color(0xFF0F766E),
+    text: Color(0xFF10262B),
+    secondary: Color(0xFF465A62),
+    divider: Color(0xFFD3E1E2),
+    accent: Color(0xFF0B6E6A),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFCCE7E4),
+    accentSoft: Color(0xFFDDF0EE),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
+    shadow: Color(0x1A0B3B3A),
   );
 
-  /// Background, surface, text and accent are from the brand spec. Secondary,
-  /// divider, accent-soft and on-accent were filled in for contrast (white on
-  /// #2DD4BF is about 1.9:1, so buttons use dark text).
+  /// Dark twin. Accent keeps dark text on it (white on #2DD4BF is about
+  /// 1.9:1).
   static const dark = RohabPalette(
-    background: Color(0xFF111312),
-    surface: Color(0xFF1A1D1C),
-    text: Color(0xFFF3F4F3),
-    secondary: Color(0xFF9CA3AF),
-    divider: Color(0xFF2A2E2D),
+    background: Color(0xFF0D1517),
+    surface: Color(0xFF162124),
+    text: Color(0xFFEAF3F3),
+    secondary: Color(0xFFA3B7BB),
+    divider: Color(0xFF283B3E),
     accent: Color(0xFF2DD4BF),
-    onAccent: Color(0xFF0B1F1D),
-    accentSoft: Color(0xFF134E4A),
+    onAccent: Color(0xFF062321),
+    accentSoft: Color(0xFF12413F),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
+    shadow: Color(0x66000000),
   );
 }
 
@@ -91,7 +99,10 @@ class RohabSpace {
 
 class RohabShape {
   RohabShape._();
-  static const double radius = 12;
+  static const double radius = 16;
+
+  /// Cards and hero panels.
+  static const double card = 24;
   static const double border = 1;
 
   /// Marker lines and the camera's hand frame.

@@ -35,7 +35,7 @@ class BottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: RohabSize.touchTarget + RohabSpace.s16,
+          height: RohabSize.touchTarget + RohabSpace.s16 + 4,
           child: Row(
             children: [
               for (var i = 0; i < destinations.length; i++)
@@ -48,10 +48,24 @@ class BottomNav extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            destinations[i].icon,
-                            size: RohabSize.icon,
-                            color: i == selectedIndex ? c.accent : c.secondary,
+                          // Active tab sits in a soft pill, so it is not
+                          // told apart by color alone.
+                          AnimatedContainer(
+                            duration: RohabMotion.max,
+                            width: 64,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: i == selectedIndex
+                                  ? c.accentSoft
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              destinations[i].icon,
+                              size: RohabSize.icon,
+                              color:
+                                  i == selectedIndex ? c.accent : c.secondary,
+                            ),
                           ),
                           const SizedBox(height: RohabSpace.s8 / 2),
                           // Shrinks (never below 16sp at the default size)

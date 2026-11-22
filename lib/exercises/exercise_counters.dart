@@ -3,6 +3,8 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show protected;
+
 import 'exercise_catalog.dart';
 import 'hand_metrics.dart';
 import 'joint_angles.dart';
@@ -14,10 +16,16 @@ class HandSample {
     required this.points,
     required this.angles,
     required this.percent,
+    this.image,
   });
 
   /// Landmarks used for distances (world landmarks when available).
   final List<Point3> points;
+
+  /// Image-space landmarks with x and y on the same scale: where the hand
+  /// is in the picture. Needed by exercises that move the whole hand (hand
+  /// slide). World landmarks have no position.
+  final List<Point3>? image;
   final HandAngles angles;
 
   /// Opening (or spread) as 0-100 % of the user's calibrated range.
@@ -81,6 +89,33 @@ abstract class ExerciseCounter {
           ),
         ExerciseKind.fingerTouches => _Touches(FingerTouchCounter()),
         ExerciseKind.fingerLifts => FingerLiftCounter(),
+        ExerciseKind.squeeze => PostureCycleCounter(
+            inTarget: (s) => s.percent <= 30,
+            released: (s) => s.percent >= 55,
+            hold: const Duration(seconds: 5),
+            holdHint: 'Keep squeezing.',
+            releaseHint: 'Relax and open your hand.',
+          ),
+        ExerciseKind.assistedExtension => PostureCycleCounter(
+            inTarget: (s) => s.percent >= 60,
+            released: (s) => s.percent <= 40,
+            hold: const Duration(seconds: 5),
+            holdHint: 'Hold the stretch.',
+            releaseHint: 'Let go and relax your hand.',
+          ),
+        ExerciseKind.thumbExtension => PostureCycleCounter(
+            inTarget: (s) => s.angles.thumbAbduction >= 35,
+            released: (s) => s.angles.thumbAbduction <= 22,
+            hold: const Duration(seconds: 5),
+            holdHint: 'Hold your thumb out.',
+            releaseHint: 'Relax your thumb.',
+          ),
+        ExerciseKind.wristStretch => WristBendCounter(),
+        ExerciseKind.wristRotation => PalmRotationCounter(),
+        ExerciseKind.handSlide => SlideCounter(),
+        ExerciseKind.flatFingerLifts => FlatFingerLiftCounter(),
+        ExerciseKind.fingerWalking =>
+          FlatFingerLiftCounter(order: FlatFingerLiftCounter.walkingOrder),
       };
 
   /// Hook grip: knuckles (MCP) mostly straight, finger joints (PIP) bent.
@@ -194,10 +229,15 @@ class FingerLiftCounter extends ExerciseCounter {
   FingerLiftCounter({
     this.margin = 60,
     this.hold = const Duration(milliseconds: 400),
+    this.order = const [0, 1, 2, 3],
   });
 
   final double margin;
   final Duration hold;
+
+  /// Fingers in the order they must be lifted (0 index ... 3 little). A
+  /// round is one pass through the whole list.
+  final List<int> order;
 
   int _rounds = 0;
   int _next = 0;
@@ -211,9 +251,12 @@ class FingerLiftCounter extends ExerciseCounter {
   int get count => _rounds;
 
   @override
-  String get hint => 'Next: ${names[_next]} finger';
+  String get hint => 'Next: ${names[order[_next]]} finger';
 
-  int? _lifted(HandSample s) {
+  /// Which finger (0 index ... 3 little) is lifted right now, if any.
+  /// Here: bent at least [margin] degrees less than the other three.
+  @protected
+  int? liftedFinger(HandSample s) {
     final totals = [for (final f in s.angles.fingers) f.total];
     int? best;
     var bestGap = margin;
@@ -230,8 +273,8 @@ class FingerLiftCounter extends ExerciseCounter {
 
   @override
   bool update(HandSample s, Duration t) {
-    final lifted = _lifted(s);
-    if (lifted == null) _registered = null; // all bent again: re-arm
+    final lifted = liftedFinger(s);
+    if (lifted == null) _registered = null; // all down again: re-arm
     if (lifted != _candidate) {
       _candidate = lifted;
       _since = lifted == null ? null : t;
@@ -241,15 +284,15 @@ class FingerLiftCounter extends ExerciseCounter {
       return false;
     }
     _registered = lifted;
-    if (lifted == _next) {
+    if (lifted == order[_next]) {
       _next++;
-      if (_next == 4) {
+      if (_next == order.length) {
         _next = 0;
         _rounds++;
         return true;
       }
     } else {
-      _next = lifted == 0 ? 1 : 0;
+      _next = lifted == order[0] ? 1 : 0;
     }
     return false;
   }
@@ -260,6 +303,199 @@ class FingerLiftCounter extends ExerciseCounter {
     _candidate = null;
     _since = null;
     _registered = null;
+  }
+}
+
+/// Tabletop finger lift and finger walking: the hand rests flat and one
+/// finger at a time rises off the surface. A finger counts as lifted when
+/// its tip is at least [margin] palm widths further from the palm's plane
+/// than the average of the other three tips. Works from any camera angle,
+/// since it measures against the hand itself.
+class FlatFingerLiftCounter extends FingerLiftCounter {
+  FlatFingerLiftCounter({
+    this.liftMargin = 0.35,
+    super.hold = const Duration(milliseconds: 300),
+    super.order,
+  }) : super(margin: 0);
+
+  /// Index, middle, ring, little, then back: ring, middle, index.
+  static const walkingOrder = [0, 1, 2, 3, 2, 1, 0];
+
+  final double liftMargin;
+
+  @override
+  int? liftedFinger(HandSample s) {
+    final h = HandMetrics.palmHeights(s.points);
+    int? best;
+    var bestGap = liftMargin;
+    for (var i = 0; i < 4; i++) {
+      final others = [for (var j = 0; j < 4; j++) if (j != i) h[j]];
+      final gap = (h[i] - others.reduce((a, b) => a + b) / 3).abs();
+      if (gap >= bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    }
+    return best;
+  }
+}
+
+/// Wrist stretch: the hand tilts at the wrist [out] degrees or more from
+/// where it started, then comes back within [back] degrees. One rep each
+/// time, whichever direction it bent.
+class WristBendCounter extends ExerciseCounter {
+  WristBendCounter({this.out = 20, this.back = 10});
+
+  final double out;
+  final double back;
+
+  final WristMonitor _monitor = WristMonitor(limitDegrees: 1000);
+  int _count = 0;
+  bool _bent = false;
+  String? _hint = 'Hold your wrist straight to start.';
+
+  @override
+  int get count => _count;
+
+  @override
+  String? get hint => _hint;
+
+  @override
+  bool update(HandSample s, Duration t) {
+    _monitor.update(s.points);
+    if (!_monitor.hasReference) return false;
+    final d = _monitor.deviation;
+    if (!_bent) {
+      _hint = 'Gently bend your wrist.';
+      if (d >= out) {
+        _bent = true;
+        _hint = 'Now bring it back to straight.';
+      }
+      return false;
+    }
+    if (d <= back) {
+      _bent = false;
+      _count++;
+      _hint = 'Gently bend your wrist.';
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  void resetCycle() {
+    _bent = false;
+    _monitor.reset();
+    _hint = 'Hold your wrist straight to start.';
+  }
+}
+
+/// Wrist rotation: the palm turns to face the other way (more than
+/// [turned] of the way round) and then back. The starting side is whatever
+/// the palm faces when the set starts, so it works palm down or palm up.
+class PalmRotationCounter extends ExerciseCounter {
+  PalmRotationCounter({this.start = 0.6, this.turned = 0.5});
+
+  final double start;
+  final double turned;
+
+  int _count = 0;
+  double? _side; // +1 or -1: which way the palm faced at the start
+  bool _over = false;
+  String? _hint = 'Hold your hand out, palm facing one way.';
+
+  @override
+  int get count => _count;
+
+  @override
+  String? get hint => _hint;
+
+  @override
+  bool update(HandSample s, Duration t) {
+    final f = HandMetrics.palmFacing(s.points);
+    final side = _side;
+    if (side == null) {
+      if (f.abs() >= start) {
+        _side = f.sign;
+        _hint = 'Slowly turn your palm over.';
+      }
+      return false;
+    }
+    final rel = f * side;
+    if (!_over) {
+      if (rel <= -turned) {
+        _over = true;
+        _hint = 'Now turn it back.';
+      }
+      return false;
+    }
+    if (rel >= turned) {
+      _over = false;
+      _count++;
+      _hint = 'Slowly turn your palm over.';
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  void resetCycle() {
+    _over = false;
+    _side = null;
+    _hint = 'Hold your hand out, palm facing one way.';
+  }
+}
+
+/// Hand slide: the wrist moves [out] palm widths away from where it
+/// started, then back within [back] of it. Distances are in palm widths, so
+/// they do not depend on how far the phone is.
+class SlideCounter extends ExerciseCounter {
+  SlideCounter({this.out = 0.8, this.back = 0.3});
+
+  final double out;
+  final double back;
+
+  int _count = 0;
+  Point3? _home;
+  bool _away = false;
+  String? _hint = 'Rest your hand flat to start.';
+
+  @override
+  int get count => _count;
+
+  @override
+  String? get hint => _hint;
+
+  @override
+  bool update(HandSample s, Duration t) {
+    final pts = s.image ?? s.points;
+    final palm = HandMetrics.palmWidth(pts);
+    if (palm <= 0) return false;
+    final wrist = pts[HandIndex.wrist];
+    final home = _home ??= wrist;
+    final d = wrist.distanceTo(home) / palm;
+    if (!_away) {
+      _hint = 'Slide your hand forward.';
+      if (d >= out) {
+        _away = true;
+        _hint = 'Now slide it back.';
+      }
+      return false;
+    }
+    if (d <= back) {
+      _away = false;
+      _count++;
+      _hint = 'Slide your hand forward.';
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  void resetCycle() {
+    _away = false;
+    _home = null;
+    _hint = 'Rest your hand flat to start.';
   }
 }
 
@@ -285,6 +521,9 @@ class WristMonitor {
   double get deviation => _deviation;
 
   bool get moved => _deviation > limitDegrees;
+
+  /// The starting direction has been recorded.
+  bool get hasReference => _reference != null;
 
   void update(List<Point3> points) {
     final v = points[HandIndex.middleMcp] - points[HandIndex.wrist];
