@@ -48,27 +48,27 @@ class RohabPalette {
   /// for the one accent, slate text. Contrast (WCAG): text on background
   /// 14:1, secondary on background 6.3:1, white on accent 6.1:1.
   static const light = RohabPalette(
-    background: Color(0xFFF2F7F7),
+    background: Color(0xFFF3F4F6),
     surface: Color(0xFFFFFFFF),
-    text: Color(0xFF10262B),
-    secondary: Color(0xFF465A62),
-    divider: Color(0xFFD3E1E2),
+    text: Color(0xFF111418),
+    secondary: Color(0xFF5B6470),
+    divider: Color(0xFFE6E8EB),
     accent: Color(0xFF0B6E6A),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFDDF0EE),
+    accentSoft: Color(0xFFE4F1EF),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x1A0B3B3A),
+    shadow: Color(0x12000000),
   );
 
   /// Dark twin. Accent keeps dark text on it (white on #2DD4BF is about
   /// 1.9:1).
   static const dark = RohabPalette(
-    background: Color(0xFF0D1517),
-    surface: Color(0xFF162124),
-    text: Color(0xFFEAF3F3),
-    secondary: Color(0xFFA3B7BB),
-    divider: Color(0xFF283B3E),
+    background: Color(0xFF0E1012),
+    surface: Color(0xFF181B1F),
+    text: Color(0xFFF2F4F5),
+    secondary: Color(0xFFA0A8B0),
+    divider: Color(0xFF2A2E33),
     accent: Color(0xFF2DD4BF),
     onAccent: Color(0xFF062321),
     accentSoft: Color(0xFF12413F),
@@ -81,8 +81,8 @@ class RohabPalette {
 /// Type scale in sp. Labels never go below [label].
 class RohabType {
   RohabType._();
-  static const double display = 56;
-  static const double title = 28;
+  static const double display = 64;
+  static const double title = 30;
   static const double body = 20;
   static const double label = 16;
 }

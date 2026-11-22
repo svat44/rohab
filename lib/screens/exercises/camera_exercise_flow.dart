@@ -602,10 +602,10 @@ class _NumberedStep extends StatelessWidget {
             height: RohabSpace.s32,
             alignment: Alignment.center,
             decoration:
-                BoxDecoration(color: c.accentSoft, shape: BoxShape.circle),
+                BoxDecoration(color: c.background, shape: BoxShape.circle),
             child: Text('$number',
                 style: t.labelMedium
-                    ?.copyWith(color: c.accent, fontWeight: FontWeight.w700)),
+                    ?.copyWith(color: c.text, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: RohabSpace.s16),
           Expanded(child: Text(text, style: t.bodyLarge)),

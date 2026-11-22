@@ -100,7 +100,7 @@ class _Preview extends StatelessWidget {
           aspectRatio: aspect,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: c.accent, width: RohabShape.strongBorder),
+              border: Border.all(color: c.divider, width: RohabShape.border),
               borderRadius: radius,
             ),
             child: ClipRRect(

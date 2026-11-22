@@ -56,6 +56,7 @@ void main() {
     glove = await pumpRohabOn(tester, db, now: now, prefs: {prefKey: stored!});
     expect(scaleOf(tester), 1.5);
     await openSettings(tester);
+    await reveal(tester, SettingsScreen.textSizeKey(TextSize.largest));
     final button = tester.widget<Material>(find.descendant(
         of: find.byKey(SettingsScreen.textSizeKey(TextSize.largest)),
         matching: find.byType(Material)).first);

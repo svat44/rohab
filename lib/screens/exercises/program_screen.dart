@@ -123,7 +123,6 @@ class _Today extends StatelessWidget {
       primary: primary,
       children: [
         RohabCard(
-          tint: true,
           padding: const EdgeInsets.all(RohabSpace.s24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,7 +132,6 @@ class _Today extends StatelessWidget {
                 child: InfoChip(
                   'Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
                   icon: Icons.stairs_outlined,
-                  filled: true,
                 ),
               ),
               const SizedBox(height: RohabSpace.s16),

@@ -27,72 +27,78 @@ class BottomNav extends StatelessWidget {
     final c = context.colors;
     final label = Theme.of(context).textTheme.labelMedium!;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        border: Border(top: BorderSide(color: c.divider)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: RohabSize.touchTarget + RohabSpace.s16 + 4,
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i++)
-                Expanded(
-                  child: Semantics(
-                    selected: i == selectedIndex,
-                    button: true,
-                    child: InkWell(
-                      onTap: () => onSelected(i),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Active tab sits in a soft pill, so it is not
-                          // told apart by color alone.
-                          AnimatedContainer(
-                            duration: RohabMotion.max,
-                            width: 64,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: i == selectedIndex
-                                  ? c.accentSoft
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              destinations[i].icon,
-                              size: RohabSize.icon,
-                              color:
-                                  i == selectedIndex ? c.accent : c.secondary,
-                            ),
-                          ),
-                          const SizedBox(height: RohabSpace.s8 / 2),
-                          // Shrinks (never below 16sp at the default size)
-                          // rather than running into the next label.
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              destinations[i].label,
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              style: label.copyWith(
+    // Floating white pill; the active tab is a near-black circle, so it
+    // is not told apart by colour alone (it also has a bold label).
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            RohabSpace.s16, RohabSpace.s8, RohabSpace.s16, RohabSpace.s8),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(
+                  color: c.shadow, blurRadius: 24, offset: const Offset(0, 6)),
+            ],
+          ),
+          child: SizedBox(
+            height: RohabSize.touchTarget + RohabSpace.s16,
+            child: Row(
+              children: [
+                for (var i = 0; i < destinations.length; i++)
+                  Expanded(
+                    child: Semantics(
+                      selected: i == selectedIndex,
+                      button: true,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(40),
+                        onTap: () => onSelected(i),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedContainer(
+                              duration: RohabMotion.max,
+                              width: 44,
+                              height: 36,
+                              decoration: BoxDecoration(
                                 color: i == selectedIndex
-                                    ? c.accent
+                                    ? c.text
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Icon(
+                                destinations[i].icon,
+                                size: RohabSize.icon,
+                                color: i == selectedIndex
+                                    ? c.background
                                     : c.secondary,
-                                fontWeight: i == selectedIndex
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
                               ),
                             ),
-                          ),
-                        ],
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                destinations[i].label,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: label.copyWith(
+                                  color: i == selectedIndex
+                                      ? c.text
+                                      : c.secondary,
+                                  fontWeight: i == selectedIndex
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

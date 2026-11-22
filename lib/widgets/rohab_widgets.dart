@@ -31,14 +31,14 @@ class RohabCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [
-          BoxShadow(color: c.shadow, blurRadius: 16, offset: const Offset(0, 4)),
+          BoxShadow(color: c.shadow, blurRadius: 24, offset: const Offset(0, 6)),
         ],
       ),
       child: Material(
         color: tint ? c.accentSoft : c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(color: tint ? c.accentSoft : c.divider),
+          side: BorderSide.none,
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -60,7 +60,7 @@ class IconBadge extends StatelessWidget {
   final IconData icon;
   final double size;
 
-  /// Solid accent with a light icon, instead of the soft tint.
+  /// Near-black circle with a light icon, instead of the quiet gray one.
   final bool solid;
 
   @override
@@ -71,11 +71,11 @@ class IconBadge extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: solid ? c.accent : c.accentSoft,
-          borderRadius: BorderRadius.circular(size * 0.32),
+          color: solid ? c.text : c.background,
+          shape: BoxShape.circle,
         ),
         child: Icon(icon,
-            size: size * 0.52, color: solid ? c.onAccent : c.accent),
+            size: size * 0.48, color: solid ? c.background : c.text),
       ),
     );
   }
@@ -95,11 +95,11 @@ class InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = Theme.of(context).textTheme.labelMedium!;
-    final fg = filled ? c.onAccent : c.accent;
+    final fg = filled ? c.background : c.secondary;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: filled ? c.accent : c.accentSoft,
-        borderRadius: BorderRadius.circular(RohabShape.radius),
+        color: filled ? c.text : c.background,
+        borderRadius: BorderRadius.circular(RohabShape.card),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(

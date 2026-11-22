@@ -52,6 +52,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final size = ref.watch(textSizeProvider);
 
     return ListView(
+      scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
       padding: const EdgeInsets.fromLTRB(
           RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
       children: [

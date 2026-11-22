@@ -51,8 +51,8 @@ ThemeData buildTheme(Brightness brightness) {
     headlineMedium: TextStyle(
       fontSize: RohabType.title,
       height: 1.2,
-      fontWeight: FontWeight.w600,
-      letterSpacing: -0.3,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.6,
       color: p.text,
     ),
     // Single instruction on a calibration step.
@@ -125,15 +125,15 @@ ThemeData buildTheme(Brightness brightness) {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(RohabShape.card),
-        side: BorderSide(color: p.divider),
+        side: BorderSide.none,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: p.accent,
+        foregroundColor: p.text,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-        side: BorderSide(color: p.accent, width: RohabShape.strongBorder),
-        shape: RoundedRectangleBorder(borderRadius: radius),
+        side: BorderSide(color: p.text, width: RohabShape.strongBorder),
+        shape: const StadiumBorder(),
         textStyle: text.labelLarge,
       ),
     ),
@@ -145,13 +145,14 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: p.accent,
-        foregroundColor: p.onAccent,
+        // Near-black pill, like the reference apps; colour stays for data.
+        backgroundColor: p.text,
+        foregroundColor: p.background,
         disabledBackgroundColor: p.divider,
         disabledForegroundColor: p.secondary,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: radius),
+        shape: const StadiumBorder(),
         textStyle: text.labelLarge,
       ),
     ),

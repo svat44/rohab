@@ -116,7 +116,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                   // The reps and what the hand is doing share one hero card.
                   RohabCard(
-                    tint: true,
                     padding: const EdgeInsets.all(RohabSpace.s24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
