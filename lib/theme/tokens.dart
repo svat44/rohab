@@ -102,7 +102,7 @@ class RohabShape {
   static const double radius = 16;
 
   /// Cards and hero panels.
-  static const double card = 24;
+  static const double card = 16;
   static const double border = 1;
 
   /// Marker lines and the camera's hand frame.

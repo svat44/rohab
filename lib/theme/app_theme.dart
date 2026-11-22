@@ -108,6 +108,11 @@ ThemeData buildTheme(Brightness brightness) {
         color: p.divider, thickness: RohabShape.border, space: 1),
     // Plain ripple, not the Material 3 sparkle.
     splashFactory: InkRipple.splashFactory,
+    // Screens change instantly: no fades or slides.
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: _InstantTransitions(),
+      TargetPlatform.iOS: _InstantTransitions(),
+    }),
     materialTapTargetSize: MaterialTapTargetSize.padded,
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: p.surface,
@@ -133,7 +138,7 @@ ThemeData buildTheme(Brightness brightness) {
         foregroundColor: p.text,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
         side: BorderSide(color: p.text, width: RohabShape.strongBorder),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: text.labelLarge,
       ),
     ),
@@ -152,7 +157,7 @@ ThemeData buildTheme(Brightness brightness) {
         disabledForegroundColor: p.secondary,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
         elevation: 0,
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: text.labelLarge,
       ),
     ),
@@ -167,4 +172,17 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     extensions: [AppColors(p)],
   );
+}
+
+class _InstantTransitions extends PageTransitionsBuilder {
+  const _InstantTransitions();
+
+  @override
+  Widget buildTransitions<T>(
+          PageRoute<T> route,
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child) =>
+      child;
 }

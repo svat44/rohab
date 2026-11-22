@@ -27,26 +27,19 @@ class RohabCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final radius = BorderRadius.circular(RohabShape.card);
-    return DecoratedBox(
-      decoration: BoxDecoration(
+    // Flat: a hairline border, no shadow, no gradient.
+    return Material(
+      color: tint ? c.accentSoft : c.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: radius,
-        boxShadow: [
-          BoxShadow(color: c.shadow, blurRadius: 24, offset: const Offset(0, 6)),
-        ],
+        side: BorderSide(color: tint ? c.accentSoft : c.divider),
       ),
-      child: Material(
-        color: tint ? c.accentSoft : c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: BorderSide.none,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: Padding(padding: padding, child: child),
-          ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: minHeight),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -88,36 +81,26 @@ class InfoChip extends StatelessWidget {
   final String label;
   final IconData? icon;
 
-  /// Accent background instead of the soft tint.
+  /// Bold, in the main text colour, for the one label that matters most.
   final bool filled;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = Theme.of(context).textTheme.labelMedium!;
-    final fg = filled ? c.background : c.secondary;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: filled ? c.text : c.background,
-        borderRadius: BorderRadius.circular(RohabShape.card),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: RohabSpace.s8 + 4, vertical: RohabSpace.s8 / 2 + 1),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: RohabType.label, color: fg),
-              const SizedBox(width: RohabSpace.s8 / 2),
-            ],
-            Flexible(
-              child: Text(label,
-                  style: t.copyWith(color: fg, fontWeight: FontWeight.w600)),
-            ),
-          ],
+    final fg = filled ? c.text : c.secondary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: RohabType.label + 2, color: fg),
+          const SizedBox(width: RohabSpace.s8 / 2 + 2),
+        ],
+        Flexible(
+          child: Text(label,
+              style: t.copyWith(color: fg, fontWeight: FontWeight.w600)),
         ),
-      ),
+      ],
     );
   }
 }
