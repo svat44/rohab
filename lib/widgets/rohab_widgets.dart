@@ -2,9 +2,11 @@ import 'package:material_ui/material_ui.dart';
 
 import '../exercises/exercise_catalog.dart';
 import '../theme/app_theme.dart';
+import 'skeuo.dart';
 
-/// White rounded panel with a soft shadow. The basic building block of the
-/// redesigned screens. [onTap] makes the whole card one large target.
+/// A sheet of textured paper with a soft shadow, lying on the linen. The
+/// basic building block of the screens. [onTap] makes the whole card one
+/// large target, which dims a little while pressed.
 class RohabCard extends StatelessWidget {
   const RohabCard({
     super.key,
@@ -18,7 +20,7 @@ class RohabCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
 
-  /// Soft accent background, for the one most important panel on a screen.
+  /// Light blue paper, for the one most important panel on a screen.
   final bool tint;
   final EdgeInsets padding;
   final double minHeight;
@@ -27,46 +29,58 @@ class RohabCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final radius = BorderRadius.circular(RohabShape.card);
-    // Flat: a hairline border, no shadow, no gradient.
-    return Material(
-      color: tint ? c.accentSoft : c.surface,
-      shape: RoundedRectangleBorder(
+    return DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: radius,
-        side: BorderSide(color: tint ? c.accentSoft : c.divider),
+        boxShadow: raisedShadow(c),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: minHeight),
-          child: Padding(padding: padding, child: child),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Ink(
+          decoration: paperDecoration(c, tint: tint, shadow: false),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: radius,
+            splashColor: c.accent.withValues(alpha: 0.18),
+            highlightColor: c.accent.withValues(alpha: 0.10),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight),
+              child: Padding(padding: padding, child: child),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// A rounded square with an icon in it, tinted with the accent.
+/// An app-icon style tile: a beveled rounded square with a glyph in it.
+/// [solid] is the blue one (done, or next); otherwise silver.
 class IconBadge extends StatelessWidget {
   const IconBadge(this.icon, {super.key, this.size = 56, this.solid = false});
 
   final IconData icon;
   final double size;
-
-  /// A filled square with a light icon (done, or next), instead of just the
-  /// icon.
   final bool solid;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     return ExcludeSemantics(
-      child: Container(
-        width: size,
-        height: size,
-        color: solid ? c.accent : null,
-        child: Icon(icon,
-            size: size * 0.55, color: solid ? c.onAccent : c.accent),
+      child: RaisedTile(
+        size: size,
+        color: solid ? c.accent : c.silver,
+        edge: solid ? null : c.silverEdge,
+        child: Icon(
+          icon,
+          size: size * 0.55,
+          color: solid ? c.onAccent : c.accent,
+          shadows: [
+            solid
+                ? const Shadow(color: Color(0x66000000), offset: Offset(0, -1))
+                : const Shadow(color: Color(0xCCFFFFFF), offset: Offset(0, 1)),
+          ],
+        ),
       ),
     );
   }
@@ -95,8 +109,10 @@ class InfoChip extends StatelessWidget {
           const SizedBox(width: RohabSpace.s8 / 2 + 2),
         ],
         Flexible(
-          child: Text(label,
-              style: t.copyWith(color: fg, fontWeight: FontWeight.w600)),
+          child: Text(
+            label,
+            style: t.copyWith(color: fg, fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );
@@ -117,14 +133,26 @@ class SectionTitle extends StatelessWidget {
       header: true,
       child: Padding(
         padding: const EdgeInsets.only(
-            top: RohabSpace.s16, bottom: RohabSpace.s8),
+          top: RohabSpace.s16,
+          bottom: RohabSpace.s8,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: t.labelLarge),
+            Text(
+              title,
+              style: t.labelLarge?.copyWith(
+                shadows: context.colors.letterpress,
+              ),
+            ),
             if (subtitle != null) ...[
               const SizedBox(height: RohabSpace.s8 / 2),
-              Text(subtitle!, style: t.labelMedium),
+              Text(
+                subtitle!,
+                style: t.labelMedium?.copyWith(
+                  shadows: context.colors.letterpress,
+                ),
+              ),
             ],
           ],
         ),
@@ -136,22 +164,21 @@ class SectionTitle extends StatelessWidget {
 /// A picture for each kind of exercise, so the list can be scanned by
 /// icon as well as by title.
 IconData exerciseIcon(ExerciseKind kind) => switch (kind) {
-      ExerciseKind.openCloseGentle ||
-      ExerciseKind.openClose =>
-        Icons.back_hand_outlined,
-      ExerciseKind.holdOpen => Icons.timer_outlined,
-      ExerciseKind.squeeze => Icons.sports_mma_outlined,
-      ExerciseKind.thumbExtension => Icons.thumb_up_alt_outlined,
-      ExerciseKind.wristStretch => Icons.swap_vert,
-      ExerciseKind.assistedExtension => Icons.front_hand_outlined,
-      ExerciseKind.cylinder => Icons.local_cafe_outlined,
-      ExerciseKind.hook => Icons.shopping_bag_outlined,
-      ExerciseKind.pinch => Icons.pinch_outlined,
-      ExerciseKind.wristRotation => Icons.autorenew,
-      ExerciseKind.handSlide => Icons.swap_horiz,
-      ExerciseKind.fingerTouches => Icons.touch_app_outlined,
-      ExerciseKind.fingerLifts => Icons.looks_one_outlined,
-      ExerciseKind.spread => Icons.open_in_full,
-      ExerciseKind.flatFingerLifts => Icons.keyboard_double_arrow_up,
-      ExerciseKind.fingerWalking => Icons.directions_walk,
-    };
+  ExerciseKind.openCloseGentle ||
+  ExerciseKind.openClose => Icons.back_hand_outlined,
+  ExerciseKind.holdOpen => Icons.timer_outlined,
+  ExerciseKind.squeeze => Icons.sports_mma_outlined,
+  ExerciseKind.thumbExtension => Icons.thumb_up_alt_outlined,
+  ExerciseKind.wristStretch => Icons.swap_vert,
+  ExerciseKind.assistedExtension => Icons.front_hand_outlined,
+  ExerciseKind.cylinder => Icons.local_cafe_outlined,
+  ExerciseKind.hook => Icons.shopping_bag_outlined,
+  ExerciseKind.pinch => Icons.pinch_outlined,
+  ExerciseKind.wristRotation => Icons.autorenew,
+  ExerciseKind.handSlide => Icons.swap_horiz,
+  ExerciseKind.fingerTouches => Icons.touch_app_outlined,
+  ExerciseKind.fingerLifts => Icons.looks_one_outlined,
+  ExerciseKind.spread => Icons.open_in_full,
+  ExerciseKind.flatFingerLifts => Icons.keyboard_double_arrow_up,
+  ExerciseKind.fingerWalking => Icons.directions_walk,
+};

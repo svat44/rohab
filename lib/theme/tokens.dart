@@ -26,6 +26,11 @@ class RohabPalette {
     required this.danger,
     required this.onDanger,
     required this.shadow,
+    required this.leather,
+    required this.steel,
+    required this.silver,
+    required this.silverEdge,
+    required this.onSteel,
   });
 
   final Color background;
@@ -41,25 +46,41 @@ class RohabPalette {
   final Color danger;
   final Color onDanger;
 
-  /// Soft card shadow.
+  /// Drop shadow under raised panels and buttons.
   final Color shadow;
 
+  /// Blue leather of the title bar.
+  final Color leather;
+
+  /// Brushed steel of the tab bar, and the light text and icons on it.
+  final Color steel;
+  final Color onSteel;
+
+  /// Secondary (silver) buttons and their edge.
+  final Color silver;
+  final Color silverEdge;
+
   /// Light blue and deep blue, from the app icon (#54C5F8, #29B6F6,
-  /// #01579B). Flat colours, square corners, no gradients. Contrast (WCAG):
-  /// text on background 15:1, secondary on background 6.1:1, white on
-  /// accent 7.6:1.
+  /// #01579B). The base colours of the classic raised-and-textured look
+  /// (see widgets/skeuo.dart). Contrast (WCAG): text on background 12:1,
+  /// secondary on background 6:1, white on accent 7.6:1.
   static const light = RohabPalette(
-    background: Color(0xFFF1F7FB),
+    background: Color(0xFFD6E4EF),
     surface: Color(0xFFFFFFFF),
     text: Color(0xFF0B1F2E),
-    secondary: Color(0xFF475F72),
-    divider: Color(0xFFC9DBE8),
+    secondary: Color(0xFF3B5367),
+    divider: Color(0xFFB3C8D8),
     accent: Color(0xFF01579B),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFDCEEFA),
-    danger: Color(0xFFDC2626),
+    accentSoft: Color(0xFFE3F1FB),
+    danger: Color(0xFFD32020),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x00000000),
+    shadow: Color(0x40102030),
+    leather: Color(0xFF0B5CA8),
+    steel: Color(0xFF3F5A74),
+    onSteel: Color(0xFFD3E0EA),
+    silver: Color(0xFFE6EEF5),
+    silverEdge: Color(0xFF7F99AE),
   );
 
   /// Dark twin. Accent keeps dark text on it (white on #54C5F8 is about
@@ -75,7 +96,12 @@ class RohabPalette {
     accentSoft: Color(0xFF143650),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x00000000),
+    shadow: Color(0x99000000),
+    leather: Color(0xFF123B5F),
+    steel: Color(0xFF1E3144),
+    onSteel: Color(0xFFC4D5E3),
+    silver: Color(0xFF2C4559),
+    silverEdge: Color(0xFF557692),
   );
 }
 
@@ -100,10 +126,12 @@ class RohabSpace {
 
 class RohabShape {
   RohabShape._();
-  static const double radius = 0;
 
-  /// Cards and panels. Square, on purpose.
-  static const double card = 0;
+  /// Buttons and small tiles: the gently rounded corners of classic apps.
+  static const double radius = 10;
+
+  /// Cards and panels.
+  static const double card = 12;
   static const double border = 1;
 
   /// Marker lines and the camera's hand frame.

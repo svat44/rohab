@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/skeuo.dart';
 import '../settings/settings_controller.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -32,10 +33,41 @@ class RohabApp extends ConsumerWidget {
         final system = mq.textScaler.scale(1.0);
         return MediaQuery(
           data: mq.copyWith(
-              textScaler: TextScaler.linear((system * scale).clamp(1.0, 2.0))),
-          child: child ?? const SizedBox.shrink(),
+            textScaler: TextScaler.linear((system * scale).clamp(1.0, 2.0)),
+          ),
+          // Linen cloth behind every screen.
+          child: _Backdrop(child: child ?? const SizedBox.shrink()),
         );
       },
     );
   }
+}
+
+/// Linen cloth behind every screen. Loads the textures once, up front.
+class _Backdrop extends StatefulWidget {
+  const _Backdrop({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_Backdrop> createState() => _BackdropState();
+}
+
+class _BackdropState extends State<_Backdrop> {
+  bool _loading = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loading) {
+      _loading = true;
+      Textures.precache();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: linenDecoration(context.colors),
+    child: widget.child,
+  );
 }

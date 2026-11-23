@@ -1,42 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../widgets/skeuo.dart';
+import 'app_colors.dart';
 import 'tokens.dart';
 
+export 'app_colors.dart';
 export 'tokens.dart';
 
-/// Exposes the active [RohabPalette] to widgets via `context.colors`.
-@immutable
-class AppColors extends ThemeExtension<AppColors> {
-  const AppColors(this.palette);
-
-  final RohabPalette palette;
-
-  Color get background => palette.background;
-  Color get surface => palette.surface;
-  Color get text => palette.text;
-  Color get secondary => palette.secondary;
-  Color get divider => palette.divider;
-  Color get accent => palette.accent;
-  Color get onAccent => palette.onAccent;
-  Color get accentSoft => palette.accentSoft;
-  Color get danger => palette.danger;
-  Color get onDanger => palette.onDanger;
-  Color get shadow => palette.shadow;
-
-  @override
-  AppColors copyWith() => this;
-
-  @override
-  AppColors lerp(AppColors? other, double t) => t < 0.5 ? this : other ?? this;
-}
-
-extension AppThemeContext on BuildContext {
-  AppColors get colors => Theme.of(this).extension<AppColors>()!;
-}
-
 ThemeData buildTheme(Brightness brightness) {
-  final p =
-      brightness == Brightness.light ? RohabPalette.light : RohabPalette.dark;
+  final p = brightness == Brightness.light
+      ? RohabPalette.light
+      : RohabPalette.dark;
 
   // Hierarchy by size and weight only.
   final text = TextTheme(
@@ -62,10 +36,8 @@ ThemeData buildTheme(Brightness brightness) {
       fontWeight: FontWeight.w500,
       color: p.text,
     ),
-    bodyLarge:
-        TextStyle(fontSize: RohabType.body, height: 1.4, color: p.text),
-    bodyMedium:
-        TextStyle(fontSize: RohabType.body, height: 1.4, color: p.text),
+    bodyLarge: TextStyle(fontSize: RohabType.body, height: 1.4, color: p.text),
+    bodyMedium: TextStyle(fontSize: RohabType.body, height: 1.4, color: p.text),
     labelLarge: TextStyle(
       fontSize: RohabType.body,
       height: 1.2,
@@ -103,16 +75,22 @@ ThemeData buildTheme(Brightness brightness) {
     colorScheme: scheme,
     fontFamily: RohabTokens.fontFamily,
     textTheme: text,
-    scaffoldBackgroundColor: p.background,
+    // The linen shows through (see RohabApp's builder).
+    scaffoldBackgroundColor: const Color(0x00000000),
     dividerTheme: DividerThemeData(
-        color: p.divider, thickness: RohabShape.border, space: 1),
+      color: p.divider,
+      thickness: RohabShape.border,
+      space: 1,
+    ),
     // Plain ripple, not the Material 3 sparkle.
     splashFactory: InkRipple.splashFactory,
     // Screens change instantly: no fades or slides.
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: _InstantTransitions(),
-      TargetPlatform.iOS: _InstantTransitions(),
-    }),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _InstantTransitions(),
+        TargetPlatform.iOS: _InstantTransitions(),
+      },
+    ),
     materialTapTargetSize: MaterialTapTargetSize.padded,
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: p.surface,
@@ -120,8 +98,9 @@ ThemeData buildTheme(Brightness brightness) {
       modalElevation: 0,
       shape: RoundedRectangleBorder(
         side: BorderSide(color: p.divider),
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(RohabShape.radius)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(RohabShape.radius),
+        ),
       ),
     ),
     cardTheme: CardThemeData(
@@ -133,40 +112,61 @@ ThemeData buildTheme(Brightness brightness) {
         side: BorderSide.none,
       ),
     ),
+    // Secondary actions are silver raised buttons: they look like buttons,
+    // not like loose blue words.
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: p.accent,
-        minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-        side: BorderSide(color: p.accent, width: RohabShape.strongBorder),
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.labelLarge,
+      style: raised(
+        OutlinedButton.styleFrom(
+          foregroundColor: p.accent,
+          backgroundColor: p.silver,
+          disabledBackgroundColor: p.divider,
+          disabledForegroundColor: p.secondary,
+          minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
+          side: BorderSide(color: p.silverEdge, width: RohabShape.border),
+          shape: RoundedRectangleBorder(borderRadius: radius),
+          textStyle: text.labelLarge,
+        ),
+        darkText: true,
       ),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStatePropertyAll(p.surface),
-      trackColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? p.accent : p.secondary),
+      trackColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? p.accent : p.secondary,
+      ),
       trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: p.accent,
-        foregroundColor: p.onAccent,
-        disabledBackgroundColor: p.divider,
-        disabledForegroundColor: p.secondary,
-        minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.labelLarge,
+      style: raised(
+        FilledButton.styleFrom(
+          backgroundColor: p.accent,
+          foregroundColor: p.onAccent,
+          disabledBackgroundColor: p.divider,
+          disabledForegroundColor: p.secondary,
+          minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
+          side: BorderSide(
+            color: Color.lerp(p.accent, const Color(0xFF000000), 0.45)!,
+            width: RohabShape.border,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: radius),
+          textStyle: text.labelLarge,
+        ),
+        darkText: false,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: p.accent,
-        minimumSize:
-            const Size(RohabSize.touchTarget, RohabSize.touchTarget),
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        textStyle: text.labelLarge,
+      style: raised(
+        TextButton.styleFrom(
+          foregroundColor: p.accent,
+          backgroundColor: p.silver,
+          disabledBackgroundColor: p.divider,
+          disabledForegroundColor: p.secondary,
+          minimumSize: const Size(RohabSize.touchTarget, RohabSize.touchTarget),
+          side: BorderSide(color: p.silverEdge, width: RohabShape.border),
+          shape: RoundedRectangleBorder(borderRadius: radius),
+          textStyle: text.labelLarge,
+        ),
+        darkText: true,
       ),
     ),
     extensions: [AppColors(p)],
@@ -178,10 +178,10 @@ class _InstantTransitions extends PageTransitionsBuilder {
 
   @override
   Widget buildTransitions<T>(
-          PageRoute<T> route,
-          BuildContext context,
-          Animation<double> animation,
-          Animation<double> secondaryAnimation,
-          Widget child) =>
-      child;
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) => child;
 }

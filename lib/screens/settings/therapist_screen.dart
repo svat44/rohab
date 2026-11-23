@@ -8,6 +8,7 @@ import '../../program/program_providers.dart';
 import '../../program/program_settings.dart';
 import '../../program/therapist_pin.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../../widgets/action_area.dart';
 
 /// Therapist plan settings, behind a 4-digit PIN.
@@ -19,7 +20,8 @@ class TherapistScreen extends ConsumerStatefulWidget {
   static const secondaryKey = Key('therapist-secondary');
   static const wristCheckKey = Key('therapist-wrist-check');
   static Key levelKey(int? level) => Key('therapist-level-${level ?? 'auto'}');
-  static Key stepKey(String id, bool up) => Key('therapist-$id-${up ? 'up' : 'down'}');
+  static Key stepKey(String id, bool up) =>
+      Key('therapist-$id-${up ? 'up' : 'down'}');
 
   @override
   ConsumerState<TherapistScreen> createState() => _TherapistScreenState();
@@ -92,10 +94,10 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
   }
 
   void _unlock() => setState(() {
-        _gate = _Gate.unlocked;
-        _error = null;
-        _draft = ref.read(programSettingsProvider);
-      });
+    _gate = _Gate.unlocked;
+    _error = null;
+    _draft = ref.read(programSettingsProvider);
+  });
 
   Future<void> _save() async {
     await ref.read(programSettingsProvider.notifier).save(_draft!);
@@ -105,8 +107,9 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
   Future<void> _resetGoal() async {
     await ref.read(programSettingsProvider.notifier).save(_draft!);
     await ref.read(programSettingsProvider.notifier).resetGoal();
-    setState(() => _notice =
-        "Saved. Today's goal is back to ${_draft!.startingGoal}.");
+    setState(
+      () => _notice = "Saved. Today's goal is back to ${_draft!.startingGoal}.",
+    );
   }
 
   @override
@@ -138,7 +141,7 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
             _gate == _Gate.enterPin
                 ? 'These settings are for the therapist or caregiver.'
                 : '4 digits. It keeps the plan from being changed by '
-                    'accident; it is not a password.',
+                      'accident; it is not a password.',
             style: t.bodyLarge,
           ),
           const SizedBox(height: RohabSpace.s24),
@@ -156,7 +159,8 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
             decoration: InputDecoration(
               counterText: '',
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(RohabShape.radius)),
+                borderRadius: BorderRadius.circular(RohabShape.radius),
+              ),
             ),
           ),
           if (_error != null) ...[
@@ -169,9 +173,9 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
 
     final d = _draft!;
     void set(ProgramSettings s) => setState(() {
-          _draft = s;
-          _notice = null;
-        });
+      _draft = s;
+      _notice = null;
+    });
     return _Layout(
       // Shown next to Save, where the eye is after tapping it.
       notice: _notice,
@@ -180,14 +184,17 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
           Expanded(child: back),
           Expanded(
             child: TextButton(
-                onPressed: _resetGoal, child: const Text("Reset today's goal")),
+              onPressed: _resetGoal,
+              child: const Text("Reset today's goal"),
+            ),
           ),
         ],
       ),
       primary: FilledButton(
-          key: TherapistScreen.primaryKey,
-          onPressed: _save,
-          child: const Text('Save')),
+        key: TherapistScreen.primaryKey,
+        onPressed: _save,
+        child: const Text('Save'),
+      ),
       children: [
         Text('Therapist plan', style: t.headlineMedium),
         const SizedBox(height: RohabSpace.s24),
@@ -283,8 +290,11 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
           child: Row(
             children: [
               Expanded(
-                child: Text('Raise the goal 10% after a full day without '
-                    'fatigue or more pain', style: t.bodyLarge),
+                child: Text(
+                  'Raise the goal 10% after a full day without '
+                  'fatigue or more pain',
+                  style: t.bodyLarge,
+                ),
               ),
               Switch(
                 value: d.autoProgress,
@@ -300,10 +310,11 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
             children: [
               Expanded(
                 child: Text(
-                    'Do not count open/close reps made by bending the wrist. '
-                    'The camera can get this wrong, so it is off unless you '
-                    'want it.',
-                    style: t.bodyLarge),
+                  'Do not count open/close reps made by bending the wrist. '
+                  'The camera can get this wrong, so it is off unless you '
+                  'want it.',
+                  style: t.bodyLarge,
+                ),
               ),
               Switch(
                 key: TherapistScreen.wristCheckKey,
@@ -344,21 +355,22 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     Widget button(bool up) => SizedBox.square(
-          dimension: RohabSize.touchTarget,
-          child: OutlinedButton(
-            key: TherapistScreen.stepKey(id, up),
-            onPressed: (up ? value + step <= max : value - step >= min)
-                ? () => onChanged(value + (up ? step : -step))
-                : null,
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              side: BorderSide(color: context.colors.divider),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(RohabShape.radius)),
-            ),
-            child: Icon(up ? Icons.add : Icons.remove, size: RohabSize.icon),
+      dimension: RohabSize.touchTarget,
+      child: OutlinedButton(
+        key: TherapistScreen.stepKey(id, up),
+        onPressed: (up ? value + step <= max : value - step >= min)
+            ? () => onChanged(value + (up ? step : -step))
+            : null,
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          side: BorderSide(color: context.colors.divider),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(RohabShape.radius),
           ),
-        );
+        ),
+        child: Icon(up ? Icons.add : Icons.remove, size: RohabSize.icon),
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: RohabSpace.s8),
       child: Column(
@@ -372,8 +384,11 @@ class _Stepper extends StatelessWidget {
               Expanded(
                 child: Semantics(
                   liveRegion: true,
-                  child: Text('$value $unit',
-                      textAlign: TextAlign.center, style: t.labelLarge),
+                  child: Text(
+                    '$value $unit',
+                    textAlign: TextAlign.center,
+                    style: t.labelLarge,
+                  ),
                 ),
               ),
               button(true),
@@ -404,23 +419,19 @@ class _Choice extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: Material(
-        color: selected ? c.accent : c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: BorderSide(color: selected ? c.accent : c.divider),
-        ),
+      child: ChoiceMaterial(
+        selected: selected,
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
           child: SizedBox(
             height: RohabSize.touchTarget,
             child: Center(
-              child: Text(label,
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelLarge
-                      ?.copyWith(color: selected ? c.onAccent : c.text)),
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: selected ? c.onAccent : c.text),
+              ),
             ),
           ),
         ),
@@ -430,8 +441,12 @@ class _Choice extends StatelessWidget {
 }
 
 class _Layout extends StatelessWidget {
-  const _Layout(
-      {required this.children, this.primary, this.secondary, this.notice});
+  const _Layout({
+    required this.children,
+    this.primary,
+    this.secondary,
+    this.notice,
+  });
 
   final List<Widget> children;
   final Widget? primary;
@@ -440,25 +455,28 @@ class _Layout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
-              children: children,
-            ),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+          children: children,
+        ),
+      ),
+      if (notice != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            RohabSpace.s24,
+            RohabSpace.s16,
+            RohabSpace.s24,
+            0,
           ),
-          if (notice != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(notice!,
-                    style: Theme.of(context).textTheme.labelLarge),
-              ),
-            ),
-          ActionArea(secondary: secondary, primary: primary),
-        ],
-      );
+          child: Semantics(
+            liveRegion: true,
+            child: Text(notice!, style: Theme.of(context).textTheme.labelLarge),
+          ),
+        ),
+      ActionArea(secondary: secondary, primary: primary),
+    ],
+  );
 }

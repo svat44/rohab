@@ -6,6 +6,7 @@ import '../../app/router.dart';
 import '../../data/database.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import 'overview.dart';
 import 'progress_data.dart';
 import 'range_chart.dart';
@@ -37,14 +38,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final data = ref.watch(progressDataProvider(_id));
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
+        RohabSpace.s24,
+        0,
+        RohabSpace.s24,
+        RohabSpace.s24,
+      ),
       children: [
-        _Selector(
-          selected: _id,
-          onSelected: (id) => setState(() => _id = id),
-        ),
+        _Selector(selected: _id, onSelected: (id) => setState(() => _id = id)),
         const SizedBox(height: RohabSpace.s16),
-        ref.watch(progressOverviewProvider).when(
+        ref
+            .watch(progressOverviewProvider)
+            .when(
               data: (o) => WeekOverview(overview: o),
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
@@ -52,8 +56,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         const SizedBox(height: RohabSpace.s24),
         ...data.when(
           loading: () => [Text('Loading.', style: t.bodyLarge)],
-          error: (e, _) =>
-              [Text('Progress could not load.', style: t.bodyLarge)],
+          error: (e, _) => [
+            Text('Progress could not load.', style: t.bodyLarge),
+          ],
           data: (d) => _content(context, d),
         ),
       ],
@@ -64,7 +69,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final t = Theme.of(context).textTheme;
     final exercise = ExerciseCatalog.byId(_id)!;
     final week = d.week;
-    final summary = 'This week: ${week.sessions} '
+    final summary =
+        'This week: ${week.sessions} '
         '${week.sessions == 1 ? 'session' : 'sessions'}, ${week.reps} '
         '${week.reps == 1 ? 'rep' : 'reps'}.';
 
@@ -72,8 +78,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       return [
         Text(summary, key: ProgressScreen.summaryKey, style: t.bodyLarge),
         const SizedBox(height: RohabSpace.s24),
-        Text('No sessions yet. Start one from Exercises.',
-            key: ProgressScreen.emptyKey, style: t.bodyLarge),
+        Text(
+          'No sessions yet. Start one from Exercises.',
+          key: ProgressScreen.emptyKey,
+          style: t.bodyLarge,
+        ),
         const SizedBox(height: RohabSpace.s24),
         SizedBox(
           height: RohabSize.touchTarget,
@@ -84,7 +93,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               foregroundColor: context.colors.accent,
               side: BorderSide(color: context.colors.divider),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(RohabShape.radius)),
+                borderRadius: BorderRadius.circular(RohabShape.radius),
+              ),
               textStyle: t.labelLarge,
             ),
             child: const Text('Go to Exercises'),
@@ -96,7 +106,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final chrono = d.chronological;
     // Charts use sessions measured in the newest session's unit.
     final unit = d.sessions.first.metricUnit;
-    final ranged = [for (final r in chrono) if (r.metricUnit == unit) r];
+    final ranged = [
+      for (final r in chrono)
+        if (r.metricUnit == unit) r,
+    ];
     return [
       Text(summary, key: ProgressScreen.summaryKey, style: t.bodyLarge),
       const SizedBox(height: RohabSpace.s24),
@@ -105,10 +118,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         const SizedBox(height: RohabSpace.s24),
       ],
       Text(
-          chrono.length == 1
-              ? 'Reps, last session'
-              : 'Reps, last ${chrono.length} sessions',
-          style: t.labelLarge),
+        chrono.length == 1
+            ? 'Reps, last session'
+            : 'Reps, last ${chrono.length} sessions',
+        style: t.labelLarge,
+      ),
       const SizedBox(height: RohabSpace.s8),
       KeyedSubtree(
         key: ProgressScreen.repsChartKey,
@@ -132,9 +146,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       const Divider(),
       for (var i = 0; i < d.sessions.length; i++) ...[
         _SessionRow(
-            key: ProgressScreen.rowKey(i),
-            row: d.sessions[i],
-            unit: exercise.repUnit),
+          key: ProgressScreen.rowKey(i),
+          row: d.sessions[i],
+          unit: exercise.repUnit,
+        ),
         const Divider(),
       ],
     ];
@@ -146,7 +161,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 Widget? _improvement(List<ExerciseSessionRow> chrono, String unit) {
   final measured = [
     for (final r in chrono)
-      if (r.metricUnit == unit && r.rangeMin != null && r.rangeMax != null) r
+      if (r.metricUnit == unit && r.rangeMin != null && r.rangeMax != null) r,
   ];
   if (measured.length < 2) return null;
   double span(ExerciseSessionRow r) => r.rangeMax! - r.rangeMin!;
@@ -181,24 +196,21 @@ class _Selector extends StatelessWidget {
               child: Semantics(
                 button: true,
                 selected: id == selected,
-                child: Material(
-                  color: id == selected ? c.accent : c.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: radius,
-                    side: BorderSide(
-                        color: id == selected ? c.accent : c.divider,
-                        width: RohabShape.border),
-                  ),
+                child: ChoiceMaterial(
+                  selected: id == selected,
                   child: InkWell(
                     key: ProgressScreen.segmentKey(id),
                     borderRadius: radius,
                     onTap: () => onSelected(id),
                     child: ConstrainedBox(
-                      constraints:
-                          const BoxConstraints(minHeight: RohabSize.touchTarget),
+                      constraints: const BoxConstraints(
+                        minHeight: RohabSize.touchTarget,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: RohabSpace.s8, vertical: RohabSpace.s8),
+                          horizontal: RohabSpace.s8,
+                          vertical: RohabSpace.s8,
+                        ),
                         child: Center(
                           child: Text(
                             progressExerciseLabels[id]!,
@@ -232,7 +244,8 @@ class _SessionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final range = rangeText(row);
-    final text = '${dateTime(row.startedAt)}. ${repsText(row, unit)}.'
+    final text =
+        '${dateTime(row.startedAt)}. ${repsText(row, unit)}.'
         '${range == null ? '' : ' $range.'}';
     return Semantics(
       label: text,

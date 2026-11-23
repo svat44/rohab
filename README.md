@@ -108,6 +108,27 @@ test/
 No screen or widget changes. Add the Bluetooth permissions (Info.plist,
 AndroidManifest) at the same time.
 
+## Look and feel (classic, tactile)
+
+The app uses a familiar "older app" look so that every control reads as a
+thing you can press: blue linen background, paper cards with a soft shadow,
+a blue leather title bar with a stitched seam, a brushed-steel tab bar, and
+beveled buttons that sink when pressed (silver for secondary actions, blue for
+the main one, red for STOP). Progress gauges are a groove with a glossy bar.
+The camera sits in a steel bezel.
+
+- `lib/widgets/skeuo.dart` holds all of it: texture decorations, `BevelPainter`,
+  `RaisedTile`, `ChoiceMaterial`, and `raised()`, which gives the filled,
+  outlined and text buttons their bevel through the theme.
+- The textures in `assets/textures/` are tileable white/black overlays with
+  varying alpha, so they work on any colour in the light and dark themes.
+  They are generated, not downloaded (no licence to track):
+  `python3 tool/gen_textures.py` (needs numpy and Pillow; the output is seeded
+  and reproducible).
+- Colours and corner radii are in `lib/theme/tokens.dart`.
+- The camera frame is drawn outside the preview's `AspectRatio`, so the bezel
+  never changes the preview's shape or the hand overlay alignment.
+
 ## Exercise program (camera)
 
 Built from `docs/rehab-science.md`:

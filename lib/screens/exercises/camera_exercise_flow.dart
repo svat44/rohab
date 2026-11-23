@@ -19,6 +19,7 @@ import '../../program/program_providers.dart';
 import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
@@ -205,8 +206,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
       case FlowStep.permission:
         return _Page(
           secondary: back,
-          primary:
-              _PrimaryAction(label: 'Allow camera', onPressed: c.allowCamera),
+          primary: _PrimaryAction(
+            label: 'Allow camera',
+            onPressed: c.allowCamera,
+          ),
           children: [
             Text('Camera', style: t.headlineMedium),
             const SizedBox(height: RohabSpace.s16),
@@ -221,8 +224,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
       case FlowStep.permissionDenied:
         return _Page(
           secondary: back,
-          primary:
-              _PrimaryAction(label: 'Open settings', onPressed: c.openSettings),
+          primary: _PrimaryAction(
+            label: 'Open settings',
+            onPressed: c.openSettings,
+          ),
           children: [
             Text('Camera is off for Rohab', style: t.headlineMedium),
             const SizedBox(height: RohabSpace.s16),
@@ -245,8 +250,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           secondary: back,
           primary: _PrimaryAction(label: 'Try again', onPressed: c.retryCamera),
           children: [
-            Text(c.errorMessage ?? 'The camera could not start.',
-                style: t.bodyLarge),
+            Text(
+              c.errorMessage ?? 'The camera could not start.',
+              style: t.bodyLarge,
+            ),
           ],
         );
 
@@ -258,8 +265,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           stats: () => c.stats,
           action: cancel,
           children: [
-            _Instruction(HandDistanceCheck.advice(c.distance) ??
-                'Hold your hand inside the frame.'),
+            _Instruction(
+              HandDistanceCheck.advice(c.distance) ??
+                  'Hold your hand inside the frame.',
+            ),
             if (c.needsHandHelp) ...[
               const SizedBox(height: RohabSpace.s8),
               Text(
@@ -276,9 +285,11 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         final high = c.calibratePhase == CalibratePhase.high;
         final text = _exercise.usesSpread
             ? (high
-                ? 'Spread your fingers as wide as you can.'
-                : 'Now bring your fingers together.')
-            : (high ? 'Open your hand as wide as you can.' : 'Now make a fist.');
+                  ? 'Spread your fingers as wide as you can.'
+                  : 'Now bring your fingers together.')
+            : (high
+                  ? 'Open your hand as wide as you can.'
+                  : 'Now make a fist.');
         return CameraPage(
           tracker: c.tracker,
           frame: c.frame,
@@ -301,7 +312,9 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
               const SizedBox(width: RohabSpace.s8),
               Expanded(
                 child: _PrimaryAction(
-                    label: 'Try again', onPressed: c.retryCalibration),
+                  label: 'Try again',
+                  onPressed: c.retryCalibration,
+                ),
               ),
             ],
           ),
@@ -345,17 +358,22 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           secondary = null;
         } else if (next == null) {
           primary = _PrimaryAction(
-              label: 'Finish for today', onPressed: _finishForToday);
+            label: 'Finish for today',
+            onPressed: _finishForToday,
+          );
           secondary = null;
         } else {
           final same = next.exercise.id == _exercise.id;
           primary = _PrimaryAction(
             label: same ? 'Next set' : 'Next: ${next.exercise.title}',
-            onPressed: () =>
-                context.pushReplacement(Routes.cameraExercise(next.exercise.id)),
+            onPressed: () => context.pushReplacement(
+              Routes.cameraExercise(next.exercise.id),
+            ),
           );
           secondary = _TextAction(
-              label: 'Finish for today', onPressed: _finishForToday);
+            label: 'Finish for today',
+            onPressed: _finishForToday,
+          );
         }
         return _Page(
           secondary: secondary,
@@ -490,7 +508,11 @@ class _Page extends StatelessWidget {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
-                RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+              RohabSpace.s24,
+              RohabSpace.s16,
+              RohabSpace.s24,
+              0,
+            ),
             children: children,
           ),
         ),
@@ -515,15 +537,15 @@ class _ExerciseReadout extends StatelessWidget {
     final String message = c.handLost
         ? 'Hold your hand inside the frame.'
         : c.wristCue
-            ? 'Wrist moved. That one did not count.'
-            : c.distance != HandDistance.good
-                ? HandDistanceCheck.advice(c.distance)!
-                : c.stuck
-                ? 'Not counting? Make the movement bigger and slower, with '
-                    'your whole hand in view.'
-                : c.suggestRest
-                    ? 'Movements are getting smaller. A rest may help.'
-                    : c.hint ?? 'Keep going.';
+        ? 'Wrist moved. That one did not count.'
+        : c.distance != HandDistance.good
+        ? HandDistanceCheck.advice(c.distance)!
+        : c.stuck
+        ? 'Not counting? Make the movement bigger and slower, with '
+              'your whole hand in view.'
+        : c.suggestRest
+        ? 'Movements are getting smaller. A rest may help.'
+        : c.hint ?? 'Keep going.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -540,8 +562,11 @@ class _ExerciseReadout extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('${c.reps} of ${c.setSize}',
-                    key: CameraExerciseFlow.repsKey, style: t.displayLarge),
+                Text(
+                  '${c.reps} of ${c.setSize}',
+                  key: CameraExerciseFlow.repsKey,
+                  style: t.displayLarge,
+                ),
                 const SizedBox(width: RohabSpace.s8),
                 Text(exercise.repUnit, style: t.bodyLarge),
               ],
@@ -561,12 +586,14 @@ class _ExerciseReadout extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: t.labelLarge?.copyWith(
-                    color: c.handLost ||
-                            c.wristCue ||
-                            c.stuck ||
-                            c.distance != HandDistance.good
-                        ? colors.text
-                        : colors.accent),
+                  color:
+                      c.handLost ||
+                          c.wristCue ||
+                          c.stuck ||
+                          c.distance != HandDistance.good
+                      ? colors.text
+                      : colors.accent,
+                ),
               ),
               const SizedBox(height: RohabSpace.s8),
               if (!c.handLost)
@@ -585,8 +612,11 @@ class _ExerciseReadout extends StatelessWidget {
 }
 
 class _NumberedStep extends StatelessWidget {
-  const _NumberedStep(
-      {required this.number, required this.text, this.last = false});
+  const _NumberedStep({
+    required this.number,
+    required this.text,
+    this.last = false,
+  });
 
   final int number;
   final String text;
@@ -601,15 +631,19 @@ class _NumberedStep extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: RohabSpace.s32,
-            height: RohabSpace.s32,
-            alignment: Alignment.center,
-            decoration:
-                BoxDecoration(color: c.accentSoft),
-            child: Text('$number',
-                style: t.labelMedium
-                    ?.copyWith(color: c.text, fontWeight: FontWeight.w700)),
+          RaisedTile(
+            size: RohabSpace.s32 + 4,
+            color: c.accent,
+            child: Text(
+              '$number',
+              style: t.labelMedium?.copyWith(
+                color: c.onAccent,
+                fontWeight: FontWeight.w700,
+                shadows: const [
+                  Shadow(color: Color(0x66000000), offset: Offset(0, -1)),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: RohabSpace.s16),
           Expanded(child: Text(text, style: t.bodyLarge)),
@@ -626,11 +660,13 @@ class _Instruction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        liveRegion: true,
-        child: Text(text,
-            key: CameraExerciseFlow.instructionKey,
-            style: Theme.of(context).textTheme.titleLarge),
-      );
+    liveRegion: true,
+    child: Text(
+      text,
+      key: CameraExerciseFlow.instructionKey,
+      style: Theme.of(context).textTheme.titleLarge,
+    ),
+  );
 }
 
 class _PrimaryAction extends StatelessWidget {
@@ -641,10 +677,10 @@ class _PrimaryAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FilledButton(
-        key: CameraExerciseFlow.primaryKey,
-        onPressed: onPressed,
-        child: Text(label),
-      );
+    key: CameraExerciseFlow.primaryKey,
+    onPressed: onPressed,
+    child: Text(label),
+  );
 }
 
 class _TextAction extends StatelessWidget {
@@ -655,10 +691,10 @@ class _TextAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextButton(
-        key: CameraExerciseFlow.secondaryKey,
-        onPressed: onPressed,
-        child: Text(label),
-      );
+    key: CameraExerciseFlow.secondaryKey,
+    onPressed: onPressed,
+    child: Text(label),
+  );
 }
 
 /// Big countdown on the camera, so it is never pushed off screen.
@@ -670,15 +706,12 @@ class _CountdownBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(RohabShape.radius),
-        border:
-            Border.all(color: context.colors.divider, width: RohabShape.border),
-      ),
+      decoration: paperDecoration(context.colors, radius: RohabShape.radius),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: RohabSpace.s16, vertical: RohabSpace.s8),
+          horizontal: RohabSpace.s16,
+          vertical: RohabSpace.s8,
+        ),
         child: CountdownNumber(seconds: seconds),
       ),
     );

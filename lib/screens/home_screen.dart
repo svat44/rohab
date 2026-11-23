@@ -7,6 +7,7 @@ import '../app/router.dart';
 import '../glove/glove_service.dart';
 import '../program/program_providers.dart';
 import '../theme/app_theme.dart';
+import '../widgets/skeuo.dart';
 import '../widgets/level_bar.dart';
 import '../widgets/rohab_widgets.dart';
 
@@ -61,8 +62,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _summary = s.faults.isNotEmpty
             ? null
             : _endRequested
-                ? 'Session complete. $reps $repWord.'
-                : 'Session stopped. $reps $repWord.';
+            ? 'Session complete. $reps $repWord.'
+            : 'Session stopped. $reps $repWord.';
       });
       _endRequested = false;
     }
@@ -94,11 +95,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // large text pushes it below the fold.
           scrollCacheExtent: const ScrollCacheExtent.pixels(3000),
           padding: const EdgeInsets.fromLTRB(
-              RohabSpace.s24, RohabSpace.s8, RohabSpace.s24, RohabSpace.s24),
+            RohabSpace.s24,
+            RohabSpace.s8,
+            RohabSpace.s24,
+            RohabSpace.s24,
+          ),
           children: [
             const _TodayCard(),
-            const SectionTitle('Glove',
-                subtitle: 'Only if you use the Rohab glove.'),
+            const SectionTitle(
+              'Glove',
+              subtitle: 'Only if you use the Rohab glove.',
+            ),
             if (s.faults.isNotEmpty) _FaultNotice(faults: s.faults),
             if (calibrationNeeded) ...[
               _CalibrationNeededRow(
@@ -110,9 +117,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (_summary != null && !s.sessionActive) ...[
               Semantics(
                 liveRegion: true,
-                child: Text(_summary!,
-                    key: HomeScreen.summaryKey,
-                    style: Theme.of(context).textTheme.headlineMedium),
+                child: Text(
+                  _summary!,
+                  key: HomeScreen.summaryKey,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
               ),
               const SizedBox(height: RohabSpace.s24),
             ],
@@ -192,9 +201,11 @@ class _TodayCard extends ConsumerWidget {
     final VoidCallback? action;
     if (next != null) {
       label = done == 0 ? 'Start' : 'Continue';
-      action = () => context.go(overview.painBefore == null
-          ? Routes.painCheck('before', next: next.exercise.id)
-          : Routes.cameraExercise(next.exercise.id));
+      action = () => context.go(
+        overview.painBefore == null
+            ? Routes.painCheck('before', next: next.exercise.id)
+            : Routes.cameraExercise(next.exercise.id),
+      );
     } else if (overview.painAfter == null && overview.painBefore != null) {
       label = 'Finish for today';
       action = () => context.go(Routes.painCheck('after'));
@@ -208,8 +219,10 @@ class _TodayCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(next == null ? 'Well done' : "Today's exercises",
-              style: t.headlineMedium),
+          Text(
+            next == null ? 'Well done' : "Today's exercises",
+            style: t.headlineMedium,
+          ),
           const SizedBox(height: RohabSpace.s8),
           Text(
             next == null
@@ -263,8 +276,10 @@ class _RepsReadout extends StatelessWidget {
               reps == null ? '–' : '$reps',
               key: HomeScreen.repsKey,
               style: reps == null
-                  ? t.displayLarge
-                      ?.copyWith(color: c.secondary, fontWeight: FontWeight.w400)
+                  ? t.displayLarge?.copyWith(
+                      color: c.secondary,
+                      fontWeight: FontWeight.w400,
+                    )
                   : t.displayLarge,
             ),
           ),
@@ -291,11 +306,13 @@ class _HandState extends StatelessWidget {
     };
     return Semantics(
       liveRegion: true,
-      child: Text(text,
-          key: HomeScreen.stateKey,
-          style: s.isConnected
-              ? t.headlineMedium
-              : t.bodyLarge?.copyWith(color: context.colors.secondary)),
+      child: Text(
+        text,
+        key: HomeScreen.stateKey,
+        style: s.isConnected
+            ? t.headlineMedium
+            : t.bodyLarge?.copyWith(color: context.colors.secondary),
+      ),
     );
   }
 }
@@ -314,7 +331,7 @@ class _PressureRow extends StatelessWidget {
     return Semantics(
       label: s.isConnected
           ? 'Pressure ${s.pressureKpa.toStringAsFixed(0)} of '
-              '${s.targetKpa.toStringAsFixed(0)} kilopascals'
+                '${s.targetKpa.toStringAsFixed(0)} kilopascals'
           : 'Pressure unavailable',
       excludeSemantics: true,
       child: Column(
@@ -337,8 +354,10 @@ class _PressureRow extends StatelessWidget {
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                    Text(' of ${s.targetKpa.toStringAsFixed(0)} kPa',
-                        style: t.bodyLarge?.copyWith(color: c.secondary)),
+                    Text(
+                      ' of ${s.targetKpa.toStringAsFixed(0)} kPa',
+                      style: t.bodyLarge?.copyWith(color: c.secondary),
+                    ),
                   ],
                 ),
               ),
@@ -383,7 +402,9 @@ class _CalibrationNeededRow extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-                onPressed: onCalibrate, child: const Text('Calibrate')),
+              onPressed: onCalibrate,
+              child: const Text('Calibrate'),
+            ),
           ),
         ],
       ),
@@ -403,10 +424,8 @@ class _FaultNotice extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: RohabSpace.s24),
       padding: const EdgeInsets.all(RohabSpace.s16),
-      decoration: BoxDecoration(
-        color: c.surface,
+      decoration: paperDecoration(c).copyWith(
         border: Border.all(color: c.danger, width: RohabShape.strongBorder),
-        borderRadius: BorderRadius.circular(RohabShape.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

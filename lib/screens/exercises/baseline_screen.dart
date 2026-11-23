@@ -10,6 +10,7 @@ import '../../program/baseline.dart';
 import '../../program/baseline_controller.dart';
 import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
@@ -66,14 +67,19 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
   void _back() => context.go(Routes.cameraExercises);
 
   @override
-  Widget build(BuildContext context) =>
-      ListenableBuilder(listenable: _c, builder: (context, _) => _step(context));
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _c,
+    builder: (context, _) => _step(context),
+  );
 
   Widget _step(BuildContext context) {
     final t = Theme.of(context).textTheme;
     setImmersive(true);
     final back = TextButton(
-        key: BaselineScreen.secondaryKey, onPressed: _back, child: const Text('Back'));
+      key: BaselineScreen.secondaryKey,
+      onPressed: _back,
+      child: const Text('Back'),
+    );
     String hand(Handedness h) => BaselineController.handName(h);
 
     switch (_c.step) {
@@ -109,48 +115,56 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
         return _Page(
           secondary: back,
           primary: FilledButton(
-              key: BaselineScreen.primaryKey,
-              onPressed: _c.allowCamera,
-              child: const Text('Allow camera')),
+            key: BaselineScreen.primaryKey,
+            onPressed: _c.allowCamera,
+            child: const Text('Allow camera'),
+          ),
           children: [
             Text('Camera', style: t.headlineMedium),
             const SizedBox(height: RohabSpace.s16),
             Text(
-                'Rohab uses the camera to measure your hand. Video stays on '
-                'this phone and is never saved.',
-                style: t.bodyLarge),
+              'Rohab uses the camera to measure your hand. Video stays on '
+              'this phone and is never saved.',
+              style: t.bodyLarge,
+            ),
           ],
         );
       case BaselineStep.permissionDenied:
         return _Page(
           secondary: back,
           primary: FilledButton(
-              key: BaselineScreen.primaryKey,
-              onPressed: _c.openSettings,
-              child: const Text('Open settings')),
+            key: BaselineScreen.primaryKey,
+            onPressed: _c.openSettings,
+            child: const Text('Open settings'),
+          ),
           children: [
             Text('Camera is off for Rohab', style: t.headlineMedium),
             const SizedBox(height: RohabSpace.s16),
             Text(
-                'Turn on camera access for Rohab in Settings, then come back here.',
-                style: t.bodyLarge),
+              'Turn on camera access for Rohab in Settings, then come back here.',
+              style: t.bodyLarge,
+            ),
           ],
         );
       case BaselineStep.starting:
         return _Page(
-            secondary: back,
-            children: [Text('Starting the camera.', style: t.bodyLarge)]);
+          secondary: back,
+          children: [Text('Starting the camera.', style: t.bodyLarge)],
+        );
       case BaselineStep.cameraError:
       case BaselineStep.failed:
         return _Page(
           secondary: back,
           primary: FilledButton(
-              key: BaselineScreen.primaryKey,
-              onPressed: _c.retry,
-              child: const Text('Try again')),
+            key: BaselineScreen.primaryKey,
+            onPressed: _c.retry,
+            child: const Text('Try again'),
+          ),
           children: [
-            Text(_c.errorMessage ?? 'The camera could not start.',
-                style: t.bodyLarge),
+            Text(
+              _c.errorMessage ?? 'The camera could not start.',
+              style: t.bodyLarge,
+            ),
           ],
         );
       case BaselineStep.handCheck:
@@ -159,15 +173,21 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
           frame: _c.frame,
           stats: () => _c.stats,
           action: TextButton(
-              key: BaselineScreen.secondaryKey,
-              onPressed: _back,
-              child: const Text('Cancel')),
+            key: BaselineScreen.secondaryKey,
+            onPressed: _back,
+            child: const Text('Cancel'),
+          ),
           children: [
-            Text('${_c.measuringOther ? 'Other hand' : 'Affected hand'}: ${hand(_c.currentHand)}',
-                style: t.labelMedium),
+            Text(
+              '${_c.measuringOther ? 'Other hand' : 'Affected hand'}: ${hand(_c.currentHand)}',
+              style: t.labelMedium,
+            ),
             const SizedBox(height: RohabSpace.s8),
-            Text('Hold your ${hand(_c.currentHand)} hand inside the frame.',
-                key: BaselineScreen.instructionKey, style: t.titleLarge),
+            Text(
+              'Hold your ${hand(_c.currentHand)} hand inside the frame.',
+              key: BaselineScreen.instructionKey,
+              style: t.titleLarge,
+            ),
             if (_c.handHint != null) ...[
               const SizedBox(height: RohabSpace.s8),
               Text(_c.handHint!, style: t.labelLarge),
@@ -181,27 +201,29 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
           frame: _c.frame,
           stats: () => _c.stats,
           overlay: DecoratedBox(
-            decoration: BoxDecoration(
-              color: context.colors.surface,
-              borderRadius: BorderRadius.circular(RohabShape.radius),
-              border: Border.all(
-                  color: context.colors.divider, width: RohabShape.border),
+            decoration: paperDecoration(
+              context.colors,
+              radius: RohabShape.radius,
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: RohabSpace.s16, vertical: RohabSpace.s8),
+                horizontal: RohabSpace.s16,
+                vertical: RohabSpace.s8,
+              ),
               child: CountdownNumber(seconds: _c.secondsLeft),
             ),
           ),
           action: TextButton(
-              key: BaselineScreen.secondaryKey,
-              onPressed: _back,
-              child: const Text('Cancel')),
+            key: BaselineScreen.secondaryKey,
+            onPressed: _back,
+            child: const Text('Cancel'),
+          ),
           children: [
             Text(
-                '${_c.measuringOther ? 'Other hand' : 'Affected hand'} · '
-                '${_c.cycle} of ${BaselineController.cycles}',
-                style: t.labelMedium),
+              '${_c.measuringOther ? 'Other hand' : 'Affected hand'} · '
+              '${_c.cycle} of ${BaselineController.cycles}',
+              style: t.labelMedium,
+            ),
             const SizedBox(height: RohabSpace.s8),
             Semantics(
               liveRegion: true,
@@ -222,16 +244,20 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
       case BaselineStep.otherHandPrompt:
         return _Page(
           secondary: TextButton(
-              key: BaselineScreen.secondaryKey,
-              onPressed: _c.skipOther,
-              child: const Text('Skip')),
+            key: BaselineScreen.secondaryKey,
+            onPressed: _c.skipOther,
+            child: const Text('Skip'),
+          ),
           primary: FilledButton(
-              key: BaselineScreen.primaryKey,
-              onPressed: _c.measureOther,
-              child: const Text('Measure other hand')),
+            key: BaselineScreen.primaryKey,
+            onPressed: _c.measureOther,
+            child: const Text('Measure other hand'),
+          ),
           children: [
-            Text('Now your ${hand(_c.currentHand == Handedness.left ? Handedness.right : Handedness.left)} hand',
-                style: t.headlineMedium),
+            Text(
+              'Now your ${hand(_c.currentHand == Handedness.left ? Handedness.right : Handedness.left)} hand',
+              style: t.headlineMedium,
+            ),
             const SizedBox(height: RohabSpace.s16),
             Text(
               'Your other hand shows what is normal for you. If both hands '
@@ -254,12 +280,17 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
             Text(ProgramScreen.levelNames[r.level]!, style: t.bodyLarge),
             const SizedBox(height: RohabSpace.s24),
             const Divider(),
-            _RangeRow(label: '${_cap(hand(r.affectedHand))} hand (affected)', range: r.affected),
+            _RangeRow(
+              label: '${_cap(hand(r.affectedHand))} hand (affected)',
+              range: r.affected,
+            ),
             const Divider(),
             if (r.other != null) ...[
               _RangeRow(
-                  label: '${_cap(hand(r.affectedHand == Handedness.left ? Handedness.right : Handedness.left))} hand',
-                  range: r.other!),
+                label:
+                    '${_cap(hand(r.affectedHand == Handedness.left ? Handedness.right : Handedness.left))} hand',
+                range: r.other!,
+              ),
               const Divider(),
             ],
             const SizedBox(height: RohabSpace.s16),
@@ -332,19 +363,20 @@ class _Choice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: RohabSize.touchTarget,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: context.colors.text,
-            side: BorderSide(color: context.colors.divider),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(RohabShape.radius)),
-            textStyle: Theme.of(context).textTheme.labelLarge,
-          ),
-          child: Text(label),
+    height: RohabSize.touchTarget,
+    child: OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: context.colors.text,
+        side: BorderSide(color: context.colors.divider),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RohabShape.radius),
         ),
-      );
+        textStyle: Theme.of(context).textTheme.labelLarge,
+      ),
+      child: Text(label),
+    ),
+  );
 }
 
 class _Page extends StatelessWidget {
@@ -356,16 +388,20 @@ class _Page extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                  RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
-              children: children,
-            ),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            RohabSpace.s24,
+            RohabSpace.s16,
+            RohabSpace.s24,
+            0,
           ),
-          ActionArea(secondary: secondary, primary: primary),
-        ],
-      );
+          children: children,
+        ),
+      ),
+      ActionArea(secondary: secondary, primary: primary),
+    ],
+  );
 }

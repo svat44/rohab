@@ -9,6 +9,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../glove/glove_service.dart';
 import '../../settings/settings_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 
@@ -56,7 +57,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return ListView(
       scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
       padding: const EdgeInsets.fromLTRB(
-          RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
+        RohabSpace.s24,
+        0,
+        RohabSpace.s24,
+        RohabSpace.s24,
+      ),
       children: [
         const Divider(),
         ValueListenableBuilder<GloveSnapshot>(
@@ -71,8 +76,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               GloveConnection.connected => 'Connected.',
             };
             return ConstrainedBox(
-              constraints:
-                  const BoxConstraints(minHeight: RohabSize.touchTarget * 1.25),
+              constraints: const BoxConstraints(
+                minHeight: RohabSize.touchTarget * 1.25,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -102,8 +108,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           key: SettingsScreen.therapistKey,
           onTap: () => context.go(Routes.therapist),
           child: ConstrainedBox(
-            constraints:
-                const BoxConstraints(minHeight: RohabSize.touchTarget * 1.25),
+            constraints: const BoxConstraints(
+              minHeight: RohabSize.touchTarget * 1.25,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -114,14 +121,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Text('Therapist plan', style: t.labelLarge),
                       const SizedBox(height: RohabSpace.s8 / 2),
                       Text(
-                          'Level, daily goal, sets and pain limits. '
-                          'Needs the therapist PIN.',
-                          style: t.labelMedium),
+                        'Level, daily goal, sets and pain limits. '
+                        'Needs the therapist PIN.',
+                        style: t.labelMedium,
+                      ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    size: RohabSize.icon, color: c.secondary),
+                Icon(
+                  Icons.chevron_right,
+                  size: RohabSize.icon,
+                  color: c.secondary,
+                ),
               ],
             ),
           ),
@@ -172,16 +183,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           if (_cleared)
             Semantics(
               liveRegion: true,
-              child: Text('All saved sessions were deleted.',
-                  key: SettingsScreen.clearedKey, style: t.labelMedium),
+              child: Text(
+                'All saved sessions were deleted.',
+                key: SettingsScreen.clearedKey,
+                style: t.labelMedium,
+              ),
             ),
         ],
         const Divider(),
         const SizedBox(height: RohabSpace.s24),
         Text('About', style: t.labelLarge),
         const SizedBox(height: RohabSpace.s8),
-        Text('Rohab version $kAppVersion',
-            key: SettingsScreen.aboutKey, style: t.bodyLarge),
+        Text(
+          'Rohab version $kAppVersion',
+          key: SettingsScreen.aboutKey,
+          style: t.bodyLarge,
+        ),
         const SizedBox(height: RohabSpace.s8),
         Text(
           'Rohab is not a medical device. Ask your therapist before changing '
@@ -212,13 +229,8 @@ class _Segment extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: Material(
-        color: selected ? c.accent : c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: BorderSide(
-              color: selected ? c.accent : c.divider, width: RohabShape.border),
-        ),
+      child: ChoiceMaterial(
+        selected: selected,
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
@@ -231,9 +243,9 @@ class _Segment extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: selected ? c.onAccent : c.text,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: selected ? c.onAccent : c.text,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -261,16 +273,14 @@ class _ConfirmDelete extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: RohabSpace.s16),
         padding: const EdgeInsets.all(RohabSpace.s16),
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border.all(color: c.divider, width: RohabShape.border),
-          borderRadius: BorderRadius.circular(RohabShape.radius),
-        ),
+        decoration: paperDecoration(c, radius: RohabShape.radius),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Delete all saved sessions? This cannot be undone.',
-                style: t.bodyLarge),
+            Text(
+              'Delete all saved sessions? This cannot be undone.',
+              style: t.bodyLarge,
+            ),
             const SizedBox(height: RohabSpace.s16),
             Row(
               children: [
@@ -284,8 +294,10 @@ class _ConfirmDelete extends StatelessWidget {
                         foregroundColor: c.onDanger,
                         backgroundColor: c.danger,
                         shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(RohabShape.radius)),
+                          borderRadius: BorderRadius.circular(
+                            RohabShape.radius,
+                          ),
+                        ),
                       ),
                       child: const Text('Delete'),
                     ),

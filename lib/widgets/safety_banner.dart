@@ -7,6 +7,7 @@ import '../app/providers.dart';
 import '../glove/glove_service.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
+import 'skeuo.dart';
 
 /// Shown at the top of every screen: connection status and the STOP button.
 ///
@@ -28,30 +29,39 @@ class SafetyBanner extends ConsumerWidget {
     return ValueListenableBuilder<GloveSnapshot>(
       valueListenable: glove.snapshot,
       builder: (context, snap, banner) =>
-          snap.connection == GloveConnection.disconnected &&
-                  snap.faults.isEmpty
-              ? const SizedBox.shrink()
-              : banner!,
+          snap.connection == GloveConnection.disconnected && snap.faults.isEmpty
+          ? const SizedBox.shrink()
+          : banner!,
       child: _banner(context, glove, c, textTheme),
     );
   }
 
-  Widget _banner(BuildContext context, GloveService glove, AppColors c,
-      TextTheme textTheme) {
+  Widget _banner(
+    BuildContext context,
+    GloveService glove,
+    AppColors c,
+    TextTheme textTheme,
+  ) {
     return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
+      decoration: paperDecoration(c, radius: 0).copyWith(
         border: Border(bottom: BorderSide(color: c.divider)),
       ),
       padding: const EdgeInsets.fromLTRB(
-          RohabSpace.s16, RohabSpace.s8, RohabSpace.s8, RohabSpace.s8),
+        RohabSpace.s16,
+        RohabSpace.s8,
+        RohabSpace.s8,
+        RohabSpace.s8,
+      ),
       child: Row(
         children: [
           Expanded(
             child: ValueListenableBuilder<GloveSnapshot>(
               valueListenable: glove.snapshot,
               builder: (context, s, _) {
-                final (title, detail) = _statusText(s, glove is MockGloveService);
+                final (title, detail) = _statusText(
+                  s,
+                  glove is MockGloveService,
+                );
                 final hasFault = s.faults.isNotEmpty;
                 return Semantics(
                   liveRegion: true,
@@ -71,10 +81,12 @@ class SafetyBanner extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // Wraps instead of cutting off on narrow phones.
-                            Text(title,
-                                style: textTheme.labelLarge,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis),
+                            Text(
+                              title,
+                              style: textTheme.labelLarge,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             if (detail != null)
                               Text(
                                 detail,
@@ -97,10 +109,12 @@ class SafetyBanner extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: RohabSpace.s8),
-          _StopButton(onPressed: () {
-            HapticFeedback.heavyImpact();
-            glove.emergencyVent();
-          }),
+          _StopButton(
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              glove.emergencyVent();
+            },
+          ),
         ],
       ),
     );
@@ -114,9 +128,9 @@ class SafetyBanner extends ConsumerWidget {
       GloveConnection.disconnected => ('Glove not connected', null),
       GloveConnection.connecting => ('Connecting', null),
       GloveConnection.connected => (
-          simulated ? 'Simulated glove' : 'Connected',
-          s.state.patientLabel
-        ),
+        simulated ? 'Simulated glove' : 'Connected',
+        s.state.patientLabel,
+      ),
     };
   }
 }
@@ -143,10 +157,13 @@ class _StopButton extends StatelessWidget {
             backgroundColor: c.danger,
             foregroundColor: c.onDanger,
             minimumSize: const Size(
-                RohabSize.stopButtonWidth, RohabSize.stopButtonHeight),
+              RohabSize.stopButtonWidth,
+              RohabSize.stopButtonHeight,
+            ),
             padding: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(RohabShape.radius)),
+              borderRadius: BorderRadius.circular(RohabShape.radius),
+            ),
             textStyle: const TextStyle(
               fontFamily: RohabTokens.fontFamily,
               fontSize: RohabType.title,

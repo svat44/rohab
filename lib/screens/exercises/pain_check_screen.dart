@@ -8,6 +8,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../program/pain.dart';
 import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../../widgets/action_area.dart';
 
 /// Pain 0-10 before the first set of the day and after the last.
@@ -45,7 +46,9 @@ class _PainCheckScreenState extends ConsumerState<PainCheckScreen> {
     if (!mounted) return;
 
     final advice = widget.after
-        ? (before == null ? PainAdvice.ok : PainRules.after(before, score, settings))
+        ? (before == null
+              ? PainAdvice.ok
+              : PainRules.after(before, score, settings))
         : PainRules.before(score, settings);
     if (advice == PainAdvice.ok) {
       _continue();
@@ -63,9 +66,11 @@ class _PainCheckScreenState extends ConsumerState<PainCheckScreen> {
       ref.read(cameraSessionRangesProvider.notifier).clear();
       context.go(Routes.cameraExercises);
     } else {
-      context.go(widget.next == null
-          ? Routes.cameraExercises
-          : Routes.cameraExercise(widget.next!));
+      context.go(
+        widget.next == null
+            ? Routes.cameraExercises
+            : Routes.cameraExercise(widget.next!),
+      );
     }
   }
 
@@ -105,8 +110,10 @@ class _PainCheckScreenState extends ConsumerState<PainCheckScreen> {
           child: const Text('Done'),
         ),
         children: [
-          Text('Your pain went up${_rise == null ? '' : ' by $_rise'}',
-              style: t.headlineMedium),
+          Text(
+            'Your pain went up${_rise == null ? '' : ' by $_rise'}',
+            style: t.headlineMedium,
+          ),
           const SizedBox(height: RohabSpace.s16),
           Text(
             "Rest your hand. Tomorrow's goal will be a little lower. Tell "
@@ -132,11 +139,15 @@ class _PainCheckScreenState extends ConsumerState<PainCheckScreen> {
       ),
       children: [
         // Short copy so all of 0-10 fits above the buttons on a phone.
-        Text(widget.after ? 'Pain now?' : 'Pain right now?',
-            style: t.headlineMedium),
+        Text(
+          widget.after ? 'Pain now?' : 'Pain right now?',
+          style: t.headlineMedium,
+        ),
         const SizedBox(height: RohabSpace.s8),
-        Text('In your hand or arm. 0 is none, 10 is the worst.',
-            style: t.bodyLarge),
+        Text(
+          'In your hand or arm. 0 is none, 10 is the worst.',
+          style: t.bodyLarge,
+        ),
         const SizedBox(height: RohabSpace.s16),
         _ScoreGrid(
           selected: _score,
@@ -158,48 +169,46 @@ class _ScoreGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
-    return LayoutBuilder(builder: (context, constraints) {
-      const perRow = 4;
-      final w = (constraints.maxWidth - RohabSpace.s8 * (perRow - 1)) / perRow;
-      return Wrap(
-        spacing: RohabSpace.s8,
-        runSpacing: RohabSpace.s8,
-        children: [
-          for (var n = 0; n <= 10; n++)
-            Semantics(
-              button: true,
-              selected: selected == n,
-              label: 'Pain $n',
-              excludeSemantics: true,
-              child: SizedBox(
-                width: w,
-                height: RohabSize.touchTarget,
-                child: Material(
-                  color: selected == n ? c.accent : c.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(RohabShape.radius),
-                    side: BorderSide(
-                        color: selected == n ? c.accent : c.divider,
-                        width: RohabShape.border),
-                  ),
-                  child: InkWell(
-                    key: PainCheckScreen.scoreKey(n),
-                    borderRadius: BorderRadius.circular(RohabShape.radius),
-                    onTap: () => onSelected(n),
-                    child: Center(
-                      child: Text(
-                        '$n',
-                        style: t.labelLarge?.copyWith(
-                            color: selected == n ? c.onAccent : c.text),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const perRow = 4;
+        final w =
+            (constraints.maxWidth - RohabSpace.s8 * (perRow - 1)) / perRow;
+        return Wrap(
+          spacing: RohabSpace.s8,
+          runSpacing: RohabSpace.s8,
+          children: [
+            for (var n = 0; n <= 10; n++)
+              Semantics(
+                button: true,
+                selected: selected == n,
+                label: 'Pain $n',
+                excludeSemantics: true,
+                child: SizedBox(
+                  width: w,
+                  height: RohabSize.touchTarget,
+                  child: ChoiceMaterial(
+                    selected: selected == n,
+                    child: InkWell(
+                      key: PainCheckScreen.scoreKey(n),
+                      borderRadius: BorderRadius.circular(RohabShape.radius),
+                      onTap: () => onSelected(n),
+                      child: Center(
+                        child: Text(
+                          '$n',
+                          style: t.labelLarge?.copyWith(
+                            color: selected == n ? c.onAccent : c.text,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -212,15 +221,15 @@ class _Layout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
-              children: children,
-            ),
-          ),
-          ActionArea(secondary: secondary, primary: primary),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+          children: children,
+        ),
+      ),
+      ActionArea(secondary: secondary, primary: primary),
+    ],
+  );
 }

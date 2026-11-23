@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
+import 'skeuo.dart';
 
 /// A labeled vertical line on a [LevelBar].
 class LevelMarker {
@@ -54,93 +55,119 @@ class LevelBar extends StatelessWidget {
       label: semanticsLabel,
       value: semanticsValue,
       excludeSemantics: true,
-      child: LayoutBuilder(builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final top = hasAbove ? labelBand : 0.0;
-        final height =
-            top + LevelBar.barHeight + (hasBelow ? labelBand : 0.0);
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final top = hasAbove ? labelBand : 0.0;
+          final height =
+              top + LevelBar.barHeight + (hasBelow ? labelBand : 0.0);
 
-        final children = <Widget>[
-          Positioned(
-            left: 0,
-            right: 0,
-            top: top,
-            height: LevelBar.barHeight,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(RohabShape.radius),
-              child: ColoredBox(
-                color: c.divider,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: fraction(value),
-                    heightFactor: 1,
-                    child: ColoredBox(color: c.accent),
+          final children = <Widget>[
+            Positioned(
+              left: 0,
+              right: 0,
+              top: top,
+              height: LevelBar.barHeight,
+              // A groove cut into the panel, with a glossy bar sliding in it.
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Color.lerp(c.divider, const Color(0xFF000000), 0.1),
+                  borderRadius: BorderRadius.circular(RohabShape.radius),
+                  border: Border.all(
+                    color: Color.lerp(c.divider, const Color(0xFF000000), 0.5)!,
+                    width: RohabShape.border,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(RohabShape.radius - 1),
+                  child: CustomPaint(
+                    painter: const _GroovePainter(),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: fraction(value),
+                        heightFactor: 1,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(color: c.accent),
+                          child: const CustomPaint(
+                            painter: BevelPainter(
+                              radius: RohabShape.radius - 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ];
-
-        // Marker lines.
-        for (final m in markers) {
-          final x = fraction(m.position) * width;
-          final lineLeft = (x - LevelBar.markerWidth / 2)
-              .clamp(0.0, width - LevelBar.markerWidth);
-          children.add(Positioned(
-            left: lineLeft,
-            width: LevelBar.markerWidth,
-            top: top - (m.above ? tick : 0),
-            height: LevelBar.barHeight + tick,
-            child: ColoredBox(color: c.text),
-          ));
-        }
-
-        // Labels, centered on their line, kept inside the bar and never
-        // overlapping another label on the same side.
-        final scaler = MediaQuery.textScalerOf(context);
-        for (final above in [true, false]) {
-          final group = [
-            for (final m in markers)
-              if (m.above == above) m
-          ]..sort((a, b) => a.position.compareTo(b.position));
-          final widths = [
-            for (final m in group) _textWidth(m.label, markerLabel, scaler)
           ];
-          final lefts = [
-            for (var i = 0; i < group.length; i++)
-              fraction(group[i].position) * width - widths[i] / 2
-          ];
-          const gap = RohabSpace.s8;
-          for (var i = 0; i < lefts.length; i++) {
-            if (i > 0) {
-              final minLeft = lefts[i - 1] + widths[i - 1] + gap;
-              if (lefts[i] < minLeft) lefts[i] = minLeft;
+
+          // Marker lines.
+          for (final m in markers) {
+            final x = fraction(m.position) * width;
+            final lineLeft = (x - LevelBar.markerWidth / 2).clamp(
+              0.0,
+              width - LevelBar.markerWidth,
+            );
+            children.add(
+              Positioned(
+                left: lineLeft,
+                width: LevelBar.markerWidth,
+                top: top - (m.above ? tick : 0),
+                height: LevelBar.barHeight + tick,
+                child: ColoredBox(color: c.text),
+              ),
+            );
+          }
+
+          // Labels, centered on their line, kept inside the bar and never
+          // overlapping another label on the same side.
+          final scaler = MediaQuery.textScalerOf(context);
+          for (final above in [true, false]) {
+            final group = [
+              for (final m in markers)
+                if (m.above == above) m,
+            ]..sort((a, b) => a.position.compareTo(b.position));
+            final widths = [
+              for (final m in group) _textWidth(m.label, markerLabel, scaler),
+            ];
+            final lefts = [
+              for (var i = 0; i < group.length; i++)
+                fraction(group[i].position) * width - widths[i] / 2,
+            ];
+            const gap = RohabSpace.s8;
+            for (var i = 0; i < lefts.length; i++) {
+              if (i > 0) {
+                final minLeft = lefts[i - 1] + widths[i - 1] + gap;
+                if (lefts[i] < minLeft) lefts[i] = minLeft;
+              }
+              if (lefts[i] < 0) lefts[i] = 0;
             }
-            if (lefts[i] < 0) lefts[i] = 0;
+            for (var i = lefts.length - 1; i >= 0; i--) {
+              final maxLeft = i == lefts.length - 1
+                  ? width - widths[i]
+                  : lefts[i + 1] - gap - widths[i];
+              if (lefts[i] > maxLeft) lefts[i] = maxLeft;
+            }
+            for (var i = 0; i < group.length; i++) {
+              children.add(
+                Positioned(
+                  left: lefts[i],
+                  top: above ? 0 : top + LevelBar.barHeight + tick,
+                  child: Text(group[i].label, style: markerLabel),
+                ),
+              );
+            }
           }
-          for (var i = lefts.length - 1; i >= 0; i--) {
-            final maxLeft = i == lefts.length - 1
-                ? width - widths[i]
-                : lefts[i + 1] - gap - widths[i];
-            if (lefts[i] > maxLeft) lefts[i] = maxLeft;
-          }
-          for (var i = 0; i < group.length; i++) {
-            children.add(Positioned(
-              left: lefts[i],
-              top: above ? 0 : top + LevelBar.barHeight + tick,
-              child: Text(group[i].label, style: markerLabel),
-            ));
-          }
-        }
 
-        return SizedBox(
-          height: height,
-          width: width,
-          child: Stack(clipBehavior: Clip.none, children: children),
-        );
-      }),
+          return SizedBox(
+            height: height,
+            width: width,
+            child: Stack(clipBehavior: Clip.none, children: children),
+          );
+        },
+      ),
     );
   }
 }
@@ -154,4 +181,26 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) {
   final w = painter.width;
   painter.dispose();
   return w;
+}
+
+/// Shadow cast into the groove from its top edge.
+class _GroovePainter extends CustomPainter {
+  const _GroovePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, 9);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x40000000), Color(0x00000000)],
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GroovePainter old) => false;
 }

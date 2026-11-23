@@ -5,6 +5,7 @@ import '../../camera/hand_tracker.dart';
 import '../../debug/diagnostics.dart';
 import '../../debug/diagnostics_overlay.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/skeuo.dart';
 import '../../widgets/hand_overlay.dart';
 
 /// Camera step. The camera takes all the height the text below it does not
@@ -43,20 +44,29 @@ class CameraPage extends StatelessWidget {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-                RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+              RohabSpace.s24,
+              RohabSpace.s16,
+              RohabSpace.s24,
+              0,
+            ),
             child: _Preview(
-                tracker: tracker,
-                frame: frame,
-                stats: stats,
-                overlay: overlay,
-                diagnostics: diagnostics),
+              tracker: tracker,
+              frame: frame,
+              stats: stats,
+              overlay: overlay,
+              diagnostics: diagnostics,
+            ),
           ),
         ),
         Flexible(
           flex: 0,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
-                RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+              RohabSpace.s24,
+              RohabSpace.s16,
+              RohabSpace.s24,
+              0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: children,
@@ -65,7 +75,11 @@ class CameraPage extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              RohabSpace.s24, RohabSpace.s8, RohabSpace.s24, RohabSpace.s16),
+            RohabSpace.s24,
+            RohabSpace.s8,
+            RohabSpace.s24,
+            RohabSpace.s16,
+          ),
           child: SizedBox(height: RohabSize.touchTarget, child: action),
         ),
       ],
@@ -91,40 +105,56 @@ class _Preview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final radius = BorderRadius.circular(RohabShape.card);
+    const bezel = 6.0;
+    final outer = BorderRadius.circular(RohabShape.card);
+    final inner = BorderRadius.circular(RohabShape.card - bezel / 2);
     final aspect = tracker?.previewAspect ?? 3 / 4;
+    // A steel bezel around the picture, like a monitor. The bezel is
+    // outside the AspectRatio, so the preview keeps its exact shape and the
+    // hand drawing stays aligned with it.
     return Semantics(
       label: 'Camera view',
       child: Center(
-        child: AspectRatio(
-          aspectRatio: aspect,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(color: c.divider, width: RohabShape.border),
-              borderRadius: radius,
-            ),
-            child: ClipRRect(
-              borderRadius: radius,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (tracker case final t?) t.buildPreview(context),
-                  HandOverlay(frame: frame),
-                  if (overlay != null)
-                    Positioned(
-                      top: RohabSpace.s8,
-                      right: RohabSpace.s8,
-                      child: overlay!,
-                    ),
-                  if (kDebugMode)
-                    Positioned(
-                      left: RohabSpace.s8,
-                      bottom: RohabSpace.s8,
-                      child: diagnostics != null
-                          ? DiagnosticsOverlay(collector: diagnostics!)
-                          : _DebugStats(stats: stats()),
-                    ),
-                ],
+        child: DecoratedBox(
+          decoration: steelDecoration(c).copyWith(
+            borderRadius: outer,
+            border: Border.all(color: const Color(0xAA000000)),
+            boxShadow: raisedShadow(c, lift: 1.4),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(bezel),
+            child: AspectRatio(
+              aspectRatio: aspect,
+              child: DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: BoxDecoration(
+                  borderRadius: inner,
+                  border: Border.all(color: const Color(0x99000000), width: 2),
+                ),
+                child: ClipRRect(
+                  borderRadius: inner,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (tracker case final t?) t.buildPreview(context),
+                      HandOverlay(frame: frame),
+                      if (overlay != null)
+                        Positioned(
+                          top: RohabSpace.s8,
+                          right: RohabSpace.s8,
+                          child: overlay!,
+                        ),
+                      if (kDebugMode)
+                        Positioned(
+                          left: RohabSpace.s8,
+                          bottom: RohabSpace.s8,
+                          child: diagnostics != null
+                              ? DiagnosticsOverlay(collector: diagnostics!)
+                              : _DebugStats(stats: stats()),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -148,7 +178,9 @@ class _DebugStats extends StatelessWidget {
       color: c.surface,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: RohabSpace.s8, vertical: RohabSpace.s8 / 2),
+          horizontal: RohabSpace.s8,
+          vertical: RohabSpace.s8 / 2,
+        ),
         child: Text(
           '${s.framesPerSecond.toStringAsFixed(0)} fps · '
           '${s.droppedFrames} dropped',
