@@ -150,6 +150,17 @@ class CameraExerciseController extends ChangeNotifier {
   /// Exercise-specific guidance ("Hold it open.", "Next: ring finger").
   String? hint;
 
+  /// Live progress toward the current move, 0-1, lightly smoothed so the bar
+  /// does not flicker with tracking noise. [meterMarker] is the goal line.
+  double meter = 0;
+  double meterMarker = 1;
+
+  /// No count for [stuckAfter] while the hand is in view: the screen offers
+  /// tips instead of leaving the person guessing.
+  bool stuck = false;
+  Duration _lastCountAt = Duration.zero;
+  static const stuckAfter = Duration(seconds: 15);
+
   /// The hand has been out of view for over 2 s; counting is paused.
   bool handLost = false;
 
@@ -296,6 +307,10 @@ class CameraExerciseController extends ChangeNotifier {
     wristCue = false;
     compensatedReps = 0;
     hint = _counter!.hint;
+    meter = 0;
+    meterMarker = _counter!.marker;
+    stuck = false;
+    _lastCountAt = _now;
     _exerciseStart = _now;
     _startedAt = _wallClock();
     _go(FlowStep.exercise);
@@ -369,6 +384,7 @@ class CameraExerciseController extends ChangeNotifier {
       case FlowStep.exercise:
         if (handLost) {
           handLost = false;
+          _lastCountAt = _now;
           _filter.reset();
           _recorder.reset();
           _wrist.reset();
@@ -396,6 +412,9 @@ class CameraExerciseController extends ChangeNotifier {
                 points: lm, angles: angles, percent: p, image: frame.points),
             frame.timestamp);
         hint = _counter!.hint;
+        final target = _counter!.meter ?? p / 100;
+        meter += (target - meter) * 0.5;
+        meterMarker = _counter!.marker;
         if (counted && _wrist.moved && !exercise.movesWrist) {
           // Made by bending the wrist (tenodesis), not the fingers.
           _recorder.close();
@@ -403,6 +422,8 @@ class CameraExerciseController extends ChangeNotifier {
           wristCue = true;
         } else if (counted) {
           wristCue = false;
+          _lastCountAt = _now;
+          stuck = false;
           final stats = _recorder.close();
           if (stats != null) _repStats.add(stats);
           reps++;
@@ -488,6 +509,11 @@ class CameraExerciseController extends ChangeNotifier {
           }
         }
       case FlowStep.exercise:
+        final isStuck = !handLost && _now - _lastCountAt >= stuckAfter;
+        if (isStuck != stuck) {
+          stuck = isStuck;
+          notifyListeners();
+        }
         final lost = _lastSeen == null || _now - _lastSeen! > lostAfter;
         if (lost && !handLost) {
           handLost = true;

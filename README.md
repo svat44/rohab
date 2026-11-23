@@ -142,6 +142,19 @@ Built from `docs/rehab-science.md`:
 6. **Therapist plan** (Settings, 4-digit PIN): level override, goals, set
    size, rest, pain limits, automatic progression.
 
+## What the screen tells you during an exercise
+
+Every exercise shows one plain instruction ("Open your hand wide.", "Touch
+your thumb to your index fingertip (1 of 4).") and a bar with a **Goal**
+line. The bar is the move itself, not a generic "openness": open/close
+shows the opening with the next target line, holds fill as the seconds pass
+(first 40 % getting into position, the rest the hold), finger tapping and
+pinch fill as the thumb nears the right fingertip, wrist, rotation and
+slide fill with the movement. After 15 s without a count the screen says
+what to try. Touch distances are loose on purpose (0.3 palm widths to
+count, 0.5 to release); tracking noise makes a stricter limit miss real
+touches.
+
 ## Camera orientation (why the hand was drawn off the real hand)
 
 The `camera` plugin delivers frames differently per platform, read from its

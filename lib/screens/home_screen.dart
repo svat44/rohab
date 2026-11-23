@@ -208,31 +208,22 @@ class _TodayCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              ProgressRing(
-                value: total == 0 ? 0 : done / total,
-                centerText: '$done of $total',
-                caption: 'sets',
-              ),
-              const SizedBox(width: RohabSpace.s24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(next == null ? 'Well done' : "Today's exercises",
-                        style: t.headlineMedium),
-                    const SizedBox(height: RohabSpace.s8),
-                    Text(
-                      next == null
-                          ? 'You finished your exercises for today.'
-                          : 'Next: ${next.exercise.title}',
-                      style: t.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(next == null ? 'Well done' : "Today's exercises",
+              style: t.headlineMedium),
+          const SizedBox(height: RohabSpace.s8),
+          Text(
+            next == null
+                ? 'You finished your exercises for today.'
+                : 'Next: ${next.exercise.title}',
+            style: t.bodyLarge,
+          ),
+          const SizedBox(height: RohabSpace.s16),
+          Text('$done of $total sets done', style: t.labelLarge),
+          const SizedBox(height: RohabSpace.s8),
+          LevelBar(
+            value: total == 0 ? 0 : done / total,
+            semanticsLabel: 'Sets today',
+            semanticsValue: '$done of $total',
           ),
           const SizedBox(height: RohabSpace.s24),
           FilledButton(

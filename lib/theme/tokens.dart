@@ -44,34 +44,35 @@ class RohabPalette {
   /// Soft card shadow.
   final Color shadow;
 
-  /// Warm sand paper, white cards, deep teal for actions. Flat colours, no
-  /// gradients. Contrast (WCAG): text on background 14:1, secondary on
-  /// background 5.9:1, white on accent 8.2:1.
+  /// Light blue and deep blue, from the app icon (#54C5F8, #29B6F6,
+  /// #01579B). Flat colours, square corners, no gradients. Contrast (WCAG):
+  /// text on background 15:1, secondary on background 6.1:1, white on
+  /// accent 7.6:1.
   static const light = RohabPalette(
-    background: Color(0xFFF6F2EA),
+    background: Color(0xFFF1F7FB),
     surface: Color(0xFFFFFFFF),
-    text: Color(0xFF1B2327),
-    secondary: Color(0xFF566067),
-    divider: Color(0xFFE2DBCD),
-    accent: Color(0xFF0F5C57),
+    text: Color(0xFF0B1F2E),
+    secondary: Color(0xFF475F72),
+    divider: Color(0xFFC9DBE8),
+    accent: Color(0xFF01579B),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFE0EDE8),
+    accentSoft: Color(0xFFDCEEFA),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
     shadow: Color(0x00000000),
   );
 
-  /// Dark twin. Accent keeps dark text on it (white on #3FD0BE is about
+  /// Dark twin. Accent keeps dark text on it (white on #54C5F8 is about
   /// 1.9:1).
   static const dark = RohabPalette(
-    background: Color(0xFF12120F),
-    surface: Color(0xFF1C1C18),
-    text: Color(0xFFF3F1EA),
-    secondary: Color(0xFFA9A89E),
-    divider: Color(0xFF302F29),
-    accent: Color(0xFF3FD0BE),
-    onAccent: Color(0xFF062321),
-    accentSoft: Color(0xFF173B37),
+    background: Color(0xFF0A1621),
+    surface: Color(0xFF112331),
+    text: Color(0xFFEAF3FA),
+    secondary: Color(0xFF9DB4C6),
+    divider: Color(0xFF244058),
+    accent: Color(0xFF54C5F8),
+    onAccent: Color(0xFF04202F),
+    accentSoft: Color(0xFF143650),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
     shadow: Color(0x00000000),
@@ -99,10 +100,10 @@ class RohabSpace {
 
 class RohabShape {
   RohabShape._();
-  static const double radius = 16;
+  static const double radius = 0;
 
-  /// Cards and hero panels.
-  static const double card = 16;
+  /// Cards and panels. Square, on purpose.
+  static const double card = 0;
   static const double border = 1;
 
   /// Marker lines and the camera's hand frame.

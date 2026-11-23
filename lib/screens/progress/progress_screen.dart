@@ -6,6 +6,7 @@ import '../../app/router.dart';
 import '../../data/database.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../theme/app_theme.dart';
+import 'overview.dart';
 import 'progress_data.dart';
 import 'range_chart.dart';
 import 'reps_chart.dart';
@@ -43,6 +44,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           onSelected: (id) => setState(() => _id = id),
         ),
         const SizedBox(height: RohabSpace.s16),
+        ref.watch(progressOverviewProvider).when(
+              data: (o) => WeekOverview(overview: o),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+        const SizedBox(height: RohabSpace.s24),
         ...data.when(
           loading: () => [Text('Loading.', style: t.bodyLarge)],
           error: (e, _) =>
@@ -93,7 +100,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return [
       Text(summary, key: ProgressScreen.summaryKey, style: t.bodyLarge),
       const SizedBox(height: RohabSpace.s24),
-      Text('Reps, last ${chrono.length} sessions', style: t.labelLarge),
+      if (_improvement(chrono, unit) case final card?) ...[
+        card,
+        const SizedBox(height: RohabSpace.s24),
+      ],
+      Text(
+          chrono.length == 1
+              ? 'Reps, last session'
+              : 'Reps, last ${chrono.length} sessions',
+          style: t.labelLarge),
       const SizedBox(height: RohabSpace.s8),
       KeyedSubtree(
         key: ProgressScreen.repsChartKey,
@@ -124,6 +139,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       ],
     ];
   }
+}
+
+/// First and latest range of movement, once there are two measured
+/// sessions to compare.
+Widget? _improvement(List<ExerciseSessionRow> chrono, String unit) {
+  final measured = [
+    for (final r in chrono)
+      if (r.metricUnit == unit && r.rangeMin != null && r.rangeMax != null) r
+  ];
+  if (measured.length < 2) return null;
+  double span(ExerciseSessionRow r) => r.rangeMax! - r.rangeMin!;
+  return ImprovementCard(
+    first: span(measured.first),
+    latest: span(measured.last),
+    unit: unit == 'deg' ? '°' : '%',
+    since: shortDate(measured.first.startedAt),
+  );
 }
 
 /// Three options, each at least 64 dp tall.

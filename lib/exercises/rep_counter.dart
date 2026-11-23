@@ -26,6 +26,9 @@ class HysteresisRepCounter {
 
   int get reps => _reps;
 
+  /// The next target is the open one (high), not the closed one (low).
+  bool get expectingOpen => _phase != _Phase.waitingForLow;
+
   /// Feed one value at time [t] (any monotonic clock). Returns true when a
   /// rep is counted on this value.
   bool update(double percent, Duration t) {
@@ -65,8 +68,8 @@ enum _Phase { waitingForHigh, waitingForLow, waitingForSecondHigh }
 /// of a fingertip for at least [holdTime]. A wrong finger restarts the round.
 class FingerTouchCounter {
   FingerTouchCounter({
-    this.touchDistance = 0.2,
-    this.releaseDistance = 0.32,
+    this.touchDistance = 0.3,
+    this.releaseDistance = 0.5,
     this.holdTime = const Duration(milliseconds: 200),
   }) : assert(releaseDistance >= touchDistance);
 
@@ -86,12 +89,18 @@ class FingerTouchCounter {
 
   int get rounds => _rounds;
 
+  double _meter = 0;
+
+  /// How near the thumb is to the fingertip due next, 0-1 (1 = touching).
+  double get meter => _meter;
+
   /// Which finger (0 index ... 3 pinky) the round expects next.
   int get expectedFinger => _next;
 
   /// Returns true when a round completes on this frame.
   bool update(List<Point3> landmarks, Duration t) {
     final d = [for (final tip in order) HandMetrics.thumbTo(landmarks, tip)];
+    _meter = ((1.2 - d[_next]) / (1.2 - touchDistance)).clamp(0.0, 1.0);
 
     // Release: the registered finger counts again only after the thumb
     // moves clearly away from it.

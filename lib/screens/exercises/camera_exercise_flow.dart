@@ -15,6 +15,7 @@ import '../../exercises/exercise_catalog.dart';
 import '../../exercises/exercise_providers.dart';
 import '../../program/daily_plan.dart';
 import '../../program/program_providers.dart';
+import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/action_area.dart';
@@ -92,6 +93,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
       if (mounted) {
         ref.invalidate(programOverviewProvider);
         ref.invalidate(progressDataProvider);
+        ref.invalidate(progressOverviewProvider);
       }
     });
     WidgetsBinding.instance.addObserver(this);
@@ -498,7 +500,6 @@ class _Page extends StatelessWidget {
 class _ExerciseReadout extends StatelessWidget {
   const _ExerciseReadout({required this.controller, required this.exercise});
 
-
   final CameraExerciseController controller;
   final CameraExercise exercise;
 
@@ -506,10 +507,18 @@ class _ExerciseReadout extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final c = controller;
-    final measure = exercise.usesSpread ? 'Spread' : 'Openness';
-    // The openness bar only makes sense when the fingers are the thing
-    // being trained; wrist and whole-hand exercises show guidance instead.
-    final showBar = exercise.reportsRange;
+    final colors = context.colors;
+    // What the instruction line says, most important first.
+    final String message = c.handLost
+        ? 'Hold your hand inside the frame.'
+        : c.wristCue
+            ? 'Wrist moved. That one did not count.'
+            : c.stuck
+                ? 'Not counting? Make the movement bigger and slower, with '
+                    'your whole hand in view.'
+                : c.suggestRest
+                    ? 'Movements are getting smaller. A rest may help.'
+                    : c.hint ?? 'Keep going.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -535,45 +544,32 @@ class _ExerciseReadout extends StatelessWidget {
           ),
         ),
         const SizedBox(height: RohabSpace.s16),
-        // The message and the bar share one fixed-height slot, so the
-        // layout doesn't jump when the hand is lost.
+        // One clear instruction, then the bar that shows how close the move
+        // is. Same height whatever is shown, so the layout never jumps.
         SizedBox(
-          height: RohabType.label * 1.25 + RohabSpace.s8 + LevelBar.barHeight,
-          // (kept the same for every exercise so the layout never jumps)
-          child: c.handLost
-              ? Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Hold your hand inside the frame.',
-                      style: t.labelLarge),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      // Most important first: compensation, then fatigue,
-                      // then the exercise's own guidance.
-                      c.wristCue
-                          ? 'Wrist moved. That one did not count.'
-                          : c.suggestRest
-                              ? 'Movements are getting smaller. A rest may help.'
-                              : c.hint ??
-                                  (showBar
-                                      ? '$measure ${c.percent.round()}%'
-                                      : 'Keep going.'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.labelMedium
-                          ?.copyWith(color: context.colors.text),
-                    ),
-                    const SizedBox(height: RohabSpace.s8),
-                    if (showBar)
-                      LevelBar(
-                        value: c.percent / 100,
-                        semanticsLabel: measure,
-                        semanticsValue: '${c.percent.round()} percent',
-                      ),
-                  ],
+          height: RohabType.body * 1.25 * 2 + RohabSpace.s8 + 64,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: t.labelLarge?.copyWith(
+                    color: c.handLost || c.wristCue || c.stuck
+                        ? colors.text
+                        : colors.accent),
+              ),
+              const SizedBox(height: RohabSpace.s8),
+              if (!c.handLost)
+                LevelBar(
+                  value: c.meter,
+                  semanticsLabel: 'Progress of this move',
+                  semanticsValue: '${(c.meter * 100).round()} percent',
+                  markers: [LevelMarker(c.meterMarker, 'Goal')],
                 ),
+            ],
+          ),
         ),
       ],
     );
@@ -602,7 +598,7 @@ class _NumberedStep extends StatelessWidget {
             height: RohabSpace.s32,
             alignment: Alignment.center,
             decoration:
-                BoxDecoration(color: c.background, shape: BoxShape.circle),
+                BoxDecoration(color: c.accentSoft),
             child: Text('$number',
                 style: t.labelMedium
                     ?.copyWith(color: c.text, fontWeight: FontWeight.w700)),

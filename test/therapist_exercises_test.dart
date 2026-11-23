@@ -282,4 +282,92 @@ void main() {
       expect(c.count, 0);
     });
   });
+
+  group('live meter and clear guidance', () {
+    test('pinch: the meter fills as the thumb nears the index fingertip', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.pinch);
+      final apart = sample(SyntheticHand.world());
+      final touching = sample(SyntheticHand.world(thumbOn: HandIndex.indexTip));
+      c.update(apart, Duration.zero);
+      final far = c.meter!;
+      expect(c.hint, contains('thumb'));
+      c.update(touching, const Duration(milliseconds: 100));
+      expect(c.meter!, greaterThan(far));
+      expect(c.hint, contains('Hold'));
+    });
+
+    test('pinch: thumb and index together counts one pinch, then needs a release',
+        () {
+      final c = ExerciseCounter.forKind(ExerciseKind.pinch);
+      final touching = sample(SyntheticHand.world(thumbOn: HandIndex.indexTip));
+      var t = feed(c, touching, Duration.zero, 1);
+      expect(c.count, 1);
+      t = feed(c, touching, t, 2);
+      expect(c.count, 1, reason: 'held pinch must not count again');
+      t = feed(c, sample(SyntheticHand.world()), t, 0.5);
+      feed(c, touching, t, 1);
+      expect(c.count, 2);
+    });
+
+    test('pinch: a slightly loose touch (0.28 palm widths) still counts', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.pinch);
+      final w = SyntheticHand.world(thumbOn: HandIndex.indexTip);
+      final palm = HandMetrics.palmWidth(w);
+      final tip = w[HandIndex.indexTip];
+      final loose = [
+        for (var i = 0; i < w.length; i++)
+          i == 4 ? Point3(tip.x - 0.28 * palm, tip.y, tip.z) : w[i],
+      ];
+      feed(c, sample(loose), Duration.zero, 1);
+      expect(c.count, 1);
+    });
+
+    test('finger tapping tells which finger is next and fills toward it', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.fingerTouches);
+      c.update(sample(SyntheticHand.world()), Duration.zero);
+      final far = c.meter!;
+      expect(c.hint, contains('index'));
+      expect(c.hint, contains('1 of 4'));
+      c.update(sample(SyntheticHand.world(thumbOn: HandIndex.indexTip)),
+          const Duration(milliseconds: 100));
+      expect(c.meter!, greaterThan(far));
+      expect(c.meter!, closeTo(1, 0.01));
+    });
+
+    test('open and close: the goal line moves between the two targets', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.openClose);
+      c.update(sample(SyntheticHand.world(), percent: 10), Duration.zero);
+      expect(c.hint, contains('Open'));
+      expect(c.marker, closeTo(0.8, 1e-9));
+      expect(c.meter, closeTo(0.1, 1e-9));
+      c.update(sample(SyntheticHand.world(), percent: 90),
+          const Duration(seconds: 1));
+      expect(c.hint, contains('fist'));
+      expect(c.marker, closeTo(0.2, 1e-9));
+    });
+
+    test('a hold counts down in seconds and the bar fills with it', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.squeeze);
+      final fist = sample(SyntheticHand.world(curl: 1), percent: 5);
+      var t = feed(c, fist, Duration.zero, 2);
+      expect(c.hint, contains('s'));
+      final mid = c.meter!;
+      expect(mid, inExclusiveRange(0.4, 1.0));
+      t = feed(c, fist, t, 2);
+      expect(c.meter!, greaterThan(mid));
+    });
+
+    test('a wrist exercise ignores finger opening (its bar is its own)', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.wristRotation);
+      final flat = sample(SyntheticHand.world());
+      // The same hand posture with wildly different "opening" gives the
+      // same meter: it follows the palm turning, nothing else.
+      c.update(HandSample(points: flat.points, angles: flat.angles, percent: 5),
+          Duration.zero);
+      final a = c.meter;
+      c.update(HandSample(points: flat.points, angles: flat.angles, percent: 95),
+          const Duration(milliseconds: 100));
+      expect(c.meter, a);
+    });
+  });
 }

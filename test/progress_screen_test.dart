@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:rohab/screens/exercises/exercises_screen.dart';
+import 'package:rohab/screens/progress/overview.dart';
 import 'package:rohab/screens/progress/progress_screen.dart';
 
 import 'helpers.dart';
@@ -35,12 +36,19 @@ void main() {
     final glove = await pumpRohabOn(tester, db, now: now);
     await openProgress(tester);
 
+    // The week at a glance sits on top: a bar per day and the streak.
+    expect(find.byKey(WeekOverview.chartKey), findsOneWidget);
+    expect(textOf(tester, WeekOverview.streakKey), '10 days in a row');
+    await reveal(tester, ProgressScreen.summaryKey);
     expect(textOf(tester, ProgressScreen.summaryKey),
         // Nov 13 09:30 is outside the 7 days before Nov 20 12:00; Nov 14-20
         // are inside: reps 8 to 14.
         'This week: 7 sessions, ${8 + 9 + 10 + 11 + 12 + 13 + 14} reps.');
+    await reveal(tester, ProgressScreen.repsChartKey);
     expect(find.byKey(ProgressScreen.repsChartKey), findsOneWidget);
+    await reveal(tester, ProgressScreen.rangeChartKey);
     expect(find.byKey(ProgressScreen.rangeChartKey), findsOneWidget);
+    await reveal(tester, ProgressScreen.repsChartKey);
     // Charts read out the same numbers as the list.
     final reps = find.bySemanticsLabel(RegExp(r'^Reps per session'));
     expect(reps, findsOneWidget);
@@ -73,11 +81,13 @@ void main() {
     final db = await seededDb(tester, const []);
     final glove = await pumpRohabOn(tester, db, now: now);
     await openProgress(tester);
+    await reveal(tester, ProgressScreen.emptyKey);
     expect(textOf(tester, ProgressScreen.emptyKey),
         'No sessions yet. Start one from Exercises.');
     expect(textOf(tester, ProgressScreen.summaryKey),
         'This week: 0 sessions, 0 reps.');
     expect(find.byKey(ProgressScreen.repsChartKey), findsNothing);
+    await reveal(tester, ProgressScreen.goToExercisesKey);
     final button = find.byKey(ProgressScreen.goToExercisesKey);
     expect(tester.getSize(button).height, greaterThanOrEqualTo(64));
     await tester.tap(button);

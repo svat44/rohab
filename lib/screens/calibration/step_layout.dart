@@ -88,7 +88,7 @@ class _StepIndicator extends StatelessWidget {
                       : i == step
                           ? c.accent
                           : c.divider,
-                  borderRadius: BorderRadius.circular(RohabSpace.s8 / 2),
+                  
                 ),
               ),
             ),

@@ -32,6 +32,11 @@ class HandSample {
   final double percent;
 }
 
+/// Maps [v] from the range [from]..[to] onto 0-1 (clamped). [from] may be
+/// above [to].
+double _lin(double v, double from, double to) =>
+    ((v - from) / (to - from)).clamp(0.0, 1.0).toDouble();
+
 /// Counts reps (or holds, or rounds) of one exercise.
 abstract class ExerciseCounter {
   int get count;
@@ -45,6 +50,14 @@ abstract class ExerciseCounter {
   /// Short, plain guidance for the current moment, if any.
   String? get hint => null;
 
+  /// How far along the current move is, 0-1: the bar on screen fills as the
+  /// person gets to the goal, so they can see what is missing. Null: show
+  /// the opening of the hand.
+  double? get meter => null;
+
+  /// Where the goal line sits on the bar, 0-1.
+  double get marker => 1.0;
+
   /// Builds the right counter for [kind].
   ///
   /// [high] and [low] set the bands of the open/close style exercises (see
@@ -53,37 +66,60 @@ abstract class ExerciseCounter {
           {double? high, double? low}) =>
       switch (kind) {
         ExerciseKind.openCloseGentle => _Hysteresis(
-            HysteresisRepCounter(high: high ?? 70, low: low ?? 30)),
-        ExerciseKind.openClose || ExerciseKind.spread => _Hysteresis(
-            HysteresisRepCounter(high: high ?? 80, low: low ?? 20)),
+            HysteresisRepCounter(high: high ?? 70, low: low ?? 30),
+            openText: 'Open your hand as far as you can.',
+            closeText: 'Now close it gently.'),
+        ExerciseKind.openClose => _Hysteresis(
+            HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
+            openText: 'Open your hand wide.',
+            closeText: 'Now make a fist.'),
+        ExerciseKind.spread => _Hysteresis(
+            HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
+            openText: 'Spread your fingers wide.',
+            closeText: 'Now bring them together.'),
         ExerciseKind.holdOpen => PostureCycleCounter(
             inTarget: (s) => s.percent >= 70,
+            closeness: (s) => _lin(s.percent, 0, 70),
             released: (s) => s.percent <= 40,
             hold: const Duration(seconds: 3),
+            startHint: 'Open your hand as wide as you can.',
             holdHint: 'Hold it open.',
             releaseHint: 'Now relax your hand.',
           ),
         ExerciseKind.cylinder => PostureCycleCounter(
             // Closed around an object: partly, not fully, closed.
             inTarget: (s) => s.percent >= 15 && s.percent <= 65,
+            closeness: (s) => s.percent > 65
+                ? _lin(s.percent, 100, 65)
+                : _lin(s.percent, 0, 15),
             released: (s) => s.percent >= 75,
             hold: const Duration(seconds: 2),
+            startHint: 'Close your hand around the cup.',
             holdHint: 'Hold the grip.',
             releaseHint: 'Let go and open your hand.',
           ),
         ExerciseKind.hook => PostureCycleCounter(
             inTarget: isHook,
+            closeness: (s) {
+              final f = s.angles.fingers;
+              final pip = f.map((x) => x.pip).reduce((a, b) => a + b) / f.length;
+              return _lin(pip, 0, 60);
+            },
             released: (s) => s.percent >= 75,
             hold: const Duration(seconds: 1),
+            startHint: 'Bend your fingers like holding a bag handle.',
             holdHint: 'Hold the hook.',
             releaseHint: 'Open your hand fully.',
           ),
         ExerciseKind.pinch => PostureCycleCounter(
             inTarget: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) < 0.2,
+                HandMetrics.thumbTo(s.points, HandIndex.indexTip) < 0.3,
+            closeness: (s) => _lin(
+                HandMetrics.thumbTo(s.points, HandIndex.indexTip), 1.2, 0.3),
             released: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) > 0.4,
+                HandMetrics.thumbTo(s.points, HandIndex.indexTip) > 0.5,
             hold: const Duration(milliseconds: 300),
+            startHint: 'Touch your thumb to your index fingertip.',
             holdHint: 'Hold the pinch.',
             releaseHint: 'Move them apart.',
           ),
@@ -91,22 +127,28 @@ abstract class ExerciseCounter {
         ExerciseKind.fingerLifts => FingerLiftCounter(),
         ExerciseKind.squeeze => PostureCycleCounter(
             inTarget: (s) => s.percent <= 30,
+            closeness: (s) => _lin(s.percent, 100, 30),
             released: (s) => s.percent >= 55,
             hold: const Duration(seconds: 5),
+            startHint: 'Make a fist and squeeze.',
             holdHint: 'Keep squeezing.',
             releaseHint: 'Relax and open your hand.',
           ),
         ExerciseKind.assistedExtension => PostureCycleCounter(
             inTarget: (s) => s.percent >= 60,
+            closeness: (s) => _lin(s.percent, 0, 60),
             released: (s) => s.percent <= 40,
             hold: const Duration(seconds: 5),
+            startHint: 'Lift your fingers straight with your other hand.',
             holdHint: 'Hold the stretch.',
             releaseHint: 'Let go and relax your hand.',
           ),
         ExerciseKind.thumbExtension => PostureCycleCounter(
             inTarget: (s) => s.angles.thumbAbduction >= 35,
+            closeness: (s) => _lin(s.angles.thumbAbduction, 10, 35),
             released: (s) => s.angles.thumbAbduction <= 22,
             hold: const Duration(seconds: 5),
+            startHint: 'Move your thumb away from your fingers.',
             holdHint: 'Hold your thumb out.',
             releaseHint: 'Relax your thumb.',
           ),
@@ -128,17 +170,34 @@ abstract class ExerciseCounter {
 }
 
 class _Hysteresis extends ExerciseCounter {
-  _Hysteresis(this._c);
+  _Hysteresis(this._c, {required this.openText, required this.closeText});
   final HysteresisRepCounter _c;
+  final String openText;
+  final String closeText;
+  double _percent = 0;
 
   @override
   int get count => _c.reps;
 
   @override
-  bool update(HandSample s, Duration t) => _c.update(s.percent, t);
+  bool update(HandSample s, Duration t) {
+    _percent = s.percent;
+    return _c.update(s.percent, t);
+  }
 
   @override
   void resetCycle() => _c.resetCycle();
+
+  @override
+  String get hint => _c.expectingOpen ? openText : closeText;
+
+  /// The bar is the opening itself, with the goal line where the next
+  /// target is: reach the line, then the other line.
+  @override
+  double get meter => _percent / 100;
+
+  @override
+  double get marker => (_c.expectingOpen ? _c.high : _c.low) / 100;
 }
 
 class _Touches extends ExerciseCounter {
@@ -157,22 +216,32 @@ class _Touches extends ExerciseCounter {
   void resetCycle() => _c.resetCycle();
 
   @override
-  String get hint => 'Next: ${names[_c.expectedFinger]} finger';
+  String get hint => 'Touch your thumb to your ${names[_c.expectedFinger]} '
+      'fingertip (${_c.expectedFinger + 1} of 4).';
+
+  @override
+  double get meter => _c.meter;
 }
 
 /// A rep = reach the target posture, hold it for [hold], then release.
 class PostureCycleCounter extends ExerciseCounter {
   PostureCycleCounter({
     required this.inTarget,
+    required this.closeness,
     required this.released,
     required this.hold,
+    this.startHint,
     this.holdHint,
     this.releaseHint,
   });
 
   final bool Function(HandSample) inTarget;
+
+  /// 0-1: how near the hand is to the target posture.
+  final double Function(HandSample) closeness;
   final bool Function(HandSample) released;
   final Duration hold;
+  final String? startHint;
   final String? holdHint;
   final String? releaseHint;
 
@@ -180,16 +249,23 @@ class PostureCycleCounter extends ExerciseCounter {
   Duration? _since;
   bool _waitingRelease = false;
   String? _hint;
+  double _meter = 0;
 
   @override
   int get count => _count;
 
   @override
-  String? get hint => _hint;
+  String? get hint => _hint ?? startHint;
+
+  /// First 40 % of the bar: getting into the posture. The rest: the hold,
+  /// filling as the seconds pass. Full means the rep counts.
+  @override
+  double get meter => _meter;
 
   @override
   bool update(HandSample s, Duration t) {
     if (_waitingRelease) {
+      _meter = 0;
       if (released(s)) {
         _waitingRelease = false;
         _hint = null;
@@ -199,15 +275,22 @@ class PostureCycleCounter extends ExerciseCounter {
     if (!inTarget(s)) {
       _since = null;
       _hint = null;
+      _meter = 0.4 * closeness(s);
       return false;
     }
     _since ??= t;
-    _hint = holdHint;
-    if (t - _since! >= hold) {
+    final held = t - _since!;
+    final left = hold - held;
+    _meter = 0.4 + 0.6 * (held.inMilliseconds / hold.inMilliseconds).clamp(0.0, 1.0);
+    _hint = hold.inSeconds >= 2 && left > Duration.zero
+        ? '${holdHint ?? 'Hold.'} ${(left.inMilliseconds / 1000).ceil()} s'
+        : holdHint;
+    if (held >= hold) {
       _count++;
       _since = null;
       _waitingRelease = true;
       _hint = releaseHint;
+      _meter = 1;
       return true;
     }
     return false;
@@ -217,6 +300,7 @@ class PostureCycleCounter extends ExerciseCounter {
   void resetCycle() {
     _since = null;
     _hint = null;
+    _meter = 0;
     // A hold already counted still needs a release before the next one.
   }
 }
@@ -251,20 +335,43 @@ class FingerLiftCounter extends ExerciseCounter {
   int get count => _rounds;
 
   @override
-  String get hint => 'Next: ${names[order[_next]]} finger';
+  String get hint => 'Lift your ${names[order[_next]]} finger '
+      '(${_next + 1} of ${order.length}).';
+
+  /// How far each finger (index to little) stands out from the other three,
+  /// in the units of [threshold]. Here: degrees less bent than the others.
+  @protected
+  List<double> gaps(HandSample s) {
+    final totals = [for (final f in s.angles.fingers) f.total];
+    return [
+      for (var i = 0; i < 4; i++)
+        [for (var j = 0; j < 4; j++) if (j != i) totals[j]]
+                    .reduce((a, b) => a + b) /
+                3 -
+            totals[i],
+    ];
+  }
+
+  /// A finger counts as lifted when its gap reaches this.
+  @protected
+  double get threshold => margin;
+
+  double _meter = 0;
+
+  /// How close the finger that is due next is to being lifted.
+  @override
+  double get meter => _meter;
 
   /// Which finger (0 index ... 3 little) is lifted right now, if any.
-  /// Here: bent at least [margin] degrees less than the other three.
   @protected
   int? liftedFinger(HandSample s) {
-    final totals = [for (final f in s.angles.fingers) f.total];
+    final g = gaps(s);
+    _meter = (g[order[_next]] / threshold).clamp(0.0, 1.0).toDouble();
     int? best;
-    var bestGap = margin;
+    var bestGap = threshold;
     for (var i = 0; i < 4; i++) {
-      final others = [for (var j = 0; j < 4; j++) if (j != i) totals[j]];
-      final gap = others.reduce((a, b) => a + b) / 3 - totals[i];
-      if (gap >= bestGap) {
-        bestGap = gap;
+      if (g[i] >= bestGap) {
+        bestGap = g[i];
         best = i;
       }
     }
@@ -324,19 +431,19 @@ class FlatFingerLiftCounter extends FingerLiftCounter {
   final double liftMargin;
 
   @override
-  int? liftedFinger(HandSample s) {
+  double get threshold => liftMargin;
+
+  @override
+  List<double> gaps(HandSample s) {
     final h = HandMetrics.palmHeights(s.points);
-    int? best;
-    var bestGap = liftMargin;
-    for (var i = 0; i < 4; i++) {
-      final others = [for (var j = 0; j < 4; j++) if (j != i) h[j]];
-      final gap = (h[i] - others.reduce((a, b) => a + b) / 3).abs();
-      if (gap >= bestGap) {
-        bestGap = gap;
-        best = i;
-      }
-    }
-    return best;
+    return [
+      for (var i = 0; i < 4; i++)
+        (h[i] -
+                [for (var j = 0; j < 4; j++) if (j != i) h[j]]
+                        .reduce((a, b) => a + b) /
+                    3)
+            .abs(),
+    ];
   }
 }
 
@@ -352,6 +459,7 @@ class WristBendCounter extends ExerciseCounter {
   final WristMonitor _monitor = WristMonitor(limitDegrees: 1000);
   int _count = 0;
   bool _bent = false;
+  double _meter = 0;
   String? _hint = 'Hold your wrist straight to start.';
 
   @override
@@ -360,11 +468,16 @@ class WristBendCounter extends ExerciseCounter {
   @override
   String? get hint => _hint;
 
+  /// Out: how far the wrist has bent. Back: how near it is to straight.
+  @override
+  double get meter => _meter;
+
   @override
   bool update(HandSample s, Duration t) {
     _monitor.update(s.points);
     if (!_monitor.hasReference) return false;
     final d = _monitor.deviation;
+    _meter = _bent ? _lin(d, out, back) : _lin(d, 0, out);
     if (!_bent) {
       _hint = 'Gently bend your wrist.';
       if (d >= out) {
@@ -402,6 +515,7 @@ class PalmRotationCounter extends ExerciseCounter {
   int _count = 0;
   double? _side; // +1 or -1: which way the palm faced at the start
   bool _over = false;
+  double _meter = 0;
   String? _hint = 'Hold your hand out, palm facing one way.';
 
   @override
@@ -409,6 +523,10 @@ class PalmRotationCounter extends ExerciseCounter {
 
   @override
   String? get hint => _hint;
+
+  /// Turning over: how far round. Turning back: how near the start.
+  @override
+  double get meter => _meter;
 
   @override
   bool update(HandSample s, Duration t) {
@@ -422,6 +540,7 @@ class PalmRotationCounter extends ExerciseCounter {
       return false;
     }
     final rel = f * side;
+    _meter = _over ? _lin(rel, -turned, 1) : _lin(rel, 1, -turned);
     if (!_over) {
       if (rel <= -turned) {
         _over = true;
@@ -458,6 +577,7 @@ class SlideCounter extends ExerciseCounter {
   int _count = 0;
   Point3? _home;
   bool _away = false;
+  double _meter = 0;
   String? _hint = 'Rest your hand flat to start.';
 
   @override
@@ -465,6 +585,10 @@ class SlideCounter extends ExerciseCounter {
 
   @override
   String? get hint => _hint;
+
+  /// Sliding out: how far from where it started. Sliding back: how near.
+  @override
+  double get meter => _meter;
 
   @override
   bool update(HandSample s, Duration t) {
@@ -474,6 +598,7 @@ class SlideCounter extends ExerciseCounter {
     final wrist = pts[HandIndex.wrist];
     final home = _home ??= wrist;
     final d = wrist.distanceTo(home) / palm;
+    _meter = _away ? _lin(d, out, back) : _lin(d, 0, out);
     if (!_away) {
       _hint = 'Slide your hand forward.';
       if (d >= out) {

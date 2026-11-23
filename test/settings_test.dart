@@ -117,6 +117,7 @@ void main() {
     await tester.pump();
     await tapTab(tester, 'Progress');
     await settleDb(tester);
+    await reveal(tester, ProgressScreen.emptyKey);
     expect(find.byKey(ProgressScreen.emptyKey), findsOneWidget);
     await finish(tester, glove);
     await closeDb(tester, db);

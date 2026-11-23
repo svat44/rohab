@@ -65,10 +65,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                           Expanded(
                             child: Container(
                               height: 8,
-                              decoration: BoxDecoration(
-                                color: i <= _step ? c.accent : c.divider,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
+                              color: i <= _step ? c.accent : c.divider,
                             ),
                           ),
                         ],
@@ -231,7 +228,7 @@ class _Numbered extends StatelessWidget {
             width: 48,
             height: 48,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+            color: c.accent,
             child: Text('$number',
                 style: t.labelLarge?.copyWith(color: c.onAccent)),
           ),

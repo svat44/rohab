@@ -9,6 +9,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../glove/glove_service.dart';
 import '../../settings/settings_controller.dart';
 import '../../theme/app_theme.dart';
+import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 
 /// Settings: the glove connection, the therapist plan, text size, deleting
@@ -36,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _delete() async {
     await ref.read(exerciseSessionRepositoryProvider).deleteAll();
     ref.invalidate(progressDataProvider);
+    ref.invalidate(progressOverviewProvider);
     if (mounted) {
       setState(() {
         _confirming = false;
