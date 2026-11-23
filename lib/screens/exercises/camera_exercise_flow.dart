@@ -16,7 +16,6 @@ import '../../exercises/exercise_providers.dart';
 import '../../exercises/hand_distance.dart';
 import '../../program/daily_plan.dart';
 import '../../program/program_providers.dart';
-import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/surfaces.dart';
@@ -24,16 +23,29 @@ import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
 import '../../widgets/level_bar.dart';
-import '../../widgets/photo_slot.dart';
-import '../../widgets/rohab_widgets.dart';
+import '../../widgets/rohab_button.dart';
 import 'camera_layout.dart';
 
 /// One camera exercise, steps 1-5: instructions, hand check, range
 /// calibration (once per session), exercise, done.
 class CameraExerciseFlow extends ConsumerStatefulWidget {
-  const CameraExerciseFlow({super.key, required this.exerciseId});
+  const CameraExerciseFlow({
+    super.key,
+    required this.exerciseId,
+    this.reps,
+    this.sets,
+    this.rest,
+    this.set,
+  });
 
   final String exerciseId;
+
+  /// From the setup screen: reps per set, number of sets, rest seconds, and
+  /// which set this is. Null = use the plan or the defaults.
+  final int? reps;
+  final int? sets;
+  final int? rest;
+  final int? set;
 
   static const primaryKey = Key('flow-primary');
   static const secondaryKey = Key('flow-secondary');
@@ -68,6 +80,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
     if (item != null) {
       _setNumber = (item.setsDone + 1).clamp(1, item.sets);
     }
+    if (widget.set != null) _setNumber = widget.set!;
     final ranges = ref.read(cameraSessionRangesProvider.notifier);
     if (kDebugMode && ref.read(diagnosticsEnabledProvider)) {
       _diagnostics = DiagnosticsCollector(log: true);
@@ -83,7 +96,10 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
         return _exercise.usesSpread ? r.spread : r.openness;
       },
       saveRange: _exercise.usesSpread ? ranges.setSpread : ranges.setOpenness,
-      setSize: item?.setSize ?? _exercise.setSizeFor(settings.setSize),
+      setSize:
+          widget.reps ??
+          item?.setSize ??
+          _exercise.setSizeFor(settings.setSize),
       wallClock: ref.read(clockProvider),
       // A short vibration on each counted rep, so you can feel it count
       // without looking. TODO(audio): speak the count too.
@@ -117,14 +133,22 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
     super.dispose();
   }
 
-  void _back() => context.go(Routes.cameraExercises);
+  void _back() => context.go(
+    _item == null && widget.reps != null
+        ? Routes.exerciseSetup(_exercise.id)
+        : Routes.cameraExercises,
+  );
+
+  int get _totalSets => _item?.sets ?? widget.sets ?? 1;
+  int get _restSeconds =>
+      widget.rest ?? ref.read(programSettingsProvider).restSeconds;
 
   /// End of today's practice: ask about pain, then back to the plan.
   void _finishForToday() => context.go(Routes.painCheck('after'));
 
-  String get _setLabel => _item == null
+  String get _setLabel => _item == null && widget.sets == null
       ? 'Free practice'
-      : 'Set $_setNumber of ${_item!.sets} · ${_item!.setSize} ${_exercise.repUnit} each';
+      : 'Set $_setNumber of $_totalSets';
 
   @override
   Widget build(BuildContext context) {
@@ -149,45 +173,20 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           secondary: back,
           primary: _PrimaryAction(label: 'Start', onPressed: c.start),
           children: [
-            // Steps first so they are visible without scrolling; the photo
-            // follows.
-            Row(
-              children: [
-                IconBadge(exerciseIcon(_exercise.kind), size: 64, solid: true),
-                const SizedBox(width: RohabSpace.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_setLabel, style: t.labelMedium),
-                      const SizedBox(height: RohabSpace.s8 / 2),
-                      Text(_exercise.title, style: t.headlineMedium),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            Text(_setLabel, style: t.labelMedium),
+            const SizedBox(height: RohabSpace.s8 / 2),
+            Text(_exercise.title, style: t.headlineMedium),
             if (_exercise.target != null) ...[
-              const SizedBox(height: RohabSpace.s16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: InfoChip(_exercise.target!, icon: Icons.repeat),
-              ),
+              const SizedBox(height: RohabSpace.s8),
+              Text(_exercise.target!, style: RohabType.metricS),
             ],
             const SizedBox(height: RohabSpace.s16),
-            RohabCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < _exercise.steps.length; i++)
-                    _NumberedStep(
-                      number: i + 1,
-                      text: _exercise.steps[i],
-                      last: i == _exercise.steps.length - 1,
-                    ),
-                ],
+            for (var i = 0; i < _exercise.steps.length; i++)
+              _NumberedStep(
+                number: i + 1,
+                text: _exercise.steps[i],
+                last: i == _exercise.steps.length - 1,
               ),
-            ),
             if (_exercise.object != null) ...[
               const SizedBox(height: RohabSpace.s16),
               Text('You need: ${_exercise.object}.', style: t.labelLarge),
@@ -197,8 +196,6 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
               'Take your time. Stop if anything hurts.',
               style: t.labelMedium,
             ),
-            const SizedBox(height: RohabSpace.s16),
-            PhotoSlot(caption: '${_exercise.title}, right hand shown.'),
             const SizedBox(height: RohabSpace.s16),
           ],
         );
@@ -333,8 +330,15 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           frame: c.frame,
           diagnostics: _diagnostics,
           stats: () => c.stats,
-          action: _TextAction(label: 'End exercise', onPressed: c.endExercise),
-          children: [_ExerciseReadout(controller: c, exercise: _exercise)],
+          action: _TextAction(label: 'End session', onPressed: c.endExercise),
+          children: [
+            _ExerciseReadout(
+              controller: c,
+              exercise: _exercise,
+              setNumber: _setNumber,
+              totalSets: _totalSets,
+            ),
+          ],
         );
 
       case FlowStep.done:
@@ -347,12 +351,31 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
             : 'Set ended. ${s.reps} $unit.';
         final overview = ref.watch(programOverviewProvider);
         final next = overview.value?.plan?.next;
-        final restSeconds = ref.watch(programSettingsProvider).restSeconds;
+        final restSeconds = _restSeconds;
         final Widget? primary;
         final Widget? secondary;
         if (_item == null) {
-          primary = _PrimaryAction(label: 'Back to plan', onPressed: _back);
-          secondary = null;
+          final more = widget.sets != null && _setNumber < widget.sets!;
+          primary = more
+              ? _PrimaryAction(
+                  label: 'Next set',
+                  onPressed: () => context.pushReplacement(
+                    Routes.cameraExercise(
+                      _exercise.id,
+                      reps: widget.reps,
+                      sets: widget.sets,
+                      rest: widget.rest,
+                      set: _setNumber + 1,
+                    ),
+                  ),
+                )
+              : _PrimaryAction(
+                  label: widget.reps != null ? 'Done' : 'Back to plan',
+                  onPressed: _back,
+                );
+          secondary = more
+              ? _TextAction(label: 'Stop here', onPressed: _back)
+              : null;
         } else if (overview.isLoading) {
           primary = const _PrimaryAction(label: 'Saving', onPressed: null);
           secondary = null;
@@ -394,7 +417,11 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
               ),
             ],
             // Resting only makes sense after a set that counted something.
-            if (_item != null && next != null && s.reps > 0) ...[
+            if (((_item != null && next != null) ||
+                    (_item == null &&
+                        widget.sets != null &&
+                        _setNumber < widget.sets!)) &&
+                s.reps > 0) ...[
               const SizedBox(height: RohabSpace.s16),
               _RestCountdown(seconds: restSeconds),
             ],
@@ -523,14 +550,20 @@ class _Page extends StatelessWidget {
 }
 
 class _ExerciseReadout extends StatelessWidget {
-  const _ExerciseReadout({required this.controller, required this.exercise});
+  const _ExerciseReadout({
+    required this.controller,
+    required this.exercise,
+    required this.setNumber,
+    required this.totalSets,
+  });
 
   final CameraExerciseController controller;
   final CameraExercise exercise;
+  final int setNumber;
+  final int totalSets;
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
     final c = controller;
     final colors = context.colors;
     // What the instruction line says, most important first.
@@ -546,67 +579,66 @@ class _ExerciseReadout extends StatelessWidget {
         : c.suggestRest
         ? 'Movements are getting smaller. A rest may help.'
         : c.hint ?? 'Keep going.';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          liveRegion: true,
-          label: '${c.reps} of ${c.setSize} ${exercise.repUnit}',
-          excludeSemantics: true,
-          // Scales down rather than overflowing at large text sizes.
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  '${c.reps} of ${c.setSize}',
-                  key: CameraExerciseFlow.repsKey,
-                  style: t.displayLarge,
-                ),
-                const SizedBox(width: RohabSpace.s8),
-                Text(exercise.repUnit, style: t.bodyLarge),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: RohabSpace.s16),
-        // One clear instruction, then the bar that shows how close the move
-        // is. Same height whatever is shown, so the layout never jumps.
-        SizedBox(
-          height: RohabType.body * 1.25 * 2 + RohabSpace.s8 + 64,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                message,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: t.labelLarge?.copyWith(
-                  color:
-                      c.handLost ||
-                          c.wristCue ||
-                          c.stuck ||
-                          c.distance != HandDistance.good
-                      ? colors.text
-                      : colors.accent,
-                ),
+    // Solid white info panel under the preview. (A translucent panel was
+    // optional; the solid one is always readable.)
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.divider),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(RohabSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              liveRegion: true,
+              label:
+                  'Rep ${c.reps} of ${c.setSize}, set $setNumber of $totalSets',
+              excludeSemantics: true,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '${c.reps}',
+                    key: CameraExerciseFlow.repsKey,
+                    style: RohabType.metricCamera,
+                  ),
+                  const SizedBox(width: RohabSpace.s16),
+                  Expanded(
+                    child: Text(
+                      'Rep ${c.reps} of ${c.setSize}, set $setNumber of $totalSets',
+                      style: RohabType.rowTitle,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: RohabSpace.s8),
-              if (!c.handLost)
-                LevelBar(
-                  value: c.meter,
-                  semanticsLabel: 'Progress of this move',
-                  semanticsValue: '${(c.meter * 100).round()} percent',
-                  markers: [LevelMarker(c.meterMarker, 'Goal')],
-                ),
-            ],
-          ),
+            ),
+            const SizedBox(height: RohabSpace.s8),
+            Text(
+              message,
+              style: RohabType.body.copyWith(
+                color:
+                    c.handLost ||
+                        c.wristCue ||
+                        c.stuck ||
+                        c.distance != HandDistance.good
+                    ? colors.text
+                    : colors.accent,
+              ),
+            ),
+            const SizedBox(height: RohabSpace.s8),
+            if (!c.handLost)
+              LevelBar(
+                value: c.meter,
+                semanticsLabel: 'Progress of this move',
+                semanticsValue: '${(c.meter * 100).round()} percent',
+                markers: [LevelMarker(c.meterMarker, 'Goal')],
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -624,26 +656,19 @@ class _NumberedStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final c = context.colors;
     return Padding(
       padding: EdgeInsets.only(bottom: last ? 0 : RohabSpace.s16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconTile(
-            size: RohabSpace.s32 + 4,
-            color: c.accent,
+          SizedBox(
+            width: 32,
             child: Text(
               '$number',
-              style: t.labelMedium?.copyWith(
-                color: c.onAccent,
-                fontWeight: FontWeight.w700,
-              ),
+              style: RohabType.metricL.copyWith(color: context.colors.accent),
             ),
           ),
-          const SizedBox(width: RohabSpace.s16),
-          Expanded(child: Text(text, style: t.bodyLarge)),
+          Expanded(child: Text(text, style: RohabType.body)),
         ],
       ),
     );
@@ -673,10 +698,10 @@ class _PrimaryAction extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => FilledButton(
+  Widget build(BuildContext context) => RohabButton(
     key: CameraExerciseFlow.primaryKey,
+    label: label,
     onPressed: onPressed,
-    child: Text(label),
   );
 }
 
@@ -703,7 +728,7 @@ class _CountdownBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: panelDecoration(context.colors, radius: RohabShape.radius),
+      decoration: panelDecoration(context.colors),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: RohabSpace.s16,

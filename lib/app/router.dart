@@ -9,6 +9,7 @@ import '../screens/welcome_screen.dart';
 import '../debug/test_protocol_screen.dart';
 import '../screens/calibration/calibration_screen.dart';
 import '../screens/exercises/camera_exercise_flow.dart';
+import '../screens/exercises/exercise_setup_screen.dart';
 import '../screens/exercises/exercises_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/progress/progress_screen.dart';
@@ -29,7 +30,23 @@ class Routes {
   static const allCameraExercises = '/exercises/camera/all';
   static const testProtocol = '/exercises/camera/test-protocol';
   static const baseline = '/exercises/camera/baseline';
-  static String cameraExercise(String id) => '/exercises/camera/$id';
+  static String exerciseSetup(String id) => '/exercises/camera/setup/$id';
+  static String cameraExercise(
+    String id, {
+    int? reps,
+    int? sets,
+    int? rest,
+    int? set,
+  }) {
+    final q = [
+      if (reps != null) 'reps=$reps',
+      if (sets != null) 'sets=$sets',
+      if (rest != null) 'rest=$rest',
+      if (set != null) 'set=$set',
+    ];
+    return '/exercises/camera/$id${q.isEmpty ? '' : '?${q.join('&')}'}';
+  }
+
   static String painCheck(String phase, {String? next}) =>
       '/exercises/camera/pain?phase=$phase${next == null ? '' : '&next=$next'}';
   static const therapist = '/settings/therapist';
@@ -55,7 +72,8 @@ GoRouter buildRouter(SharedPreferences prefs) => GoRouter(
           const NoTransitionPage(child: WelcomeScreen()),
     ),
     StatefulShellRoute.indexedStack(
-      builder: (context, state, shell) => AppShell(shell: shell),
+      builder: (context, state, shell) =>
+          AppShell(shell: shell, location: state.uri.path),
       branches: [
         _branch(Routes.home, const HomeScreen()),
         _branch(Routes.calibration, const CalibrationScreen()),
@@ -104,11 +122,32 @@ GoRouter buildRouter(SharedPreferences prefs) => GoRouter(
                       ),
                     ),
                     GoRoute(
+                      path: 'setup/:exerciseId',
+                      pageBuilder: (context, state) => NoTransitionPage(
+                        key: state.pageKey,
+                        child: ExerciseSetupScreen(
+                          exerciseId: state.pathParameters['exerciseId']!,
+                        ),
+                      ),
+                    ),
+                    GoRoute(
                       path: ':exerciseId',
                       pageBuilder: (context, state) => NoTransitionPage(
                         key: state.pageKey,
                         child: CameraExerciseFlow(
                           exerciseId: state.pathParameters['exerciseId']!,
+                          reps: int.tryParse(
+                            state.uri.queryParameters['reps'] ?? '',
+                          ),
+                          sets: int.tryParse(
+                            state.uri.queryParameters['sets'] ?? '',
+                          ),
+                          rest: int.tryParse(
+                            state.uri.queryParameters['rest'] ?? '',
+                          ),
+                          set: int.tryParse(
+                            state.uri.queryParameters['set'] ?? '',
+                          ),
                         ),
                       ),
                     ),

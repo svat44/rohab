@@ -43,9 +43,9 @@ class CameraPage extends StatelessWidget {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-              RohabSpace.s24,
+              RohabSpace.gutter,
               RohabSpace.s16,
-              RohabSpace.s24,
+              RohabSpace.gutter,
               0,
             ),
             child: _Preview(
@@ -61,9 +61,9 @@ class CameraPage extends StatelessWidget {
           flex: 0,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
-              RohabSpace.s24,
+              RohabSpace.gutter,
               RohabSpace.s16,
-              RohabSpace.s24,
+              RohabSpace.gutter,
               0,
             ),
             child: Column(
@@ -74,9 +74,9 @@ class CameraPage extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            RohabSpace.s24,
+            RohabSpace.gutter,
             RohabSpace.s8,
-            RohabSpace.s24,
+            RohabSpace.gutter,
             RohabSpace.s16,
           ),
           child: SizedBox(height: RohabSize.touchTarget, child: action),
@@ -105,8 +105,8 @@ class _Preview extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     const bezel = 4.0;
-    final outer = BorderRadius.circular(RohabShape.card);
-    final inner = BorderRadius.circular(RohabShape.card - bezel / 2);
+    const outer = BorderRadius.zero;
+    const inner = BorderRadius.zero;
     final aspect = tracker?.previewAspect ?? 3 / 4;
     // A flat frame around the picture. The bezel is
     // outside the AspectRatio, so the preview keeps its exact shape and the
@@ -131,7 +131,7 @@ class _Preview extends StatelessWidget {
                 position: DecorationPosition.foreground,
                 decoration: BoxDecoration(
                   borderRadius: inner,
-                  border: Border.all(color: const Color(0x99000000), width: 2),
+                  border: Border.all(color: c.text, width: 2),
                 ),
                 child: ClipRRect(
                   borderRadius: inner,
@@ -186,7 +186,7 @@ class _DebugStats extends StatelessWidget {
         child: Text(
           '${s.framesPerSecond.toStringAsFixed(0)} fps · '
           '${s.droppedFrames} dropped',
-          style: Theme.of(context).textTheme.labelMedium,
+          style: RohabType.metricS,
         ),
       ),
     );

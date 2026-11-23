@@ -7,8 +7,9 @@ import '../../program/daily_plan.dart';
 import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/action_area.dart';
-import '../../widgets/level_bar.dart';
-import '../../widgets/rohab_widgets.dart';
+import '../../widgets/rohab_app_bar.dart';
+import '../../widgets/rohab_row.dart';
+import '../../widgets/segmented_bar.dart';
 
 /// Today's camera practice: level, rep goal, the planned exercises in sets,
 /// and the next step.
@@ -29,19 +30,10 @@ class ProgramScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
     final overview = ref.watch(programOverviewProvider);
-    final back = TextButton.icon(
-      onPressed: () => context.go(Routes.exercises),
-      icon: const Icon(Icons.arrow_back, size: RohabSize.icon),
-      label: const Text('All exercises'),
-    );
-
     return overview.when(
-      loading: () => _Frame(
-        top: back,
-        children: [Text('Loading your plan.', style: t.bodyLarge)],
-      ),
+      loading: () =>
+          _Frame(children: [Text('Loading your plan.', style: t.bodyLarge)]),
       error: (e, _) => _Frame(
-        top: back,
         children: [
           Text('Your plan could not load. ${e.toString()}', style: t.bodyLarge),
         ],
@@ -49,7 +41,6 @@ class ProgramScreen extends ConsumerWidget {
       data: (o) {
         if (o.plan == null) {
           return _Frame(
-            top: back,
             primary: FilledButton(
               key: primaryKey,
               onPressed: () => context.go(Routes.baseline),
@@ -74,17 +65,16 @@ class ProgramScreen extends ConsumerWidget {
             ],
           );
         }
-        return _Today(overview: o, back: back);
+        return _Today(overview: o);
       },
     );
   }
 }
 
 class _Today extends StatelessWidget {
-  const _Today({required this.overview, required this.back});
+  const _Today({required this.overview});
 
   final ProgramOverview overview;
-  final Widget back;
 
   @override
   Widget build(BuildContext context) {
@@ -123,38 +113,30 @@ class _Today extends StatelessWidget {
     }
 
     return _Frame(
-      top: back,
       primary: primary,
       children: [
-        RohabCard(
-          padding: const EdgeInsets.all(RohabSpace.s24),
+        Container(
+          color: c.surface,
+          padding: const EdgeInsets.all(RohabSpace.gutter),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: InfoChip(
-                  'Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
-                ),
+              Text(
+                'Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
+                style: RohabType.sectionLabel,
               ),
-              const SizedBox(height: RohabSpace.s16),
+              const SizedBox(height: RohabSpace.s8),
               Semantics(
                 label:
                     '${plan.setsDoneTotal} of ${plan.setsTotal} sets done today',
                 excludeSemantics: true,
                 child: Text(
                   '${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
-                  style: t.headlineMedium,
+                  style: RohabType.metricL,
                 ),
               ),
               const SizedBox(height: RohabSpace.s16),
-              LevelBar(
-                value: plan.setsTotal == 0
-                    ? 0
-                    : plan.setsDoneTotal / plan.setsTotal,
-                semanticsLabel: 'Sets today',
-                semanticsValue: '${plan.setsDoneTotal} of ${plan.setsTotal}',
-              ),
+              SegmentedBar(done: plan.setsDoneTotal, total: plan.setsTotal),
             ],
           ),
         ),
@@ -174,10 +156,9 @@ class _Today extends StatelessWidget {
             style: t.bodyLarge,
           ),
         ],
-        const SectionTitle("Today's exercises"),
+        const RohabSectionLabel("Today's exercises"),
         for (final item in plan.items) ...[
           _PlanRow(item: item, isNext: identical(item, next)),
-          const SizedBox(height: RohabSpace.s16),
         ],
         if (o.recheckDue)
           _InlineAction(
@@ -217,43 +198,17 @@ class _PlanRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final c = context.colors;
     final status = item.complete
         ? 'Done'
         : '${item.setsDone} of ${item.sets} sets · ${item.setSize} ${item.exercise.repUnit} each';
     return Semantics(
       label: '${item.exercise.title}. $status.${isNext ? ' Next.' : ''}',
       excludeSemantics: true,
-      child: RohabCard(
-        minHeight: RohabSize.touchTarget,
-        child: Row(
-          children: [
-            IconBadge(
-              item.complete ? Icons.check : exerciseIcon(item.exercise.kind),
-              solid: item.complete || isNext,
-            ),
-            const SizedBox(width: RohabSpace.s16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.exercise.title,
-                    style: isNext
-                        ? t.labelLarge
-                        : t.bodyLarge?.copyWith(
-                            color: item.complete ? c.secondary : c.text,
-                          ),
-                  ),
-                  const SizedBox(height: RohabSpace.s8 / 2),
-                  Text(status, style: t.labelMedium),
-                ],
-              ),
-            ),
-            if (isNext) const InfoChip('Next', filled: true),
-          ],
-        ),
+      child: RohabRow(
+        title: item.exercise.title,
+        subtitle: status,
+        value: isNext ? 'Next' : null,
+        titleStyle: RohabType.rowTitle,
       ),
     );
   }
@@ -298,9 +253,8 @@ class _InlineAction extends StatelessWidget {
 
 /// Back link on top, scrolling content, fixed action area.
 class _Frame extends StatelessWidget {
-  const _Frame({required this.top, required this.children, this.primary});
+  const _Frame({required this.children, this.primary});
 
-  final Widget top;
   final List<Widget> children;
   final Widget? primary;
 
@@ -309,6 +263,10 @@ class _Frame extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        RohabAppBar(
+          title: "Today's plan",
+          onBack: () => context.go(Routes.exercises),
+        ),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
@@ -318,7 +276,6 @@ class _Frame extends StatelessWidget {
               RohabSpace.s16,
             ),
             children: [
-              Align(alignment: Alignment.centerLeft, child: top),
               Padding(
                 padding: const EdgeInsets.only(left: RohabSpace.s16),
                 child: Column(

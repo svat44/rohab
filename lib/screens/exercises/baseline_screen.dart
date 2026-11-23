@@ -202,9 +202,7 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
           stats: () => _c.stats,
           overlay: DecoratedBox(
             decoration: panelDecoration(
-              context.colors,
-              radius: RohabShape.radius,
-            ),
+              context.colors),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: RohabSpace.s16,
