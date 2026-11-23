@@ -86,6 +86,7 @@ class CameraExerciseController extends ChangeNotifier {
     required this.setSize,
     this.diagnostics,
     this.level,
+    this.checkWrist = false,
     DateTime Function()? wallClock,
     this.onRepCounted,
   }) : _wallClock = wallClock ?? DateTime.now {
@@ -104,6 +105,10 @@ class CameraExerciseController extends ChangeNotifier {
 
   /// Reps (or holds, or rounds) in this set.
   final int setSize;
+
+  /// Throw out reps made by bending the wrist (therapist setting, off by
+  /// default).
+  final bool checkWrist;
 
   /// Program level, saved with the session. Null for free practice.
   final int? level;
@@ -432,7 +437,8 @@ class CameraExerciseController extends ChangeNotifier {
         final target = _counter!.meter ?? p / 100;
         meter += (target - meter) * 0.5;
         meterMarker = _counter!.marker;
-        final cheated = counted && _wrist.moved && exercise.checksWrist;
+        final cheated =
+            counted && checkWrist && _wrist.moved && exercise.checksWrist;
         if (counted) _wrist.endRep();
         if (cheated) {
           // Made by bending the wrist (tenodesis), not the fingers.

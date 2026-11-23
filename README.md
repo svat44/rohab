@@ -135,8 +135,12 @@ Built from `docs/rehab-science.md`:
    100, max 300) split into sets with rest; exercises rotate by day. The
    goal rises 10 % after a full day without fatigue or more pain, and drops
    10 % when pain rose.
-4. **Wrist check** (`WristMonitor` in `exercise_counters.dart`): a rep made
-   by tilting the hand at the wrist more than 25 degrees does not count.
+4. **Wrist check** (`WristMonitor` in `exercise_counters.dart`): **off by
+   default.** From a phone camera, wrist tilt could not be told apart from
+   normal hand movement reliably, and wrongly rejecting real reps was worse
+   than missing a cheated one. A therapist can switch it on (Settings >
+   Therapist plan); it then applies only to open/close style exercises and
+   throws out a rep with a clear tilt (25 degrees on at least two frames).
 5. **Pain** 0-10 before the first set and after the last: high pain advises
    rest; a rise of 2 or more lowers the next goal.
 6. **Therapist plan** (Settings, 4-digit PIN): level override, goals, set

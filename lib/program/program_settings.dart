@@ -11,6 +11,7 @@ class ProgramSettings {
     this.autoProgress = true,
     this.painRiseLimit = 2,
     this.painHighLimit = 7,
+    this.wristCheck = false,
   });
 
   static const defaults = ProgramSettings();
@@ -41,6 +42,12 @@ class ProgramSettings {
   /// Pain at or above this before starting: advise rest.
   final int painHighLimit;
 
+  /// Throw out reps made by bending the wrist instead of the fingers. Off by
+  /// default: from a phone camera, wrist tilt cannot be told apart from
+  /// normal hand movement reliably enough, and wrongly rejecting real reps
+  /// is worse than missing a cheated one. A therapist can switch it on.
+  final bool wristCheck;
+
   static const goalRange = (min: 20, max: 400);
   static const setRange = (min: 5, max: 30);
   static const restRange = (min: 15, max: 180);
@@ -54,6 +61,7 @@ class ProgramSettings {
     bool? autoProgress,
     int? painRiseLimit,
     int? painHighLimit,
+    bool? wristCheck,
   }) =>
       ProgramSettings(
         levelOverride:
@@ -65,6 +73,7 @@ class ProgramSettings {
         autoProgress: autoProgress ?? this.autoProgress,
         painRiseLimit: painRiseLimit ?? this.painRiseLimit,
         painHighLimit: painHighLimit ?? this.painHighLimit,
+        wristCheck: wristCheck ?? this.wristCheck,
       );
 
   Map<String, Object?> toJson() => {
@@ -76,6 +85,7 @@ class ProgramSettings {
         'autoProgress': autoProgress,
         'painRiseLimit': painRiseLimit,
         'painHighLimit': painHighLimit,
+        'wristCheck': wristCheck,
       };
 
   static ProgramSettings fromJson(Map<String, Object?> j) {
@@ -90,6 +100,8 @@ class ProgramSettings {
       autoProgress: j['autoProgress'] is bool ? j['autoProgress'] as bool : d.autoProgress,
       painRiseLimit: i('painRiseLimit', d.painRiseLimit),
       painHighLimit: i('painHighLimit', d.painHighLimit),
+      wristCheck:
+          j['wristCheck'] is bool ? j['wristCheck'] as bool : d.wristCheck,
     );
   }
 }

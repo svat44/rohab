@@ -88,6 +88,7 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
       // without looking. TODO(audio): speak the count too.
       onRepCounted: (_) => HapticFeedback.mediumImpact(),
       level: item == null ? null : overview?.level,
+      checkWrist: settings.wristCheck,
     );
     // Refresh the plan once the set is saved, so "next" is up to date.
     _controller.saved.then((_) {

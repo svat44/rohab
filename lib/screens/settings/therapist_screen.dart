@@ -17,6 +17,7 @@ class TherapistScreen extends ConsumerStatefulWidget {
   static const pinFieldKey = Key('therapist-pin');
   static const primaryKey = Key('therapist-primary');
   static const secondaryKey = Key('therapist-secondary');
+  static const wristCheckKey = Key('therapist-wrist-check');
   static Key levelKey(int? level) => Key('therapist-level-${level ?? 'auto'}');
   static Key stepKey(String id, bool up) => Key('therapist-$id-${up ? 'up' : 'down'}');
 
@@ -288,6 +289,26 @@ class _TherapistScreenState extends ConsumerState<TherapistScreen> {
               Switch(
                 value: d.autoProgress,
                 onChanged: (v) => set(d.copyWith(autoProgress: v)),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                    'Do not count open/close reps made by bending the wrist. '
+                    'The camera can get this wrong, so it is off unless you '
+                    'want it.',
+                    style: t.bodyLarge),
+              ),
+              Switch(
+                key: TherapistScreen.wristCheckKey,
+                value: d.wristCheck,
+                onChanged: (v) => set(d.copyWith(wristCheck: v)),
               ),
             ],
           ),

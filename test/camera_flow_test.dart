@@ -1,3 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rohab/app/app.dart';
+import 'package:rohab/program/program_providers.dart';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -315,7 +318,7 @@ void main() {
       await close(tester, h);
     });
 
-    testWidgets('reps made by bending the wrist do not count',
+    testWidgets('by default a tilted wrist does not throw reps out',
         (tester) async {
       final h = await launch(tester);
       await openFree(tester, 'open_close');
@@ -323,10 +326,27 @@ void main() {
       await passHandCheckAndCalibrate(tester, h);
       await firstOpen(tester, h);
       await doReps(tester, h, 2);
+      await doReps(tester, h, 2, open: const HandPose(wristPitch: 40));
+      expect(repsText(tester), '4 of 10');
+      expect(find.text('Wrist moved. That one did not count.'), findsNothing);
+      await close(tester, h);
+    });
+
+    testWidgets('with the therapist wrist check on, wrist-made reps do not '
+        'count', (tester) async {
+      final h = await launch(tester);
+      final container = ProviderScope.containerOf(
+          tester.element(find.byType(RohabApp)));
+      await container.read(programSettingsProvider.notifier).save(
+          container.read(programSettingsProvider).copyWith(wristCheck: true));
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      await firstOpen(tester, h);
+      await doReps(tester, h, 2);
       expect(repsText(tester), '2 of 10');
       // Opening by tilting the wrist 40 degrees.
-      await doReps(tester, h, 2,
-          open: const HandPose(wristPitch: 40));
+      await doReps(tester, h, 2, open: const HandPose(wristPitch: 40));
       expect(repsText(tester), '2 of 10');
       expect(find.text('Wrist moved. That one did not count.'),
           findsOneWidget);
