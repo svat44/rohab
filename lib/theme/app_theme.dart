@@ -135,9 +135,9 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: p.text,
+        foregroundColor: p.accent,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-        side: BorderSide(color: p.text, width: RohabShape.strongBorder),
+        side: BorderSide(color: p.accent, width: RohabShape.strongBorder),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: text.labelLarge,
       ),
@@ -150,9 +150,8 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        // Near-black pill, like the reference apps; colour stays for data.
-        backgroundColor: p.text,
-        foregroundColor: p.background,
+        backgroundColor: p.accent,
+        foregroundColor: p.onAccent,
         disabledBackgroundColor: p.divider,
         disabledForegroundColor: p.secondary,
         minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),

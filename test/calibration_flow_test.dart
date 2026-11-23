@@ -26,7 +26,7 @@ const flowDuration = Duration(seconds: 24, milliseconds: 200);
 
 Future<void> openCalibrationAndStart(WidgetTester tester) async {
   await connectFromHome(tester);
-  await tapTab(tester, 'Calibrate');
+  await tapTab(tester, 'Glove');
   await tester.tap(find.byKey(CalibrationScreen.startKey));
   await tester.pump();
   await tester.tap(find.byKey(StepLayout.primaryKey)); // I'm ready
@@ -168,7 +168,7 @@ void main() {
     testWidgets('start is blocked when disconnected or in a session',
         (tester) async {
       final glove = await pumpRohab(tester);
-      await tapTab(tester, 'Calibrate');
+      await tapTab(tester, 'Glove');
       expect(find.text('Connect the glove on Home first.'), findsOneWidget);
       expect(
           tester
@@ -178,9 +178,9 @@ void main() {
 
       await tapTab(tester, 'Home');
       await connectFromHome(tester);
-      await tester.tap(find.byKey(HomeScreen.primaryButtonKey)); // Start
+      await tapHomePrimary(tester); // Start
       await tester.pump(const Duration(milliseconds: 100));
-      await tapTab(tester, 'Calibrate');
+      await tapTab(tester, 'Glove');
       expect(find.text('End the session on Home first.'), findsOneWidget);
       await tester.tap(find.byKey(SafetyBanner.stopKey));
       await tester.pump(const Duration(seconds: 1));

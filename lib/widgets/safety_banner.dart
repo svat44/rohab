@@ -23,6 +23,21 @@ class SafetyBanner extends ConsumerWidget {
     final c = context.colors;
     final textTheme = Theme.of(context).textTheme;
 
+    // Without a glove there is nothing to vent, so the banner stays away
+    // (camera-only use). It appears as soon as a glove connects or faults.
+    return ValueListenableBuilder<GloveSnapshot>(
+      valueListenable: glove.snapshot,
+      builder: (context, snap, banner) =>
+          snap.connection == GloveConnection.disconnected &&
+                  snap.faults.isEmpty
+              ? const SizedBox.shrink()
+              : banner!,
+      child: _banner(context, glove, c, textTheme),
+    );
+  }
+
+  Widget _banner(BuildContext context, GloveService glove, AppColors c,
+      TextTheme textTheme) {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,

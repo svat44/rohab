@@ -160,7 +160,15 @@ class MediaPipeHandTracker implements HandTracker {
     final category =
         result.handedness.isEmpty ? null : result.handedness.first.firstOrNull;
     _frames.add(HandFrame(
-      landmarks: [for (final p in hand) Point3(p.x, p.y, p.z)],
+      // MediaPipe answers in the delivered (sensor) frame; turn the points
+      // upright so the overlay and every measurement share one frame.
+      landmarks: [
+        for (final p in hand)
+          () {
+            final (x, y) = geometry.toUpright(p.x, p.y);
+            return Point3(x, y, p.z);
+          }(),
+      ],
       handedness:
           _userHand(category?.categoryName, geometry.alreadyMirrored),
       confidence: category?.score ?? 0,

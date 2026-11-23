@@ -64,11 +64,11 @@ class IconBadge extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: solid ? c.text : c.background,
+          color: solid ? c.accent : c.accentSoft,
           shape: BoxShape.circle,
         ),
         child: Icon(icon,
-            size: size * 0.48, color: solid ? c.background : c.text),
+            size: size * 0.48, color: solid ? c.onAccent : c.accent),
       ),
     );
   }
@@ -157,3 +157,80 @@ IconData exerciseIcon(ExerciseKind kind) => switch (kind) {
       ExerciseKind.flatFingerLifts => Icons.keyboard_double_arrow_up,
       ExerciseKind.fingerWalking => Icons.directions_walk,
     };
+
+/// Big ring showing how much of today is done. Flat strokes, no animation.
+class ProgressRing extends StatelessWidget {
+  const ProgressRing({
+    super.key,
+    required this.value,
+    required this.centerText,
+    required this.caption,
+    this.size = 132,
+  });
+
+  /// 0-1.
+  final double value;
+  final String centerText;
+  final String caption;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    return Semantics(
+      label: '$centerText $caption',
+      excludeSemantics: true,
+      child: SizedBox.square(
+        dimension: size,
+        child: CustomPaint(
+          painter: _RingPainter(value.clamp(0.0, 1.0), c.accent, c.divider),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(centerText,
+                    style: t.headlineMedium?.copyWith(height: 1.0)),
+                Text(caption, style: t.labelMedium),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter(this.value, this.color, this.track);
+
+  final double value;
+  final Color color;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 14.0;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = track;
+    canvas.drawArc(arc, 0, 6.2832, false, base);
+    if (value > 0) {
+      canvas.drawArc(
+          arc,
+          -1.5708,
+          6.2832 * value,
+          false,
+          base
+            ..color = color
+            ..strokeCap = StrokeCap.butt);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.value != value || old.color != color || old.track != track;
+}

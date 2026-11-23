@@ -8,7 +8,7 @@ import 'providers.dart';
 import 'router.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final router = buildRouter();
+  final router = buildRouter(ref.watch(sharedPreferencesProvider));
   ref.onDispose(router.dispose);
   return router;
 });

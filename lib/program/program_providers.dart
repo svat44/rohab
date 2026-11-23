@@ -27,8 +27,8 @@ class ProgramSettingsNotifier extends Notifier<ProgramSettings> {
 
   Future<void> save(ProgramSettings s) async {
     await ref.read(programStoreProvider).saveSettings(s);
+    // The plan watches these settings, so it rebuilds by itself.
     state = s;
-    ref.invalidate(programOverviewProvider);
   }
 
   /// Sets today's goal back to the starting goal.

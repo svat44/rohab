@@ -26,7 +26,7 @@ class AppShell extends ConsumerStatefulWidget {
   // Branch order matches lib/app/router.dart.
   static const titles = [
     'Home',
-    'Calibration',
+    'Glove',
     'Exercises',
     'Progress',
     'Settings',
@@ -40,11 +40,12 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   static const _tabs = [
     NavDestination('Home', Icons.home_outlined),
-    NavDestination('Calibrate', Icons.tune),
+    NavDestination('Glove', Icons.tune),
     NavDestination('Exercises', Icons.back_hand_outlined),
     NavDestination('Progress', Icons.show_chart),
   ];
 
+  static const _maxWidth = 640.0;
   int _lastTab = 0;
 
   StatefulNavigationShell get _shell => widget.shell;
@@ -79,13 +80,27 @@ class _AppShellState extends ConsumerState<AppShell> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SafetyBanner(),
-              if (!immersive)
-                _Header(
-                  title: AppShell.titles[_shell.currentIndex],
-                  settingsOpen: _settingsOpen,
-                  onToggleSettings: _toggleSettings,
+              // Wide screens (tablets, landscape web) keep a readable column
+              // instead of stretching lines across the whole width.
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _maxWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (!immersive)
+                          _Header(
+                            title: AppShell.titles[_shell.currentIndex],
+                            settingsOpen: _settingsOpen,
+                            onToggleSettings: _toggleSettings,
+                          ),
+                        Expanded(child: _shell),
+                      ],
+                    ),
+                  ),
                 ),
-              Expanded(child: _shell),
+              ),
             ],
           ),
         ),

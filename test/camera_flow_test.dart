@@ -92,7 +92,7 @@ Future<Harness> launch(
         ));
   }
   final permission = FakePermission(access, afterRequest: afterRequest);
-  final glove = await pumpRohab(tester, clock: () => today, overrides: [
+  final glove = await pumpRohab(tester, clock: () => today, db: db, overrides: [
     handTrackerFactoryProvider.overrideWithValue(() {
       if (first) {
         first = false;
@@ -101,7 +101,6 @@ Future<Harness> launch(
       return create();
     }),
     cameraPermissionProvider.overrideWithValue(permission),
-    appDatabaseProvider.overrideWithValue(db),
   ]);
   return Harness(glove, trackers, db, permission);
 }
@@ -213,7 +212,8 @@ void main() {
       await settle(tester);
       expect(find.text('Hold your right hand inside the frame.'),
           findsOneWidget);
-      expect(find.byKey(SafetyBanner.stopKey), findsOneWidget);
+      // No glove: no glove banner during camera practice.
+      expect(find.byKey(SafetyBanner.stopKey), findsNothing);
 
       // Affected right hand: bend 0.15 to 0.8 of a fist (about 40 to 214).
       Future<void> measure(HandPose open, HandPose closed) async {

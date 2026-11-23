@@ -12,6 +12,7 @@ import 'package:rohab/data/database.dart';
 import 'package:rohab/data/exercise_session_repository.dart';
 import 'package:rohab/exercises/exercise_providers.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
+import 'package:rohab/onboarding/onboarding.dart';
 import 'package:rohab/screens/home_screen.dart';
 import 'package:rohab/widgets/bottom_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,16 +24,25 @@ Future<MockGloveService> pumpRohab(
   Map<String, Object> prefs = const {},
   DateTime Function()? clock,
   List<Override> overrides = const [],
+  AppDatabase? db,
 }) async {
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   SharedPreferences.resetStatic();
-  SharedPreferences.setMockInitialValues(prefs);
+  // The first-run guide is covered by its own test; everything else starts
+  // past it.
+  SharedPreferences.setMockInitialValues({onboardingDoneKey: true, ...prefs});
   final sp = await SharedPreferences.getInstance();
   final g = glove ?? MockGloveService(random: Random(7));
+  // Home shows today's plan, so every launch needs a database. Tests that
+  // care pass their own (later overrides win).
+  final memoryDb = db ??
+      AppDatabase(DatabaseConnection(NativeDatabase.memory(),
+          closeStreamsSynchronously: true));
   await tester.pumpWidget(ProviderScope(
     overrides: [
+      appDatabaseProvider.overrideWithValue(memoryDb),
       gloveServiceProvider.overrideWithValue(g),
       sharedPreferencesProvider.overrideWithValue(sp),
       if (clock != null) clockProvider.overrideWithValue(clock),
@@ -56,8 +66,16 @@ Future<void> tapTab(WidgetTester tester, String label) async {
   await tester.pump();
 }
 
-Future<void> connectFromHome(WidgetTester tester) async {
+/// Taps the glove button on Home, scrolling it into view first.
+Future<void> tapHomePrimary(WidgetTester tester) async {
+  await tester.ensureVisible(
+      find.byKey(HomeScreen.primaryButtonKey, skipOffstage: false));
+  await tester.pump();
   await tester.tap(find.byKey(HomeScreen.primaryButtonKey));
+}
+
+Future<void> connectFromHome(WidgetTester tester) async {
+  await tapHomePrimary(tester);
   await tester.pump(MockGloveService.connectDelay);
 }
 
@@ -116,7 +134,7 @@ Future<MockGloveService> pumpRohabOn(
     pumpRohab(tester,
         prefs: prefs,
         clock: () => now,
-        overrides: [appDatabaseProvider.overrideWithValue(db)]);
+        db: db);
 
 Future<void> closeDb(WidgetTester tester, AppDatabase db) async {
   await settleDb(tester);

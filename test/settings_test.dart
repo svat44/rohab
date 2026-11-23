@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rohab/glove/mock_glove_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:rohab/config/app_info.dart';
 import 'package:rohab/data/exercise_session_repository.dart';
@@ -124,6 +125,8 @@ void main() {
   testWidgets('the delete confirmation does not cover STOP', (tester) async {
     final db = await seededDb(tester, const []);
     final glove = await pumpRohabOn(tester, db, now: now);
+    glove.connect();
+    await tester.pump(MockGloveService.connectDelay);
     await openSettings(tester);
     await reveal(tester, SettingsScreen.clearKey);
     await tester.tap(find.byKey(SettingsScreen.clearKey));
@@ -170,10 +173,10 @@ void main() {
     }
 
     await check('Home');
-    await tester.tap(find.byKey(const Key('home-primary')));
+    await tapHomePrimary(tester);
     await tester.pump(const Duration(milliseconds: 800));
     await check('Home connected');
-    for (final tab in ['Calibrate', 'Exercises', 'Progress']) {
+    for (final tab in ['Glove', 'Exercises', 'Progress']) {
       await tapTab(tester, tab);
       await check(tab);
     }

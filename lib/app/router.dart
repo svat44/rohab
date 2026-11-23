@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' show Widget;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../onboarding/onboarding.dart';
+import '../screens/welcome_screen.dart';
 
 import '../debug/test_protocol_screen.dart';
 import '../screens/calibration/calibration_screen.dart';
@@ -17,6 +21,7 @@ import '../widgets/app_shell.dart';
 
 class Routes {
   Routes._();
+  static const welcome = '/welcome';
   static const home = '/home';
   static const calibration = '/calibration';
   static const exercises = '/exercises';
@@ -35,9 +40,20 @@ class Routes {
 /// One branch per screen, kept alive in an IndexedStack so a running
 /// calibration survives a tab switch. AppShell wraps every branch, so the
 /// STOP banner is on every screen.
-GoRouter buildRouter() => GoRouter(
+GoRouter buildRouter(SharedPreferences prefs) => GoRouter(
       initialLocation: Routes.home,
+      // First run: the guide comes before anything else.
+      redirect: (context, state) {
+        final onWelcome = state.matchedLocation == Routes.welcome;
+        if (!isOnboardingDone(prefs) && !onWelcome) return Routes.welcome;
+        return null;
+      },
       routes: [
+        GoRoute(
+          path: Routes.welcome,
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: WelcomeScreen()),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => AppShell(shell: shell),
           branches: [

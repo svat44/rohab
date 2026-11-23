@@ -44,37 +44,37 @@ class RohabPalette {
   /// Soft card shadow.
   final Color shadow;
 
-  /// Calm clinical palette: a cool mist background, white cards, deep teal
-  /// for the one accent, slate text. Contrast (WCAG): text on background
-  /// 14:1, secondary on background 6.3:1, white on accent 6.1:1.
+  /// Warm sand paper, white cards, deep teal for actions. Flat colours, no
+  /// gradients. Contrast (WCAG): text on background 14:1, secondary on
+  /// background 5.9:1, white on accent 8.2:1.
   static const light = RohabPalette(
-    background: Color(0xFFF3F4F6),
+    background: Color(0xFFF6F2EA),
     surface: Color(0xFFFFFFFF),
-    text: Color(0xFF111418),
-    secondary: Color(0xFF5B6470),
-    divider: Color(0xFFE6E8EB),
-    accent: Color(0xFF0B6E6A),
+    text: Color(0xFF1B2327),
+    secondary: Color(0xFF566067),
+    divider: Color(0xFFE2DBCD),
+    accent: Color(0xFF0F5C57),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFE4F1EF),
+    accentSoft: Color(0xFFE0EDE8),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x12000000),
+    shadow: Color(0x00000000),
   );
 
-  /// Dark twin. Accent keeps dark text on it (white on #2DD4BF is about
+  /// Dark twin. Accent keeps dark text on it (white on #3FD0BE is about
   /// 1.9:1).
   static const dark = RohabPalette(
-    background: Color(0xFF0E1012),
-    surface: Color(0xFF181B1F),
-    text: Color(0xFFF2F4F5),
-    secondary: Color(0xFFA0A8B0),
-    divider: Color(0xFF2A2E33),
-    accent: Color(0xFF2DD4BF),
+    background: Color(0xFF12120F),
+    surface: Color(0xFF1C1C18),
+    text: Color(0xFFF3F1EA),
+    secondary: Color(0xFFA9A89E),
+    divider: Color(0xFF302F29),
+    accent: Color(0xFF3FD0BE),
     onAccent: Color(0xFF062321),
-    accentSoft: Color(0xFF12413F),
+    accentSoft: Color(0xFF173B37),
     danger: Color(0xFFDC2626),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x66000000),
+    shadow: Color(0x00000000),
   );
 }
 

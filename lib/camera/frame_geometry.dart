@@ -1,21 +1,23 @@
 /// How a camera frame must be turned and drawn. Pure Dart.
 ///
-/// The `camera` plugin hands frames to the app differently per platform
-/// (read from the plugin sources, camera_avfoundation 0.11 and
-/// camera_android_camerax 0.7):
+/// Two facts, both confirmed on a real Android phone (the first version of
+/// this code got the second one wrong, and the skeleton was drawn shifted
+/// and squashed) and in the reference live-camera sample of the
+/// mediapipe_vision package:
 ///
-/// - **iOS** turns the video output to the device orientation and mirrors it
-///   for the front camera (`DefaultCamera.swift`: `isVideoMirrored = true`,
-///   `updateOrientation`). Frames arrive upright and already mirrored, so
-///   they must NOT be rotated again, and the landmarks already match the
-///   mirrored preview.
-/// - **Android** (CameraX) hands over the raw sensor buffer: unrotated and
-///   unmirrored. It must be rotated by the sensor orientation, and the
-///   preview is mirrored by the plugin, so the overlay has to mirror x.
+/// 1. MediaPipe is told `rotationDegrees` so it can see an upright hand, but
+///    it still reports landmarks in the coordinates of the frame as the
+///    camera DELIVERED it (a landscape sensor buffer on Android). Landmarks
+///    must be turned the same way before they are drawn or measured:
+///    [toUpright].
+/// 2. The front-camera preview is a mirror. Android streams unmirrored
+///    buffers (so x is flipped when drawing); iOS streams buffers that are
+///    already mirrored (so it is not).
 ///
-/// Rotating an upright iOS frame by 90 degrees (what a one-size-fits-all
-/// `sensorOrientation` does) shows MediaPipe a sideways hand: tracking
-/// almost never starts, and when it does the drawn hand is flipped.
+/// Rotation: Android needs the sensor angle (270 for most front cameras in
+/// portrait). iOS frames may arrive upright or in sensor layout depending on
+/// the plugin version, so a portrait buffer is left alone and a landscape
+/// buffer is turned by the sensor angle.
 library;
 
 class FrameGeometry {
@@ -34,6 +36,18 @@ class FrameGeometry {
 
   /// Width / height of the upright image.
   final double aspect;
+
+  /// Quarter turns clockwise (0-3) that stand the delivered frame upright.
+  int get quarterTurns => (rotationDegrees ~/ 90) % 4;
+
+  /// Maps a normalized point in the delivered frame to the same point in the
+  /// upright frame (still not mirrored). Clockwise turn of the picture.
+  (double, double) toUpright(double x, double y) => switch (quarterTurns) {
+        1 => (1 - y, x),
+        2 => (1 - x, 1 - y),
+        3 => (y, 1 - x),
+        _ => (x, y),
+      };
 
   /// Where a landmark's normalized x lands on a mirrored preview, 0-1.
   double previewX(double x) => alreadyMirrored ? x : 1 - x;

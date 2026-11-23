@@ -38,45 +38,53 @@ class BottomNav extends StatelessWidget {
         top: false,
         child: SizedBox(
           height: RohabSize.touchTarget + RohabSpace.s8,
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i++)
-                Expanded(
-                  child: Semantics(
-                    selected: i == selectedIndex,
-                    button: true,
-                    child: InkWell(
-                      onTap: () => onSelected(i),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            destinations[i].icon,
-                            size: RohabSize.icon,
-                            color: i == selectedIndex ? c.accent : c.secondary,
-                          ),
-                          const SizedBox(height: RohabSpace.s8 / 2),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              destinations[i].label,
-                              maxLines: 1,
-                              softWrap: false,
-                              style: label.copyWith(
-                                color:
-                                    i == selectedIndex ? c.accent : c.secondary,
-                                fontWeight: i == selectedIndex
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Row(
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    Expanded(
+                      child: Semantics(
+                        selected: i == selectedIndex,
+                        button: true,
+                        child: InkWell(
+                          onTap: () => onSelected(i),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                destinations[i].icon,
+                                size: RohabSize.icon,
+                                color: i == selectedIndex
+                                    ? c.accent
+                                    : c.secondary,
                               ),
-                            ),
+                              const SizedBox(height: RohabSpace.s8 / 2),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  destinations[i].label,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: label.copyWith(
+                                    color: i == selectedIndex
+                                        ? c.accent
+                                        : c.secondary,
+                                    fontWeight: i == selectedIndex
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

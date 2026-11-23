@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app/providers.dart';
 import '../app/router.dart';
 import '../glove/glove_service.dart';
+import '../program/program_providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/level_bar.dart';
 import '../widgets/rohab_widgets.dart';
@@ -15,6 +16,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   static const primaryButtonKey = Key('home-primary');
+  static const todayKey = Key('home-today');
+  static const todayPrimaryKey = Key('home-today-primary');
   static const pressureKey = Key('home-pressure');
   static const repsKey = Key('home-reps');
   static const stateKey = Key('home-state');
@@ -86,56 +89,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return ValueListenableBuilder<GloveSnapshot>(
       valueListenable: glove.snapshot,
       builder: (context, s, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        return ListView(
+          // A short list: build every card, so none is missing when
+          // large text pushes it below the fold.
+          scrollCacheExtent: const ScrollCacheExtent.pixels(3000),
+          padding: const EdgeInsets.fromLTRB(
+              RohabSpace.s24, RohabSpace.s8, RohabSpace.s24, RohabSpace.s24),
           children: [
-            Expanded(
-              child: ListView(
-                // A short list: build every card, so none is missing when
-                // large text pushes it below the fold.
-                scrollCacheExtent: const ScrollCacheExtent.pixels(2000),
-                padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+            const _TodayCard(),
+            const SectionTitle('Glove',
+                subtitle: 'Only if you use the Rohab glove.'),
+            if (s.faults.isNotEmpty) _FaultNotice(faults: s.faults),
+            if (calibrationNeeded) ...[
+              _CalibrationNeededRow(
+                onCalibrate: () => context.go(Routes.calibration),
+              ),
+              const SizedBox(height: RohabSpace.s16),
+            ],
+            // Only after a session ends; cleared when the next starts.
+            if (_summary != null && !s.sessionActive) ...[
+              Semantics(
+                liveRegion: true,
+                child: Text(_summary!,
+                    key: HomeScreen.summaryKey,
+                    style: Theme.of(context).textTheme.headlineMedium),
+              ),
+              const SizedBox(height: RohabSpace.s24),
+            ],
+            // The reps and what the hand is doing share one card.
+            RohabCard(
+              padding: const EdgeInsets.all(RohabSpace.s24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: RohabSpace.s8),
-                  if (s.faults.isNotEmpty) _FaultNotice(faults: s.faults),
-                  if (calibrationNeeded) ...[
-                    _CalibrationNeededRow(
-                      onCalibrate: () => context.go(Routes.calibration),
-                    ),
-                    const SizedBox(height: RohabSpace.s16),
-                  ],
-                  // Only after a session ends; cleared when the next starts.
-                  if (_summary != null && !s.sessionActive) ...[
-                    Semantics(
-                      liveRegion: true,
-                      child: Text(_summary!,
-                          key: HomeScreen.summaryKey,
-                          style: Theme.of(context).textTheme.headlineMedium),
-                    ),
-                    const SizedBox(height: RohabSpace.s24),
-                  ],
-                  // The reps and what the hand is doing share one hero card.
-                  RohabCard(
-                    padding: const EdgeInsets.all(RohabSpace.s24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _RepsReadout(
-                          reps: s.sessionActive || _summary != null
-                              ? s.reps - _repsAtStart
-                              : null,
-                        ),
-                        const SizedBox(height: RohabSpace.s16),
-                        _HandState(snapshot: s),
-                      ],
-                    ),
+                  _RepsReadout(
+                    reps: s.sessionActive || _summary != null
+                        ? s.reps - _repsAtStart
+                        : null,
                   ),
                   const SizedBox(height: RohabSpace.s16),
-                  RohabCard(child: _PressureRow(snapshot: s)),
-                  const SizedBox(height: RohabSpace.s24),
+                  _HandState(snapshot: s),
                 ],
               ),
             ),
+            const SizedBox(height: RohabSpace.s16),
+            RohabCard(child: _PressureRow(snapshot: s)),
+            const SizedBox(height: RohabSpace.s16),
             _Actions(
               snapshot: s,
               onConnect: glove.connect,
@@ -145,6 +144,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// The one thing to do next: measure the hands, or do today's exercises.
+class _TodayCard extends ConsumerWidget {
+  const _TodayCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Theme.of(context).textTheme;
+    final overview = ref.watch(programOverviewProvider).value;
+    if (overview == null) return const SizedBox.shrink();
+    final plan = overview.plan;
+
+    if (plan == null) {
+      return RohabCard(
+        key: HomeScreen.todayKey,
+        padding: const EdgeInsets.all(RohabSpace.s24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Start here', style: t.labelMedium),
+            const SizedBox(height: RohabSpace.s8),
+            Text("Let's measure your hands", style: t.headlineMedium),
+            const SizedBox(height: RohabSpace.s8),
+            Text(
+              'This takes about 2 minutes. It picks exercises that fit you.',
+              style: t.bodyLarge,
+            ),
+            const SizedBox(height: RohabSpace.s24),
+            FilledButton(
+              key: HomeScreen.todayPrimaryKey,
+              onPressed: () => context.go(Routes.baseline),
+              child: const Text('Measure my hands'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final next = plan.next;
+    final done = plan.setsDoneTotal;
+    final total = plan.setsTotal;
+    final String label;
+    final VoidCallback? action;
+    if (next != null) {
+      label = done == 0 ? 'Start' : 'Continue';
+      action = () => context.go(overview.painBefore == null
+          ? Routes.painCheck('before', next: next.exercise.id)
+          : Routes.cameraExercise(next.exercise.id));
+    } else if (overview.painAfter == null && overview.painBefore != null) {
+      label = 'Finish for today';
+      action = () => context.go(Routes.painCheck('after'));
+    } else {
+      label = 'Done for today';
+      action = null;
+    }
+    return RohabCard(
+      key: HomeScreen.todayKey,
+      padding: const EdgeInsets.all(RohabSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              ProgressRing(
+                value: total == 0 ? 0 : done / total,
+                centerText: '$done of $total',
+                caption: 'sets',
+              ),
+              const SizedBox(width: RohabSpace.s24),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(next == null ? 'Well done' : "Today's exercises",
+                        style: t.headlineMedium),
+                    const SizedBox(height: RohabSpace.s8),
+                    Text(
+                      next == null
+                          ? 'You finished your exercises for today.'
+                          : 'Next: ${next.exercise.title}',
+                      style: t.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: RohabSpace.s24),
+          FilledButton(
+            key: HomeScreen.todayPrimaryKey,
+            onPressed: action,
+            child: Text(label),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -361,14 +458,10 @@ class _Actions extends StatelessWidget {
       GloveConnection.connected => ('Start session', onStart),
     };
     // One action, always in the same place. Disconnect is in Settings.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, RohabSpace.s16),
-      child: FilledButton(
-        key: HomeScreen.primaryButtonKey,
-        onPressed: action,
-        child: Text(label),
-      ),
+    return FilledButton(
+      key: HomeScreen.primaryButtonKey,
+      onPressed: action,
+      child: Text(label),
     );
   }
 }
