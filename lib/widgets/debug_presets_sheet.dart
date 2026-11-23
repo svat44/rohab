@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
+import 'rohab_icon.dart';
 
 /// Debug builds only: pick the simulated patient's grip strength.
 ///
@@ -53,11 +54,7 @@ class _PresetSheetState extends State<_PresetSheet> {
                         ),
                       ),
                       if (widget.glove.preset == preset)
-                        Icon(
-                          Icons.check,
-                          color: c.accent,
-                          size: RohabSize.icon,
-                        ),
+                        RohabIcon(RohabIconData.check, color: c.accent),
                     ],
                   ),
                 ),

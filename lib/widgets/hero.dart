@@ -1,34 +1,34 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/palette_values.dart';
 
-/// Soft pale-blue circles behind a hero number, as in MIUI's Battery and
-/// Security screens. Painted once and never animated, so it costs nothing on
-/// a low-end phone. Drawn well below the text contrast limits: the circles are
-/// at most 18% accent on the page grey, and they never carry information.
-class HeroBackdrop extends StatelessWidget {
-  const HeroBackdrop({super.key, required this.child});
+/// HeroBubbles: the one decorative element. Exactly three soft circles
+/// (about 240, 140 and 80 dp), cropped at the screen edges, accent at 8%
+/// (6% for the two smaller ones), STATIC. Painted once inside a
+/// RepaintBoundary, ignoring touches, hidden from screen readers. White
+/// surfaces cover them; never put it behind the nav or a pinned panel.
+class HeroBubbles extends StatelessWidget {
+  const HeroBubbles({super.key, required this.child, this.height = 280});
 
+  /// The hero content drawn over the bubbles.
   final Widget child;
+
+  /// Height of the band the bubbles live in.
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    // The circles bleed past the page padding to the screen edge, like
-    // MIUI's, and stay in the top band where the number is, never behind
-    // a chart or a button.
+    final accent = context.colors.accent;
     return Stack(
-      clipBehavior: Clip.none,
       children: [
-        Positioned(
-          left: -RohabSpace.s24,
-          right: -RohabSpace.s24,
-          top: 0,
-          height: _band,
+        Positioned.fill(
           child: ExcludeSemantics(
             child: IgnorePointer(
               child: RepaintBoundary(
-                child: CustomPaint(painter: _CirclesPainter(c.accent)),
+                child: ClipRect(
+                  child: CustomPaint(painter: BubblePainter(accent)),
+                ),
               ),
             ),
           ),
@@ -37,86 +37,35 @@ class HeroBackdrop extends StatelessWidget {
       ],
     );
   }
-
-  static const _band = 270.0;
 }
 
-class _CirclesPainter extends CustomPainter {
-  const _CirclesPainter(this.accent);
+/// Paints the three circles. Positions are fractions of the band, so they
+/// stay cropped by the screen edge at any width.
+class BubblePainter extends CustomPainter {
+  const BubblePainter(this.accent);
 
   final Color accent;
 
-  void _circle(Canvas canvas, Offset center, double radius, double alpha) {
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: alpha * 0.55),
-            accent.withValues(alpha: alpha),
-          ],
-        ).createShader(rect),
-    );
-  }
+  static const largeDiameter = 240.0;
+  static const mediumDiameter = 140.0;
+  static const smallDiameter = 80.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    _circle(canvas, const Offset(20, 115), 100, 0.18);
-    _circle(canvas, const Offset(14, 232), 30, 0.14);
-    _circle(canvas, Offset(w, 92), 64, 0.14);
-  }
-
-  @override
-  bool shouldRepaint(_CirclesPainter old) => old.accent != accent;
-}
-
-/// One large thin number with a short line under it. The screen's single most
-/// important figure, set straight on the page.
-class HeroNumber extends StatelessWidget {
-  const HeroNumber({
-    super.key,
-    required this.value,
-    required this.caption,
-    required this.semanticsLabel,
-    this.valueKey,
-  });
-
-  final String value;
-  final String caption;
-  final String semanticsLabel;
-  final Key? valueKey;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final c = context.colors;
-    return Semantics(
-      label: semanticsLabel,
-      excludeSemantics: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              key: valueKey,
-              style: t.displayLarge?.copyWith(
-                fontSize: RohabType.hero,
-                fontWeight: FontWeight.w300,
-                color: c.text,
-              ),
-            ),
-          ),
-          const SizedBox(height: RohabSpace.s8),
-          Text(caption, textAlign: TextAlign.center, style: t.bodyLarge),
-        ],
-      ),
+    void circle(Offset c, double d, double alpha) => canvas.drawCircle(
+      c,
+      d / 2,
+      Paint()..color = accent.withValues(alpha: alpha),
+    );
+    circle(Offset(size.width - 40, 70), largeDiameter, kBubbleAlphaLarge);
+    circle(Offset(20, size.height - 50), mediumDiameter, kBubbleAlphaSmall);
+    circle(
+      Offset(size.width - 10, size.height - 20),
+      smallDiameter,
+      kBubbleAlphaSmall,
     );
   }
+
+  @override
+  bool shouldRepaint(BubblePainter old) => old.accent != accent;
 }

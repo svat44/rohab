@@ -1,186 +1,83 @@
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../app/providers.dart';
+import '../calibration/calibration_controller.dart';
 import '../glove/glove_service.dart';
-import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
-import 'surfaces.dart';
+import 'rohab_button.dart';
 
-/// Shown at the top of every screen: connection status and the STOP button.
-///
-/// STOP calls [GloveService.emergencyVent] directly, in every state,
-/// with no confirmation step.
+/// The glove STOP sign, top right of every screen, shown only while the glove
+/// is doing something: a session running, the hand moving or pressurised,
+/// calibration in progress, or a fault. Idle, or no glove, it is not shown.
+/// It sits above the screen (never inside a scroll view) and calls
+/// [GloveService.emergencyVent] directly, with no confirmation step.
 class SafetyBanner extends ConsumerWidget {
   const SafetyBanner({super.key});
 
-  static const stopKey = Key('safety-stop');
+  static const stopKey = StopButton.stopKey;
+
+  /// True when pressure could be live or something just went wrong.
+  static bool isActive(GloveSnapshot s, {required bool calibrating}) {
+    if (s.faults.isNotEmpty) return true;
+    if (!s.isConnected) return false;
+    return s.sessionActive || s.state != GloveState.idle || calibrating;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final glove = ref.watch(gloveServiceProvider);
+    final step = ref.watch(calibrationControllerProvider).step;
+    final calibrating = step != CalibrationStep.start;
+    return ValueListenableBuilder<GloveSnapshot>(
+      valueListenable: glove.snapshot,
+      builder: (context, s, _) {
+        if (!isActive(s, calibrating: calibrating)) {
+          return const SizedBox.shrink();
+        }
+        return SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.all(RohabSpace.s8),
+            child: StopButton(onStop: glove.emergencyVent),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A plain red line under the top bar while the glove has a fault, so the
+/// reason for a vent is never hidden. Not shown otherwise.
+class GloveFaultNotice extends ConsumerWidget {
+  const GloveFaultNotice({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glove = ref.watch(gloveServiceProvider);
     final c = context.colors;
-    final textTheme = Theme.of(context).textTheme;
-
-    // Without a glove there is nothing to vent, so the banner stays away
-    // (camera-only use). It appears as soon as a glove connects or faults.
     return ValueListenableBuilder<GloveSnapshot>(
       valueListenable: glove.snapshot,
-      builder: (context, snap, banner) =>
-          snap.connection == GloveConnection.disconnected && snap.faults.isEmpty
-          ? const SizedBox.shrink()
-          : banner!,
-      child: _banner(context, glove, c, textTheme),
-    );
-  }
-
-  Widget _banner(
-    BuildContext context,
-    GloveService glove,
-    AppColors c,
-    TextTheme textTheme,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        border: Border(bottom: BorderSide(color: c.divider)),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        RohabSpace.s16,
-        RohabSpace.s8,
-        RohabSpace.s8,
-        RohabSpace.s8,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ValueListenableBuilder<GloveSnapshot>(
-              valueListenable: glove.snapshot,
-              builder: (context, s, _) {
-                final (title, detail) = _statusText(
-                  s,
-                  glove is MockGloveService,
-                );
-                final hasFault = s.faults.isNotEmpty;
-                return Semantics(
-                  liveRegion: true,
-                  child: Row(
-                    children: [
-                      Icon(
-                        s.isConnected
-                            ? Icons.bluetooth_connected
-                            : Icons.bluetooth_disabled,
-                        size: RohabSize.icon,
-                        color: s.isConnected ? c.accent : c.secondary,
-                      ),
-                      const SizedBox(width: RohabSpace.s8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Wraps instead of cutting off on narrow phones.
-                            Text(
-                              title,
-                              style: textTheme.labelLarge?.copyWith(
-                                fontSize: RohabType.bannerTitle,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (detail != null)
-                              Text(
-                                detail,
-                                style: textTheme.labelMedium?.copyWith(
-                                  fontSize: RohabType.bannerDetail,
-                                  color: hasFault ? c.danger : c.secondary,
-                                  fontWeight: hasFault
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+      builder: (context, s, _) {
+        if (s.faults.isEmpty) return const SizedBox.shrink();
+        return Semantics(
+          liveRegion: true,
+          child: Container(
+            color: c.surface,
+            padding: const EdgeInsets.all(RohabSpace.gutter),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Glove vented',
+                  style: RohabType.rowTitle.copyWith(color: c.danger),
+                ),
+                Text('Fault: ${s.faults.first.label}', style: RohabType.rowSub),
+              ],
             ),
           ),
-          const SizedBox(width: RohabSpace.s8),
-          _StopButton(
-            onPressed: () {
-              HapticFeedback.heavyImpact();
-              glove.emergencyVent();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  (String, String?) _statusText(GloveSnapshot s, bool simulated) {
-    if (s.faults.isNotEmpty) {
-      return ('Glove vented', 'Fault: ${s.faults.first.label}');
-    }
-    return switch (s.connection) {
-      GloveConnection.disconnected => ('Glove not connected', null),
-      GloveConnection.connecting => ('Connecting', null),
-      GloveConnection.connected => (
-        simulated ? 'Simulated glove' : 'Connected',
-        s.state.patientLabel,
-      ),
-    };
-  }
-}
-
-class _StopButton extends StatelessWidget {
-  const _StopButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Semantics(
-      button: true,
-      label: 'Stop. Vents the glove now.',
-      excludeSemantics: true,
-      child: SizedBox(
-        width: RohabSize.stopButtonWidth,
-        height: RohabSize.stopButtonHeight,
-        child: FilledButton(
-          key: SafetyBanner.stopKey,
-          onPressed: onPressed,
-          style: solidButton(
-            FilledButton.styleFrom(
-              backgroundColor: c.danger,
-              foregroundColor: c.onDanger,
-              minimumSize: const Size(
-                RohabSize.stopButtonWidth,
-                RohabSize.stopButtonHeight,
-              ),
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(RohabShape.radius),
-              ),
-              textStyle: const TextStyle(
-                fontFamily: RohabTokens.fontFamily,
-                fontSize: RohabType.stop,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-              ),
-            ),
-            edge: Color.lerp(c.danger, const Color(0xFF000000), 0.5)!,
-          ),
-          child: const Text('STOP'),
-        ),
-      ),
+        );
+      },
     );
   }
 }
