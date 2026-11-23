@@ -1,18 +1,20 @@
-/// Rohab brand tokens. The single source of truth for color, type, spacing,
-/// shape, size and motion. Nothing else in lib/ hard-codes these values.
+/// Rohab design tokens: color, type, spacing, shape, size. Nothing else in
+/// lib/ hard-codes these values. Colors come from palette_values.dart so the
+/// contrast test and the app read the same numbers.
 library;
 
-import 'dart:ui' show Color;
+import 'dart:ui' show Color, FontFeature, FontVariation, FontWeight;
+
+import 'package:material_ui/material_ui.dart' show TextStyle;
+
+import 'palette_values.dart';
 
 class RohabTokens {
   RohabTokens._();
-
   static const name = 'Rohab';
-  static const fontFamily = 'Roboto';
 }
 
-/// One palette per brightness. Rules: one accent, red only for STOP and
-/// faults, one secondary gray.
+/// The one palette. One accent (deep teal), one danger, one success.
 class RohabPalette {
   const RohabPalette({
     required this.background,
@@ -21,26 +23,31 @@ class RohabPalette {
     required this.secondary,
     required this.divider,
     required this.accent,
+    required this.accentPressed,
     required this.onAccent,
     required this.accentSoft,
     required this.danger,
     required this.onDanger,
-    required this.header,
     required this.controlFill,
     required this.controlEdge,
     required this.disabledFill,
     required this.disabledText,
     required this.success,
     required this.onSuccess,
+    required this.warningText,
     required this.focus,
   });
 
+  /// Page behind the white surfaces.
   final Color background;
   final Color surface;
   final Color text;
   final Color secondary;
+
+  /// 1 dp hairline between rows.
   final Color divider;
   final Color accent;
+  final Color accentPressed;
   final Color onAccent;
   final Color accentSoft;
 
@@ -48,135 +55,235 @@ class RohabPalette {
   final Color danger;
   final Color onDanger;
 
-  /// Solid title bar.
-  final Color header;
-
-  /// Secondary buttons and choice boxes: white, with a dark edge.
+  /// Secondary buttons and square toggles: white.
   final Color controlFill;
 
-  /// 3:1 edge for every control, so a control never depends on its fill.
+  /// Edge of a control.
   final Color controlEdge;
-
-  /// Disabled controls: flat, with a label that is still readable.
   final Color disabledFill;
   final Color disabledText;
 
-  /// "Done" and "connected". Never the only signal: always with a word.
+  /// Always paired with a word, never the only signal.
   final Color success;
   final Color onSuccess;
+  final Color warningText;
 
-  /// Keyboard and switch-access focus ring: yellow, 4 px, on every control.
+  /// Keyboard and switch-access focus ring.
   final Color focus;
 
-  /// Clinical blue on white, like a patient portal. Contrast (WCAG):
-  /// text on page 16:1, secondary on page 8:1, white on accent 6.6:1,
-  /// white on danger 6.9:1, white on success 5.9:1.
-  static const light = RohabPalette(
-    background: Color(0xFFF7F7F7),
-    surface: Color(0xFFFFFFFF),
-    text: Color(0xFF000000),
-    secondary: Color(0xFF5C5F66),
-    divider: Color(0xFFE6E6E6),
-    accent: Color(0xFF1A63E0),
-    onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFE8F0FE),
-    danger: Color(0xFFD92B2B),
-    onDanger: Color(0xFFFFFFFF),
-    header: Color(0xFFF7F7F7),
-    controlFill: Color(0xFFE8F0FE),
-    controlEdge: Color(0xFF6B7280),
-    disabledFill: Color(0xFFEBEBEB),
-    disabledText: Color(0xFF5F6368),
-    success: Color(0xFF0B7A3E),
-    onSuccess: Color(0xFFFFFFFF),
-    focus: Color(0xFFFFD21F),
-  );
+  /// Fully transparent, for places that must draw nothing.
+  static const clear = Color(0x00000000);
 
-  static const dark = RohabPalette(
-    background: Color(0xFF000000),
-    surface: Color(0xFF1C1C1E),
-    text: Color(0xFFFFFFFF),
-    secondary: Color(0xFFB0B3B8),
-    divider: Color(0xFF38383A),
-    accent: Color(0xFF6FA8FF),
-    onAccent: Color(0xFF00122E),
-    accentSoft: Color(0xFF14284A),
-    danger: Color(0xFFFF8A80),
-    onDanger: Color(0xFF2A0505),
-    header: Color(0xFF000000),
-    controlFill: Color(0xFF14284A),
-    controlEdge: Color(0xFF8A8F98),
-    disabledFill: Color(0xFF2C2C2E),
-    disabledText: Color(0xFFA9ADB3),
-    success: Color(0xFF6CD39A),
-    onSuccess: Color(0xFF04210F),
+  static const light = RohabPalette(
+    background: Color(RohabHex.page),
+    surface: Color(RohabHex.surface),
+    text: Color(RohabHex.text),
+    secondary: Color(RohabHex.textSecondary),
+    divider: Color(RohabHex.hairline),
+    accent: Color(RohabHex.accent),
+    accentPressed: Color(RohabHex.accentPressed),
+    onAccent: Color(RohabHex.onAccent),
+    accentSoft: Color(RohabHex.accentTint),
+    danger: Color(RohabHex.danger),
+    onDanger: Color(RohabHex.onAccent),
+    controlFill: Color(RohabHex.surface),
+    controlEdge: Color(RohabHex.border),
+    disabledFill: Color(RohabHex.disabledFill),
+    disabledText: Color(RohabHex.disabledText),
+    success: Color(RohabHex.success),
+    onSuccess: Color(RohabHex.onAccent),
+    warningText: Color(RohabHex.warningText),
     focus: Color(0xFFFFD21F),
   );
 }
 
-/// Type scale in sp: regular Android sizes. People who want larger text use
-/// Settings > Text size (Large, Largest), which scales all of it.
+/// Font families bundled in assets/fonts (all SIL OFL). Never fetched.
+class RohabFonts {
+  RohabFonts._();
+
+  /// Body, UI and every number (with tabular figures).
+  static const body = 'AtkinsonHyperlegibleNext';
+
+  /// Numbers use the body face too, so digits and words match.
+  static const numbers = body;
+
+  /// Screen titles and the wordmark only: the sans companion of Source Serif.
+  static const title = 'SourceSans3';
+}
+
+/// Type scale in sp. Nothing under 14, no light weights. These are the only
+/// text styles in the app; widgets copy one, they never invent one.
 class RohabType {
   RohabType._();
-  static const double display = 48;
 
-  /// The one big number on a screen (MIUI's 95 and 90).
-  static const double hero = 96;
-  static const double title = 22;
-  static const double heading = 20;
-  static const double body = 17;
-  static const double label = 16;
+  static const _text = Color(RohabHex.text);
+  static const _secondary = Color(RohabHex.textSecondary);
+  static const _tabular = [FontFeature.tabularFigures()];
 
-  /// The safety banner keeps its original sizes, whatever the scale above.
-  static const double bannerTitle = 20;
-  static const double bannerDetail = 18;
+  static const title = TextStyle(
+    fontFamily: RohabFonts.title,
+    fontWeight: FontWeight.w600,
+    fontVariations: [FontVariation('wght', 600)],
+    fontSize: 24,
+    height: 1.2,
+    color: _text,
+  );
 
-  /// The STOP button label. Fixed, so it never changes with the scale above.
-  static const double stop = 28;
+  /// The "Rohab" wordmark: small.
+  static const wordmark = TextStyle(
+    fontFamily: RohabFonts.title,
+    fontWeight: FontWeight.w600,
+    fontVariations: [FontVariation('wght', 600)],
+    fontSize: 16,
+    height: 1.2,
+    color: _text,
+  );
+
+  static const sectionLabel = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 14,
+    height: 1.3,
+    color: _secondary,
+  );
+
+  static const rowTitle = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 16,
+    height: 1.25,
+    color: _text,
+  );
+
+  static const rowSub = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w400,
+    fontVariations: [FontVariation('wght', 400)],
+    fontSize: 15,
+    height: 1.3,
+    color: _secondary,
+  );
+
+  static const body = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w400,
+    fontVariations: [FontVariation('wght', 400)],
+    fontSize: 16,
+    height: 1.4,
+    color: _text,
+  );
+
+  static const button = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 16,
+    height: 1.2,
+    color: _text,
+  );
+
+  static const navLabel = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w400,
+    fontVariations: [FontVariation('wght', 400)],
+    fontSize: 14,
+    height: 1.2,
+    color: _secondary,
+  );
+
+  static const navLabelSelected = TextStyle(
+    fontFamily: RohabFonts.body,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 14,
+    height: 1.2,
+    color: Color(RohabHex.accent),
+  );
+
+  static const metricXL = TextStyle(
+    fontFamily: RohabFonts.numbers,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 48,
+    height: 1.0,
+    color: _text,
+    fontFeatures: _tabular,
+  );
+
+  /// The live rep counter on the camera screen.
+  static const metricCamera = TextStyle(
+    fontFamily: RohabFonts.numbers,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 64,
+    height: 1.0,
+    color: _text,
+    fontFeatures: _tabular,
+  );
+
+  static const metricL = TextStyle(
+    fontFamily: RohabFonts.numbers,
+    fontWeight: FontWeight.w700,
+    fontVariations: [FontVariation('wght', 700)],
+    fontSize: 28,
+    height: 1.1,
+    color: _text,
+    fontFeatures: _tabular,
+  );
+
+  static const metricS = TextStyle(
+    fontFamily: RohabFonts.numbers,
+    fontWeight: FontWeight.w400,
+    fontVariations: [FontVariation('wght', 400)],
+    fontSize: 16,
+    height: 1.2,
+    color: _text,
+    fontFeatures: _tabular,
+  );
 }
 
-/// 8pt grid.
+/// 8 dp grid.
 class RohabSpace {
   RohabSpace._();
+  static const double s4 = 4;
   static const double s8 = 8;
   static const double s16 = 16;
   static const double s24 = 24;
   static const double s32 = 32;
   static const double s48 = 48;
+
+  /// Side padding of every screen.
+  static const double gutter = 16;
 }
 
 class RohabShape {
   RohabShape._();
 
-  /// Square corners, on purpose: every box is an edge a person with low
-  /// vision can follow, like the boxes on a paper form. Groups, tiles,
-  /// choice boxes and buttons are all square.
+  /// Controls: buttons, steppers, square toggles. Rows, panels and the result
+  /// block are 0.
+  static const double control = 4;
   static const double radius = 0;
   static const double card = 0;
-
-  /// Icon tiles.
-  static const double tile = 0;
-
-  /// Panels and list rows.
   static const double border = 1;
-
-  /// Controls: buttons, choice boxes, the camera frame.
   static const double strongBorder = 2;
-
-  /// Depth of a button's bottom edge. It sinks when pressed.
-  static const double buttonEdge = 0;
-
-  /// Keyboard focus ring.
   static const double focusRing = 4;
+  static const double tabUnderline = 3;
+  static const double navBar = 3;
+  static const double icon = 2;
 }
 
 class RohabSize {
   RohabSize._();
-  static const double touchTarget = 64;
+  static const double touchTarget = 48;
+  static const double rowMin = 64;
   static const double primaryButtonHeight = 64;
-  static const double stopButtonHeight = 80;
-  static const double stopButtonWidth = 112;
-  static const double icon = 28;
+  static const double stopButtonHeight = 64;
+  static const double stepperButton = 56;
+  static const double icon = 24;
+  static const double navHeight = 64;
+  static const double appBarHeight = 64;
 }
 
 /// Motion: functional only, never longer than [max].

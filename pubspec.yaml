@@ -9,6 +9,7 @@ environment:
 dependencies:
   camera: ^0.12.2
   drift: ^2.35.4
+  fl_chart: ^1.3.1
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.5.0
@@ -37,3 +38,21 @@ flutter:
   uses-material-design: true
   assets:
     - assets/mediapipe/
+    - assets/exercises/
+    - assets/fonts/atkinson/OFL.txt
+    - assets/fonts/sourcesans3/OFL.txt
+  fonts:
+    # Atkinson Hyperlegible Next: body, UI and every number (tabular figures).
+    # One variable file, two weights
+    # (the wght axis is set in RohabType).
+    - family: AtkinsonHyperlegibleNext
+      fonts:
+        - asset: assets/fonts/atkinson/AtkinsonHyperlegibleNext.ttf
+          weight: 400
+        - asset: assets/fonts/atkinson/AtkinsonHyperlegibleNext.ttf
+          weight: 700
+    # Source Sans 3: screen titles and the wordmark only.
+    - family: SourceSans3
+      fonts:
+        - asset: assets/fonts/sourcesans3/SourceSans3.ttf
+          weight: 600

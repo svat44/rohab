@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'tokens.dart';
 
-/// Exposes the active [RohabPalette] to widgets via `context.colors`.
+/// Exposes the palette to widgets via `context.colors`.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors(this.palette);
@@ -15,17 +15,18 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get secondary => palette.secondary;
   Color get divider => palette.divider;
   Color get accent => palette.accent;
+  Color get accentPressed => palette.accentPressed;
   Color get onAccent => palette.onAccent;
   Color get accentSoft => palette.accentSoft;
   Color get danger => palette.danger;
   Color get onDanger => palette.onDanger;
-  Color get header => palette.header;
   Color get controlFill => palette.controlFill;
   Color get controlEdge => palette.controlEdge;
   Color get disabledFill => palette.disabledFill;
   Color get disabledText => palette.disabledText;
   Color get success => palette.success;
   Color get onSuccess => palette.onSuccess;
+  Color get warningText => palette.warningText;
   Color get focus => palette.focus;
 
   @override
