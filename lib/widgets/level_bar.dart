@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
-import 'skeuo.dart';
 
 /// A labeled vertical line on a [LevelBar].
 class LevelMarker {
@@ -31,7 +30,7 @@ class LevelBar extends StatelessWidget {
   });
 
   static const barHeight = 32.0;
-  static const markerWidth = RohabShape.strongBorder;
+  static const markerWidth = 4.0;
 
   /// Fill, 0-1.
   final double value;
@@ -68,34 +67,24 @@ class LevelBar extends StatelessWidget {
               right: 0,
               top: top,
               height: LevelBar.barHeight,
-              // A groove cut into the panel, with a glossy bar sliding in it.
+              // A plain track with a solid blue fill and a dark edge.
               child: Container(
                 decoration: BoxDecoration(
-                  color: Color.lerp(c.divider, const Color(0xFF000000), 0.1),
+                  color: c.surface,
                   borderRadius: BorderRadius.circular(RohabShape.radius),
                   border: Border.all(
-                    color: Color.lerp(c.divider, const Color(0xFF000000), 0.5)!,
-                    width: RohabShape.border,
+                    color: c.controlEdge,
+                    width: RohabShape.strongBorder,
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(RohabShape.radius - 1),
-                  child: CustomPaint(
-                    painter: const _GroovePainter(),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: fraction(value),
-                        heightFactor: 1,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(color: c.accent),
-                          child: const CustomPaint(
-                            painter: BevelPainter(
-                              radius: RohabShape.radius - 1,
-                            ),
-                          ),
-                        ),
-                      ),
+                  borderRadius: BorderRadius.zero,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: fraction(value),
+                      heightFactor: 1,
+                      child: ColoredBox(color: c.accent),
                     ),
                   ),
                 ),
@@ -181,20 +170,4 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) {
   final w = painter.width;
   painter.dispose();
   return w;
-}
-
-/// The groove is cut into the page: a dark line along its top edge.
-class _GroovePainter extends CustomPainter {
-  const _GroovePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, 3),
-      Paint()..color = const Color(0x33000000),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_GroovePainter old) => false;
 }

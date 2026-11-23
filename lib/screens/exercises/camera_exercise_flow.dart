@@ -19,7 +19,7 @@ import '../../program/program_providers.dart';
 import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
@@ -631,7 +631,7 @@ class _NumberedStep extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RaisedTile(
+          IconTile(
             size: RohabSpace.s32 + 4,
             color: c.accent,
             child: Text(
@@ -639,9 +639,6 @@ class _NumberedStep extends StatelessWidget {
               style: t.labelMedium?.copyWith(
                 color: c.onAccent,
                 fontWeight: FontWeight.w700,
-                shadows: const [
-                  Shadow(color: Color(0x66000000), offset: Offset(0, -1)),
-                ],
               ),
             ),
           ),
@@ -706,7 +703,7 @@ class _CountdownBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: paperDecoration(context.colors, radius: RohabShape.radius),
+      decoration: panelDecoration(context.colors, radius: RohabShape.radius),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: RohabSpace.s16,

@@ -8,7 +8,7 @@ import '../../program/program_providers.dart';
 import '../../program/program_settings.dart';
 import '../../program/therapist_pin.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import '../../widgets/action_area.dart';
 
 /// Therapist plan settings, behind a 4-digit PIN.
@@ -419,7 +419,7 @@ class _Choice extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: ChoiceMaterial(
+      child: ChoiceBox(
         selected: selected,
         child: InkWell(
           borderRadius: radius,

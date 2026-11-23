@@ -23,7 +23,7 @@ class CountdownNumber extends StatelessWidget {
         children: [
           Text('$seconds', key: valueKey, style: t.displayLarge),
           const SizedBox(width: RohabSpace.s8),
-          Text('s', style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w500)),
+          Text('s', style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
         ],
       ),
     );

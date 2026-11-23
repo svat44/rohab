@@ -8,7 +8,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../program/pain.dart';
 import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import '../../widgets/action_area.dart';
 
 /// Pain 0-10 before the first set of the day and after the last.
@@ -187,7 +187,7 @@ class _ScoreGrid extends StatelessWidget {
                 child: SizedBox(
                   width: w,
                   height: RohabSize.touchTarget,
-                  child: ChoiceMaterial(
+                  child: ChoiceBox(
                     selected: selected == n,
                     child: InkWell(
                       key: PainCheckScreen.scoreKey(n),

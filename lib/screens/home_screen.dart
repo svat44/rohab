@@ -7,7 +7,7 @@ import '../app/router.dart';
 import '../glove/glove_service.dart';
 import '../program/program_providers.dart';
 import '../theme/app_theme.dart';
-import '../widgets/skeuo.dart';
+import '../widgets/surfaces.dart';
 import '../widgets/level_bar.dart';
 import '../widgets/rohab_widgets.dart';
 
@@ -223,15 +223,33 @@ class _TodayCard extends ConsumerWidget {
       label = 'Done for today';
       action = null;
     }
+    final c = context.colors;
     return RohabCard(
       key: HomeScreen.todayKey,
+      tint: next != null,
       padding: const EdgeInsets.all(RohabSpace.s24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            next == null ? 'Well done' : "Today's exercises",
-            style: t.headlineMedium,
+          Row(
+            children: [
+              if (next == null) ...[
+                ExcludeSemantics(
+                  child: Icon(
+                    Icons.check_circle,
+                    size: RohabSize.icon + 8,
+                    color: c.success,
+                  ),
+                ),
+                const SizedBox(width: RohabSpace.s8),
+              ],
+              Expanded(
+                child: Text(
+                  next == null ? 'Well done' : "Today's exercises",
+                  style: t.headlineMedium,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: RohabSpace.s8),
           Text(
@@ -360,7 +378,7 @@ class _PressureRow extends StatelessWidget {
                       s.isConnected ? s.pressureKpa.toStringAsFixed(1) : '–',
                       key: HomeScreen.pressureKey,
                       style: t.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -434,20 +452,35 @@ class _FaultNotice extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: RohabSpace.s24),
       padding: const EdgeInsets.all(RohabSpace.s16),
-      decoration: paperDecoration(c).copyWith(
+      decoration: panelDecoration(c).copyWith(
         border: Border.all(color: c.danger, width: RohabShape.strongBorder),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            faults.map((f) => f.label).join('. '),
-            style: t.labelLarge?.copyWith(color: c.danger),
+          ExcludeSemantics(
+            child: Icon(
+              Icons.warning_amber_rounded,
+              size: RohabSize.icon + 8,
+              color: c.danger,
+            ),
           ),
-          const SizedBox(height: RohabSpace.s8),
-          Text(
-            'The glove has vented. Check the fit, then start again.',
-            style: t.bodyLarge,
+          const SizedBox(width: RohabSpace.s16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  faults.map((f) => f.label).join('. '),
+                  style: t.labelLarge?.copyWith(color: c.danger),
+                ),
+                const SizedBox(height: RohabSpace.s8),
+                Text(
+                  'The glove has vented. Check the fit, then start again.',
+                  style: t.bodyLarge,
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -168,7 +168,7 @@ class _Bar extends StatelessWidget {
         Text(letter,
             style: t.labelMedium?.copyWith(
                 color: today ? c.accent : c.secondary,
-                fontWeight: today ? FontWeight.w700 : FontWeight.w500)),
+                fontWeight: today ? FontWeight.w700 : FontWeight.w400)),
       ],
     );
   }

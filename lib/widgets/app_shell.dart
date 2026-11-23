@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../app/providers.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/responsive.dart';
 import 'bottom_nav.dart';
 import 'immersive.dart';
 import '../debug/debug_menu.dart';
@@ -26,7 +27,6 @@ class AppShell extends ConsumerStatefulWidget {
   // Branch order matches lib/app/router.dart.
   static const titles = ['Home', 'Glove', 'Exercises', 'Progress', 'Settings'];
   static const settingsBranch = 4;
-  static const maxWidth = 640.0;
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -34,10 +34,10 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   static const _tabs = [
-    NavDestination('Home', Icons.home_outlined),
-    NavDestination('Glove', Icons.tune),
-    NavDestination('Exercises', Icons.back_hand_outlined),
-    NavDestination('Progress', Icons.show_chart),
+    NavDestination('Home', Icons.home),
+    NavDestination('Glove', Icons.bluetooth),
+    NavDestination('Exercises', Icons.back_hand),
+    NavDestination('Progress', Icons.bar_chart),
   ];
 
   int _lastTab = 0;
@@ -62,6 +62,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final immersive = ref.watch(immersiveProvider);
+    final window = WindowClass.of(context);
+    final sideNav = window.usesSideNav && !immersive;
     return PopScope(
       canPop: !_settingsOpen,
       onPopInvokedWithResult: (didPop, _) {
@@ -84,24 +86,39 @@ class _AppShellState extends ConsumerState<AppShell> {
                 settingsOpen: _settingsOpen,
                 onToggleSettings: _toggleSettings,
               ),
-            // Wide screens (tablets, landscape web) keep a readable column
-            // instead of stretching lines across the whole width.
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppShell.maxWidth,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sideNav)
+                    SideNav(
+                      destinations: _tabs,
+                      selectedIndex: _settingsOpen
+                          ? null
+                          : _shell.currentIndex,
+                      onSelected: _goTab,
+                    ),
+                  // Wide windows keep a readable column instead of
+                  // stretching lines across the whole width.
+                  Expanded(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: window.contentMaxWidth,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: RohabSpace.s16),
+                          child: _shell,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: RohabSpace.s16),
-                    child: _shell,
-                  ),
-                ),
+                ],
               ),
             ),
           ],
         ),
-        bottomNavigationBar: immersive
+        bottomNavigationBar: immersive || window.usesSideNav
             ? null
             : BottomNav(
                 destinations: _tabs,
@@ -142,112 +159,100 @@ class _Header extends ConsumerWidget {
     final t = Theme.of(context).textTheme;
     final glove = ref.watch(gloveServiceProvider);
 
-    // Solid header: the screen title on the left
-    // (small wordmark above it), a labelled Settings button on the right.
+    // Solid blue title bar: the screen title on the left (small wordmark
+    // above it), a labelled Settings button on the right. On a short window
+    // the wordmark goes, so the bar takes less height.
+    final short = isShortWindow(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.header,
-        border: Border(bottom: BorderSide(color: c.accent)),
-      ),
+      decoration: BoxDecoration(color: c.header),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: RohabSize.touchTarget + RohabSpace.s16,
+        constraints: BoxConstraints(
+          minHeight: RohabSize.touchTarget + (short ? 0 : RohabSpace.s16),
         ),
-        child: Stack(
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: AppShell.maxWidth),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    RohabSpace.s16,
-                    RohabSpace.s8 / 2,
-                    RohabSpace.s8,
-                    RohabSpace.s16 / 2 + RohabSpace.s8 / 2,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            RohabSpace.s16,
+            RohabSpace.s8 / 2,
+            RohabSpace.s8,
+            RohabSpace.s8 / 2,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!short)
+                      GestureDetector(
+                        key: AppShell.wordmarkKey,
+                        behavior: HitTestBehavior.opaque,
+                        onLongPress: kDebugMode
+                            ? () => showDebugMenu(
+                                context,
+                                mockGlove: glove is MockGloveService
+                                    ? glove
+                                    : null,
+                              )
+                            : null,
+                        child: Text(
+                          RohabTokens.name,
+                          style: t.labelMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    Semantics(
+                      header: true,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          style: t.headlineMedium?.copyWith(
+                            height: 1.1,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Tooltip(
+                message: settingsOpen ? 'Close settings' : 'Settings',
+                child: TextButton.icon(
+                  key: settingsOpen
+                      ? AppShell.closeSettingsKey
+                      : AppShell.settingsButtonKey,
+                  onPressed: onToggleSettings,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(
+                      RohabSize.touchTarget,
+                      RohabSize.touchTarget,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: RohabSpace.s16,
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              key: AppShell.wordmarkKey,
-                              behavior: HitTestBehavior.opaque,
-                              onLongPress: kDebugMode
-                                  ? () => showDebugMenu(
-                                      context,
-                                      mockGlove: glove is MockGloveService
-                                          ? glove
-                                          : null,
-                                    )
-                                  : null,
-                              child: Text(
-                                RohabTokens.name,
-                                style: t.labelMedium?.copyWith(
-                                  color: const Color(0xFFCFE3F3),
-                                ),
-                              ),
-                            ),
-                            Semantics(
-                              header: true,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  title,
-                                  maxLines: 1,
-                                  style: t.headlineMedium?.copyWith(
-                                    fontSize: 30,
-                                    height: 1.1,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Tooltip(
-                        message: settingsOpen ? 'Close settings' : 'Settings',
-                        child: TextButton.icon(
-                          key: settingsOpen
-                              ? AppShell.closeSettingsKey
-                              : AppShell.settingsButtonKey,
-                          onPressed: onToggleSettings,
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(
-                              RohabSize.touchTarget,
-                              RohabSize.touchTarget,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: RohabSpace.s16,
-                            ),
-                          ),
-                          icon: Icon(
-                            settingsOpen
-                                ? Icons.close
-                                : Icons.settings_outlined,
-                            size: RohabSize.icon - 4,
-                          ),
-                          label: Text(
-                            settingsOpen ? 'Close' : 'Settings',
-                            maxLines: 1,
-                            softWrap: false,
-                            style: t.labelMedium?.copyWith(
-                              color: c.accent,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  icon: Icon(
+                    settingsOpen ? Icons.close : Icons.settings,
+                    size: RohabSize.icon - 4,
+                  ),
+                  label: Text(
+                    settingsOpen ? 'Close' : 'Settings',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: t.labelMedium?.copyWith(
+                      color: c.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

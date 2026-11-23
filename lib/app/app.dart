@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/skeuo.dart';
+import '../theme/responsive.dart';
 import '../widgets/startup_splash.dart';
 import '../settings/settings_controller.dart';
 import 'providers.dart';
@@ -35,21 +35,27 @@ class RohabApp extends ConsumerWidget {
         final scale = ref.watch(textSizeProvider).scale;
         final mq = MediaQuery.of(context);
         final system = mq.textScaler.scale(1.0);
+        // Tablets get larger text so it is read at the same size at arm's
+        // length. The total stays between 1x and 2x so layouts survive it.
+        final boost = WindowClass.ofWidth(mq.size.width).textBoost;
         return MediaQuery(
           data: mq.copyWith(
-            textScaler: TextScaler.linear((system * scale).clamp(1.0, 2.0)),
+            textScaler: TextScaler.linear(
+              (system * scale * boost).clamp(1.0, 2.0),
+            ),
           ),
-          // Linen cloth behind every screen.
           child: _Backdrop(
-              showSplash: showSplash,
-              child: child ?? const SizedBox.shrink()),
+            showSplash: showSplash,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );
   }
 }
 
-/// Linen cloth behind every screen. Loads the textures once, up front.
+/// The plain page colour behind every screen, with the opening screen on
+/// top until it finishes.
 class _Backdrop extends StatefulWidget {
   const _Backdrop({required this.child, required this.showSplash});
 
@@ -62,21 +68,11 @@ class _Backdrop extends StatefulWidget {
 }
 
 class _BackdropState extends State<_Backdrop> {
-  bool _loading = false;
   late bool _splash = widget.showSplash;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_loading) {
-      _loading = true;
-      Textures.precache();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: pageDecoration(context.colors),
+  Widget build(BuildContext context) => ColoredBox(
+    color: context.colors.background,
     child: Stack(
       fit: StackFit.expand,
       children: [

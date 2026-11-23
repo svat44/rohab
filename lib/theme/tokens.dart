@@ -8,7 +8,7 @@ class RohabTokens {
   RohabTokens._();
 
   static const name = 'Rohab';
-  static const fontFamily = 'Inter';
+  static const fontFamily = 'Atkinson';
 }
 
 /// One palette per brightness. Rules: one accent, red only for STOP and
@@ -25,13 +25,14 @@ class RohabPalette {
     required this.accentSoft,
     required this.danger,
     required this.onDanger,
-    required this.shadow,
     required this.header,
-    required this.highlight,
-    required this.silver,
-    required this.silverEdge,
+    required this.controlFill,
+    required this.controlEdge,
     required this.disabledFill,
     required this.disabledText,
+    required this.success,
+    required this.onSuccess,
+    required this.focus,
   });
 
   final Color background;
@@ -47,79 +48,81 @@ class RohabPalette {
   final Color danger;
   final Color onDanger;
 
-  /// Dark side of the soft extruded look: shadow falling to the bottom right.
-  final Color shadow;
-
-  /// Light side: the glow on the top left of a raised surface.
-  final Color highlight;
-
   /// Solid title bar.
   final Color header;
 
-  /// Secondary buttons and choice tiles: same material as the page, raised.
-  final Color silver;
+  /// Secondary buttons and choice boxes: white, with a dark edge.
+  final Color controlFill;
 
-  /// 3:1 edge for controls, so they never depend on the shadow alone.
-  final Color silverEdge;
+  /// 3:1 edge for every control, so a control never depends on its fill.
+  final Color controlEdge;
 
   /// Disabled controls: flat, with a label that is still readable.
   final Color disabledFill;
   final Color disabledText;
 
-  /// Light blue and deep blue, from the app icon (#54C5F8, #29B6F6,
-  /// #01579B). The base colours of the classic raised-and-textured look
-  /// (see widgets/skeuo.dart). Contrast (WCAG): text on background 12:1,
-  /// secondary on background 6:1, white on accent 7.6:1.
+  /// "Done" and "connected". Never the only signal: always with a word.
+  final Color success;
+  final Color onSuccess;
+
+  /// Keyboard and switch-access focus ring: yellow, 4 px, on every control.
+  final Color focus;
+
+  /// Clinical blue on white, like a patient portal. Contrast (WCAG):
+  /// text on page 16:1, secondary on page 8:1, white on accent 6.6:1,
+  /// white on danger 6.9:1, white on success 5.9:1.
   static const light = RohabPalette(
-    background: Color(0xFFDFE7EF),
-    surface: Color(0xFFE9EFF5),
-    text: Color(0xFF0B1F2E),
-    secondary: Color(0xFF3B5367),
-    divider: Color(0xFFB3C8D8),
-    accent: Color(0xFF01579B),
+    background: Color(0xFFF4F7FA),
+    surface: Color(0xFFFFFFFF),
+    text: Color(0xFF14212B),
+    secondary: Color(0xFF3F505E),
+    divider: Color(0xFF7F8F9C),
+    accent: Color(0xFF0B5CAD),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFD3E6F5),
-    danger: Color(0xFFC62020),
+    accentSoft: Color(0xFFE1EDF8),
+    danger: Color(0xFFB3170F),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x4D5B7691),
-    highlight: Color(0xCCFFFFFF),
-    header: Color(0xFF01579B),
-    silver: Color(0xFFE9EFF5),
-    silverEdge: Color(0xFF5A7388),
-    disabledFill: Color(0xFFD0D9E2),
-    disabledText: Color(0xFF465B6D),
+    header: Color(0xFF0B5CAD),
+    controlFill: Color(0xFFFFFFFF),
+    controlEdge: Color(0xFF4B5C69),
+    disabledFill: Color(0xFFE3E8EC),
+    disabledText: Color(0xFF55646F),
+    success: Color(0xFF00703C),
+    onSuccess: Color(0xFFFFFFFF),
+    focus: Color(0xFFFFD21F),
   );
 
-  /// Dark twin. Accent keeps dark text on it (white on #54C5F8 is about
-  /// 1.9:1).
+  /// Dark twin, for people who choose it (or whose phone does).
   static const dark = RohabPalette(
-    background: Color(0xFF0E1A25),
-    surface: Color(0xFF142331),
-    text: Color(0xFFEAF3FA),
-    secondary: Color(0xFF9DB4C6),
-    divider: Color(0xFF244058),
-    accent: Color(0xFF54C5F8),
-    onAccent: Color(0xFF04202F),
-    accentSoft: Color(0xFF143650),
-    danger: Color(0xFFF07070),
-    onDanger: Color(0xFF1A0505),
-    shadow: Color(0xB3000000),
-    highlight: Color(0x14FFFFFF),
-    header: Color(0xFF123B5F),
-    silver: Color(0xFF142331),
-    silverEdge: Color(0xFF557692),
-    disabledFill: Color(0xFF1E3141),
+    background: Color(0xFF0F1A24),
+    surface: Color(0xFF17232F),
+    text: Color(0xFFF2F7FB),
+    secondary: Color(0xFFB4C4D2),
+    divider: Color(0xFF5E7385),
+    accent: Color(0xFF6FB7F2),
+    onAccent: Color(0xFF06223A),
+    accentSoft: Color(0xFF1B3550),
+    danger: Color(0xFFFF8A80),
+    onDanger: Color(0xFF2A0505),
+    header: Color(0xFF0B3B6B),
+    controlFill: Color(0xFF17232F),
+    controlEdge: Color(0xFF8FA5B7),
+    disabledFill: Color(0xFF223442),
     disabledText: Color(0xFFA9BDCC),
+    success: Color(0xFF6CD39A),
+    onSuccess: Color(0xFF04210F),
+    focus: Color(0xFFFFD21F),
   );
 }
 
 /// Type scale in sp. Labels never go below [label].
 class RohabType {
   RohabType._();
-  static const double display = 64;
-  static const double title = 30;
+  static const double display = 56;
+  static const double title = 28;
+  static const double heading = 24;
   static const double body = 20;
-  static const double label = 16;
+  static const double label = 18;
 }
 
 /// 8pt grid.
@@ -135,15 +138,22 @@ class RohabSpace {
 class RohabShape {
   RohabShape._();
 
-  /// Buttons and small tiles: the gently rounded corners of classic apps.
-  static const double radius = 12;
+  /// Square corners, on purpose: every box is an edge a person with low
+  /// vision can follow, like the boxes on a paper form.
+  static const double radius = 0;
+  static const double card = 0;
 
-  /// Cards and panels.
-  static const double card = 20;
-  static const double border = 1;
+  /// Panels and list rows.
+  static const double border = 1.5;
 
-  /// Marker lines and the camera's hand frame.
+  /// Controls: buttons, choice boxes, the camera frame.
   static const double strongBorder = 2;
+
+  /// Depth of a button's bottom edge. It sinks when pressed.
+  static const double buttonEdge = 4;
+
+  /// Keyboard focus ring.
+  static const double focusRing = 4;
 }
 
 class RohabSize {

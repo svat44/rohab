@@ -19,13 +19,14 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get accentSoft => palette.accentSoft;
   Color get danger => palette.danger;
   Color get onDanger => palette.onDanger;
-  Color get shadow => palette.shadow;
   Color get header => palette.header;
-  Color get highlight => palette.highlight;
-  Color get silver => palette.silver;
-  Color get silverEdge => palette.silverEdge;
+  Color get controlFill => palette.controlFill;
+  Color get controlEdge => palette.controlEdge;
   Color get disabledFill => palette.disabledFill;
   Color get disabledText => palette.disabledText;
+  Color get success => palette.success;
+  Color get onSuccess => palette.onSuccess;
+  Color get focus => palette.focus;
 
   @override
   AppColors copyWith() => this;

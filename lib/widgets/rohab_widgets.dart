@@ -2,11 +2,11 @@ import 'package:material_ui/material_ui.dart';
 
 import '../exercises/exercise_catalog.dart';
 import '../theme/app_theme.dart';
-import 'skeuo.dart';
+import 'surfaces.dart';
 
-/// A sheet of textured paper with a soft shadow, lying on the linen. The
-/// basic building block of the screens. [onTap] makes the whole card one
-/// large target, which dims a little while pressed.
+/// A flat white panel with a visible edge, the basic building block of the
+/// screens. [onTap] makes the whole panel one large target; it shows a chevron
+/// so it reads as a link, and darkens while pressed.
 class RohabCard extends StatelessWidget {
   const RohabCard({
     super.key,
@@ -20,7 +20,7 @@ class RohabCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
 
-  /// Light blue paper, for the one most important panel on a screen.
+  /// Light blue panel, for the one most important panel on a screen.
   final bool tint;
   final EdgeInsets padding;
   final double minHeight;
@@ -29,24 +29,34 @@ class RohabCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final radius = BorderRadius.circular(RohabShape.card);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: raisedShadow(c),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: Ink(
-          decoration: paperDecoration(c, tint: tint, shadow: false),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: radius,
-            splashColor: c.accent.withValues(alpha: 0.18),
-            highlightColor: c.accent.withValues(alpha: 0.10),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: minHeight),
-              child: Padding(padding: padding, child: child),
-            ),
+    final body = Padding(padding: padding, child: child);
+    return Material(
+      type: MaterialType.transparency,
+      child: Ink(
+        decoration: panelDecoration(c, tint: tint),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          splashFactory: NoSplash.splashFactory,
+          highlightColor: c.accent.withValues(alpha: 0.16),
+          focusColor: c.focus.withValues(alpha: 0.5),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: onTap == null
+                ? body
+                : Row(
+                    children: [
+                      Expanded(child: body),
+                      Padding(
+                        padding: const EdgeInsets.only(right: RohabSpace.s16),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: RohabSize.icon + 8,
+                          color: c.accent,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -54,8 +64,8 @@ class RohabCard extends StatelessWidget {
   }
 }
 
-/// An app-icon style tile: a beveled rounded square with a glyph in it.
-/// [solid] is the blue one (done, or next); otherwise silver.
+/// A flat square icon tile. [solid] is the blue one (done, or next);
+/// otherwise light blue with a blue edge.
 class IconBadge extends StatelessWidget {
   const IconBadge(this.icon, {super.key, this.size = 56, this.solid = false});
 
@@ -67,10 +77,10 @@ class IconBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return ExcludeSemantics(
-      child: RaisedTile(
+      child: IconTile(
         size: size,
-        color: solid ? c.accent : c.silver,
-        edge: solid ? null : c.silverEdge,
+        color: solid ? c.accent : c.accentSoft,
+        edge: solid ? null : c.accent,
         child: Icon(
           icon,
           size: size * 0.55,
@@ -81,7 +91,7 @@ class IconBadge extends StatelessWidget {
   }
 }
 
-/// Small rounded label: "10 times", "Level 2", "Done".
+/// Small label: "10 times", "Level 2", "Done".
 class InfoChip extends StatelessWidget {
   const InfoChip(this.label, {super.key, this.icon, this.filled = false});
 
@@ -106,7 +116,7 @@ class InfoChip extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            style: t.copyWith(color: fg, fontWeight: FontWeight.w600),
+            style: t.copyWith(color: fg, fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -134,7 +144,7 @@ class SectionTitle extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: t.labelLarge),
+            Text(title, style: t.headlineSmall),
             if (subtitle != null) ...[
               const SizedBox(height: RohabSpace.s8 / 2),
               Text(subtitle!, style: t.labelMedium),

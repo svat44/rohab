@@ -10,7 +10,7 @@ import '../../program/baseline.dart';
 import '../../program/baseline_controller.dart';
 import '../../program/program_providers.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import '../../widgets/action_area.dart';
 import '../../widgets/countdown_number.dart';
 import '../../widgets/immersive.dart';
@@ -201,7 +201,7 @@ class _BaselineScreenState extends ConsumerState<BaselineScreen>
           frame: _c.frame,
           stats: () => _c.stats,
           overlay: DecoratedBox(
-            decoration: paperDecoration(
+            decoration: panelDecoration(
               context.colors,
               radius: RohabShape.radius,
             ),

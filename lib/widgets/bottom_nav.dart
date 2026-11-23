@@ -8,9 +8,10 @@ class NavDestination {
   final IconData icon;
 }
 
-/// Tab bar on brushed steel: icon and text label on every tab, the current
-/// tab pressed in and lit. [selectedIndex] may be null when a screen
-/// outside the tabs is open.
+/// Tab bar at the bottom of a phone: an icon and a word on every tab, the
+/// current tab filled solid blue with a bold label, so it never depends on
+/// colour alone. [selectedIndex] may be null when a screen outside the tabs
+/// is open.
 class BottomNav extends StatelessWidget {
   const BottomNav({
     super.key,
@@ -26,40 +27,28 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final label = Theme.of(context).textTheme.labelMedium!;
-
-    // Solid bar with a 1 px top border. The current tab is a filled shape
-    // with a bold label, so it never depends on colour alone.
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(top: BorderSide(color: c.divider)),
+        border: Border(
+          top: BorderSide(color: c.controlEdge, width: RohabShape.strongBorder),
+        ),
       ),
       child: SafeArea(
         top: false,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-          child: Center(
-            heightFactor: 1,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Padding(
-                padding: const EdgeInsets.all(RohabSpace.s8 / 2),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < destinations.length; i++)
-                      Expanded(
-                        child: _Tab(
-                          destination: destinations[i],
-                          selected: i == selectedIndex,
-                          style: label,
-                          onTap: () => onSelected(i),
-                        ),
-                      ),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.all(RohabSpace.s8 / 2),
+          child: Row(
+            children: [
+              for (var i = 0; i < destinations.length; i++)
+                Expanded(
+                  child: NavTab(
+                    destination: destinations[i],
+                    selected: i == selectedIndex,
+                    onTap: () => onSelected(i),
+                  ),
                 ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -67,27 +56,86 @@ class BottomNav extends StatelessWidget {
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.destination,
-    required this.selected,
-    required this.style,
-    required this.onTap,
+/// Tabs down the left side, for windows wider than a phone. Same tabs, same
+/// order, same filled-when-current rule as [BottomNav].
+class SideNav extends StatelessWidget {
+  const SideNav({
+    super.key,
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
   });
 
-  final NavDestination destination;
-  final bool selected;
-  final TextStyle style;
-  final VoidCallback onTap;
+  static const width = 128.0;
+
+  final List<NavDestination> destinations;
+  final int? selectedIndex;
+  final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final fg = selected ? c.onAccent : c.secondary;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(
+          right: BorderSide(
+            color: c.controlEdge,
+            width: RohabShape.strongBorder,
+          ),
+        ),
+      ),
+      child: SizedBox(
+        width: width,
+        child: SafeArea(
+          top: false,
+          right: false,
+          child: ListView(
+            padding: const EdgeInsets.all(RohabSpace.s8),
+            children: [
+              for (var i = 0; i < destinations.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: RohabSpace.s8),
+                  child: NavTab(
+                    destination: destinations[i],
+                    selected: i == selectedIndex,
+                    onTap: () => onSelected(i),
+                    minHeight: 88,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NavTab extends StatelessWidget {
+  const NavTab({
+    super.key,
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+    this.minHeight = RohabSize.touchTarget,
+  });
+
+  final NavDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final style = Theme.of(context).textTheme.labelMedium!;
+    final fg = selected ? c.onAccent : c.text;
     const radius = BorderRadius.all(Radius.circular(RohabShape.radius));
     return Semantics(
       selected: selected,
       button: true,
+      label: destination.label,
+      excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Material(
@@ -95,15 +143,16 @@ class _Tab extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: radius,
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: c.accent.withValues(alpha: 0.2),
+            focusColor: c.focus.withValues(alpha: 0.6),
             child: Ink(
               decoration: BoxDecoration(
                 borderRadius: radius,
                 color: selected ? c.accent : null,
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minHeight: RohabSize.touchTarget,
-                ),
+                constraints: BoxConstraints(minHeight: minHeight),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -118,9 +167,7 @@ class _Tab extends StatelessWidget {
                         softWrap: false,
                         style: style.copyWith(
                           color: fg,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

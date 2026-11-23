@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../widgets/skeuo.dart';
+import '../widgets/surfaces.dart';
 import 'app_colors.dart';
 import 'tokens.dart';
 
@@ -12,13 +12,12 @@ ThemeData buildTheme(Brightness brightness) {
       ? RohabPalette.light
       : RohabPalette.dark;
 
-  // Hierarchy by size and weight only.
+  // Two weights only (regular and bold). Hierarchy by size and weight.
   final text = TextTheme(
     displayLarge: TextStyle(
       fontSize: RohabType.display,
       height: 1.0,
-      fontWeight: FontWeight.w600,
-      letterSpacing: -1,
+      fontWeight: FontWeight.w700,
       color: p.text,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
@@ -26,14 +25,20 @@ ThemeData buildTheme(Brightness brightness) {
       fontSize: RohabType.title,
       height: 1.2,
       fontWeight: FontWeight.w700,
-      letterSpacing: -0.6,
+      color: p.text,
+    ),
+    // Section headings.
+    headlineSmall: TextStyle(
+      fontSize: RohabType.heading,
+      height: 1.25,
+      fontWeight: FontWeight.w700,
       color: p.text,
     ),
     // Single instruction on a calibration step.
     titleLarge: TextStyle(
       fontSize: RohabType.title,
       height: 1.25,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
       color: p.text,
     ),
     bodyLarge: TextStyle(fontSize: RohabType.body, height: 1.4, color: p.text),
@@ -41,18 +46,20 @@ ThemeData buildTheme(Brightness brightness) {
     labelLarge: TextStyle(
       fontSize: RohabType.body,
       height: 1.2,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w700,
       color: p.text,
     ),
     labelMedium: TextStyle(
       fontSize: RohabType.label,
-      height: 1.25,
-      fontWeight: FontWeight.w500,
+      height: 1.3,
+      fontWeight: FontWeight.w400,
       color: p.secondary,
     ),
   ).apply(fontFamily: RohabTokens.fontFamily);
 
   final radius = BorderRadius.circular(RohabShape.radius);
+  final shape = RoundedRectangleBorder(borderRadius: radius);
+  final darkAccent = Color.lerp(p.accent, const Color(0xFF000000), 0.4)!;
 
   final scheme = ColorScheme(
     brightness: brightness,
@@ -65,7 +72,7 @@ ThemeData buildTheme(Brightness brightness) {
     surface: p.background,
     onSurface: p.text,
     surfaceTint: Colors.transparent,
-    outline: p.divider,
+    outline: p.controlEdge,
     outlineVariant: p.divider,
   );
 
@@ -75,15 +82,13 @@ ThemeData buildTheme(Brightness brightness) {
     colorScheme: scheme,
     fontFamily: RohabTokens.fontFamily,
     textTheme: text,
-    // The linen shows through (see RohabApp's builder).
-    scaffoldBackgroundColor: const Color(0x00000000),
+    scaffoldBackgroundColor: p.background,
     dividerTheme: DividerThemeData(
       color: p.divider,
       thickness: RohabShape.border,
       space: 1,
     ),
-    // Plain ripple, not the Material 3 sparkle.
-    splashFactory: InkRipple.splashFactory,
+    splashFactory: NoSplash.splashFactory,
     // Screens change instantly: no fades or slides.
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
@@ -92,12 +97,13 @@ ThemeData buildTheme(Brightness brightness) {
       },
     ),
     materialTapTargetSize: MaterialTapTargetSize.padded,
+    focusColor: p.focus.withValues(alpha: 0.4),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: p.surface,
       elevation: 0,
       modalElevation: 0,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: p.divider),
+        side: BorderSide(color: p.divider, width: RohabShape.strongBorder),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(RohabShape.radius),
         ),
@@ -109,23 +115,22 @@ ThemeData buildTheme(Brightness brightness) {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(RohabShape.card),
-        side: BorderSide.none,
+        side: BorderSide(color: p.divider, width: RohabShape.border),
       ),
     ),
-    // Secondary actions are silver raised buttons: they look like buttons,
-    // not like loose blue words.
+    // Secondary actions: white buttons with a dark edge and bold blue label.
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: raised(
+      style: solidButton(
         OutlinedButton.styleFrom(
           foregroundColor: p.accent,
-          backgroundColor: p.silver,
+          backgroundColor: p.controlFill,
           disabledBackgroundColor: p.disabledFill,
           disabledForegroundColor: p.disabledText,
           minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-          side: BorderSide(color: p.silverEdge, width: RohabShape.border),
-          shape: RoundedRectangleBorder(borderRadius: radius),
+          shape: shape,
           textStyle: text.labelLarge,
         ),
+        edge: p.controlEdge,
       ),
     ),
     switchTheme: SwitchThemeData(
@@ -133,37 +138,35 @@ ThemeData buildTheme(Brightness brightness) {
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected) ? p.accent : p.secondary,
       ),
-      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+      trackOutlineColor: WidgetStatePropertyAll(p.controlEdge),
     ),
+    // Primary action: solid blue block.
     filledButtonTheme: FilledButtonThemeData(
-      style: raised(
+      style: solidButton(
         FilledButton.styleFrom(
           backgroundColor: p.accent,
           foregroundColor: p.onAccent,
           disabledBackgroundColor: p.disabledFill,
           disabledForegroundColor: p.disabledText,
           minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
-          side: BorderSide(
-            color: Color.lerp(p.accent, const Color(0xFF000000), 0.45)!,
-            width: RohabShape.border,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: radius),
+          shape: shape,
           textStyle: text.labelLarge,
         ),
+        edge: darkAccent,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: raised(
+      style: solidButton(
         TextButton.styleFrom(
           foregroundColor: p.accent,
-          backgroundColor: p.silver,
+          backgroundColor: p.controlFill,
           disabledBackgroundColor: p.disabledFill,
           disabledForegroundColor: p.disabledText,
           minimumSize: const Size(RohabSize.touchTarget, RohabSize.touchTarget),
-          side: BorderSide(color: p.silverEdge, width: RohabShape.border),
-          shape: RoundedRectangleBorder(borderRadius: radius),
+          shape: shape,
           textStyle: text.labelLarge,
         ),
+        edge: p.controlEdge,
       ),
     ),
     extensions: [AppColors(p)],

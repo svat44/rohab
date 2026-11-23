@@ -33,7 +33,7 @@ void main() {
       ('danger text on card', p.danger, p.surface, 4.5),
       ('label on header', const Color(0xFFFFFFFF), p.header, 4.5),
       ('disabled label', p.disabledText, p.disabledFill, 3.0),
-      ('control edge on page', p.silverEdge, p.background, 3.0),
+      ('control edge on page', p.controlEdge, p.background, 3.0),
       ('selected tab label', p.onAccent, p.accent, 4.5),
     ];
     for (final (label, fg, bg, min) in pairs) {

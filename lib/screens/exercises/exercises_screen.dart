@@ -78,7 +78,7 @@ class _PathRow extends StatelessWidget {
         padding: const EdgeInsets.all(RohabSpace.s16),
         child: Row(
           children: [
-            Opacity(opacity: enabled ? 1 : 0.5, child: IconBadge(icon, size: 64)),
+            IconBadge(icon, size: 64),
             const SizedBox(width: RohabSpace.s16),
             Expanded(
               child: Column(
@@ -98,9 +98,6 @@ class _PathRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (enabled)
-              Icon(Icons.chevron_right,
-                  size: RohabSize.icon, color: c.secondary),
           ],
         ),
       ),
@@ -170,8 +167,6 @@ class CameraExerciseListScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Icon(Icons.chevron_right,
-                            size: RohabSize.icon, color: c.secondary),
                       ],
                     ),
                   ),

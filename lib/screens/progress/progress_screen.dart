@@ -6,7 +6,7 @@ import '../../app/router.dart';
 import '../../data/database.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import 'overview.dart';
 import 'progress_data.dart';
 import 'range_chart.dart';
@@ -196,7 +196,7 @@ class _Selector extends StatelessWidget {
               child: Semantics(
                 button: true,
                 selected: id == selected,
-                child: ChoiceMaterial(
+                child: ChoiceBox(
                   selected: id == selected,
                   child: InkWell(
                     key: ProgressScreen.segmentKey(id),
@@ -217,7 +217,7 @@ class _Selector extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: t.labelMedium?.copyWith(
                               color: id == selected ? c.onAccent : c.text,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),

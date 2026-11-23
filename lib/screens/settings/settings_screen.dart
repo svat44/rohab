@@ -9,7 +9,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../glove/glove_service.dart';
 import '../../settings/settings_controller.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
+import '../../widgets/surfaces.dart';
 import '../progress/overview.dart';
 import '../progress/progress_data.dart';
 
@@ -229,7 +229,7 @@ class _Segment extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      child: ChoiceMaterial(
+      child: ChoiceBox(
         selected: selected,
         child: InkWell(
           borderRadius: radius,
@@ -239,12 +239,28 @@ class _Segment extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(RohabSpace.s8),
               child: Center(
-                child: Text(
-                  label,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      if (selected)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(
+                              Icons.check,
+                              size: RohabType.label + 2,
+                              color: c.onAccent,
+                            ),
+                          ),
+                        ),
+                      TextSpan(text: label),
+                    ],
+                  ),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: selected ? c.onAccent : c.text,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -273,7 +289,7 @@ class _ConfirmDelete extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: RohabSpace.s16),
         padding: const EdgeInsets.all(RohabSpace.s16),
-        decoration: paperDecoration(c, radius: RohabShape.radius),
+        decoration: panelDecoration(c, radius: RohabShape.radius),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -5,7 +5,6 @@ import '../../camera/hand_tracker.dart';
 import '../../debug/diagnostics.dart';
 import '../../debug/diagnostics_overlay.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/skeuo.dart';
 import '../../widgets/hand_overlay.dart';
 
 /// Camera step. The camera takes all the height the text below it does not
@@ -105,11 +104,11 @@ class _Preview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    const bezel = 6.0;
+    const bezel = 4.0;
     final outer = BorderRadius.circular(RohabShape.card);
     final inner = BorderRadius.circular(RohabShape.card - bezel / 2);
     final aspect = tracker?.previewAspect ?? 3 / 4;
-    // A raised frame around the picture. The bezel is
+    // A flat frame around the picture. The bezel is
     // outside the AspectRatio, so the preview keeps its exact shape and the
     // hand drawing stays aligned with it.
     return Semantics(
@@ -119,8 +118,10 @@ class _Preview extends StatelessWidget {
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: outer,
-            border: Border.all(color: c.silverEdge),
-            boxShadow: raisedShadow(c),
+            border: Border.all(
+              color: c.controlEdge,
+              width: RohabShape.strongBorder,
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(bezel),

@@ -7,7 +7,7 @@ import '../app/providers.dart';
 import '../glove/glove_service.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
-import 'skeuo.dart';
+import 'surfaces.dart';
 
 /// Shown at the top of every screen: connection status and the STOP button.
 ///
@@ -43,8 +43,11 @@ class SafetyBanner extends ConsumerWidget {
     TextTheme textTheme,
   ) {
     return Container(
-      decoration: paperDecoration(c, radius: 0).copyWith(
-        border: Border(bottom: BorderSide(color: c.divider)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(
+          bottom: BorderSide(color: c.controlEdge, width: RohabShape.strongBorder),
+        ),
       ),
       padding: const EdgeInsets.fromLTRB(
         RohabSpace.s16,
@@ -93,8 +96,8 @@ class SafetyBanner extends ConsumerWidget {
                                 style: textTheme.labelMedium?.copyWith(
                                   color: hasFault ? c.danger : c.secondary,
                                   fontWeight: hasFault
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -153,23 +156,26 @@ class _StopButton extends StatelessWidget {
         child: FilledButton(
           key: SafetyBanner.stopKey,
           onPressed: onPressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: c.danger,
-            foregroundColor: c.onDanger,
-            minimumSize: const Size(
-              RohabSize.stopButtonWidth,
-              RohabSize.stopButtonHeight,
+          style: solidButton(
+            FilledButton.styleFrom(
+              backgroundColor: c.danger,
+              foregroundColor: c.onDanger,
+              minimumSize: const Size(
+                RohabSize.stopButtonWidth,
+                RohabSize.stopButtonHeight,
+              ),
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(RohabShape.radius),
+              ),
+              textStyle: const TextStyle(
+                fontFamily: RohabTokens.fontFamily,
+                fontSize: RohabType.title,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+              ),
             ),
-            padding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(RohabShape.radius),
-            ),
-            textStyle: const TextStyle(
-              fontFamily: RohabTokens.fontFamily,
-              fontSize: RohabType.title,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
+            edge: Color.lerp(c.danger, const Color(0xFF000000), 0.5)!,
           ),
           child: const Text('STOP'),
         ),
