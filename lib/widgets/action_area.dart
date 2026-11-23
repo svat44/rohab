@@ -2,9 +2,9 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 
-/// Bottom action area with two fixed slots: secondary above, primary below.
-/// Both slots keep their height when empty, so the primary button never
-/// moves between steps and a repeated tap can't land on another action.
+/// Bottom action area: optional secondary button above, primary below. The
+/// primary button is anchored to the bottom, so it does not move when the
+/// secondary button appears or goes.
 ///
 /// There is no box around the buttons. The scrolling content above slowly
 /// fades into the page colour just before the buttons, so it looks like it
@@ -62,8 +62,12 @@ class ActionArea extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: RohabSize.touchTarget, child: secondary),
-              const SizedBox(height: RohabSpace.s8),
+              // No empty slot: with nothing to show, the fade meets the
+              // primary button directly, so there is no gap or box.
+              if (secondary != null) ...[
+                SizedBox(height: RohabSize.touchTarget, child: secondary),
+                const SizedBox(height: RohabSpace.s8),
+              ],
               SizedBox(height: RohabSize.primaryButtonHeight, child: primary),
             ],
           ),
