@@ -159,15 +159,18 @@ class NavTab extends StatelessWidget {
                   children: [
                     Icon(destination.icon, size: RohabSize.icon, color: fg),
                     const SizedBox(height: RohabSpace.s8 / 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        destination.label,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: style.copyWith(
-                          color: fg,
-                          fontWeight: FontWeight.w700,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          destination.label,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: style.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
