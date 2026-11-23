@@ -77,9 +77,9 @@ class CalibrationController extends Notifier<CalibrationFlowState> {
 
   /// Why calibration can't start right now, or null if it can.
   static String? blockReason(GloveSnapshot s) {
-    if (!s.isConnected) return 'Connect the glove on Home first.';
+    if (!s.isConnected) return 'Connect your glove first.';
     if (s.sessionActive || s.state != GloveState.idle) {
-      return 'End the session on Home first.';
+      return 'End the glove session first.';
     }
     return null;
   }
