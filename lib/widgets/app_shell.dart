@@ -12,9 +12,8 @@ import 'immersive.dart';
 import '../debug/debug_menu.dart';
 import 'safety_banner.dart';
 
-/// Frame for every screen: STOP banner, "Rohab" wordmark, screen title,
-/// screen body, bottom navigation. Settings opens from the gear and keeps
-/// the banner, so STOP is reachable everywhere.
+/// Frame for every screen: STOP banner, a compact title, screen body and
+/// bottom navigation. Settings opens from the compact title line.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
 
@@ -73,12 +72,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // The header colour runs up under the status bar, so the title bar has no
-            // gap above it.
-            if (!immersive)
-              _StatusBarFill(height: MediaQuery.paddingOf(context).top)
-            else
-              SizedBox(height: MediaQuery.paddingOf(context).top),
+            SizedBox(height: MediaQuery.paddingOf(context).top),
             const SafetyBanner(),
             if (!immersive)
               _Header(
@@ -130,18 +124,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-class _StatusBarFill extends StatelessWidget {
-  const _StatusBarFill({required this.height});
-
-  final double height;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(color: context.colors.header),
-    child: SizedBox(height: height),
-  );
-}
-
 class _Header extends ConsumerWidget {
   const _Header({
     required this.title,
@@ -155,80 +137,41 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final t = Theme.of(context).textTheme;
     final glove = ref.watch(gloveServiceProvider);
-
-    // Keep the header compact so it leaves room for the screen content.
-    return DecoratedBox(
-      decoration: BoxDecoration(color: c.header),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: RohabSize.touchTarget),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            RohabSpace.s16,
-            RohabSpace.s8 / 2,
-            RohabSpace.s8,
-            RohabSpace.s8 / 2,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      key: AppShell.wordmarkKey,
-                      behavior: HitTestBehavior.opaque,
-                      onLongPress: kDebugMode
-                          ? () => showDebugMenu(
-                              context,
-                              mockGlove: glove is MockGloveService
-                                  ? glove
-                                  : null,
-                            )
-                          : null,
-                      child: Text(
-                        RohabTokens.name,
-                        style: t.labelMedium?.copyWith(color: Colors.white),
-                      ),
-                    ),
-                    Semantics(
-                      header: true,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          style: t.headlineMedium?.copyWith(
-                            height: 1.1,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+    final key = settingsOpen
+        ? AppShell.closeSettingsKey
+        : AppShell.settingsButtonKey;
+    return Semantics(
+      button: true,
+      label: settingsOpen ? 'Close settings' : 'Open settings',
+      child: GestureDetector(
+        key: key,
+        behavior: HitTestBehavior.opaque,
+        onTap: onToggleSettings,
+        child: SizedBox(
+          height: RohabSize.touchTarget,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                key: AppShell.wordmarkKey,
+                behavior: HitTestBehavior.opaque,
+                onLongPress: kDebugMode
+                    ? () => showDebugMenu(
+                        context,
+                        mockGlove: glove is MockGloveService ? glove : null,
+                      )
+                    : null,
+                child: Text(
+                  '$title · Rohab',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium
+                      ?.copyWith(fontSize: 14),
                 ),
               ),
-              Tooltip(
-                message: settingsOpen ? 'Close settings' : 'Settings',
-                child: IconButton(
-                  key: settingsOpen
-                      ? AppShell.closeSettingsKey
-                      : AppShell.settingsButtonKey,
-                  onPressed: onToggleSettings,
-                  constraints: const BoxConstraints.tightFor(
-                    width: RohabSize.touchTarget,
-                    height: RohabSize.touchTarget,
-                  ),
-                  iconSize: RohabSize.icon,
-                  color: c.accent,
-                  icon: Icon(settingsOpen ? Icons.close : Icons.settings),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
