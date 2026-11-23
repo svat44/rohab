@@ -206,7 +206,8 @@ class CameraExerciseController extends ChangeNotifier {
   final ExcursionTracker _swings = ExcursionTracker(deadband: 10);
   final List<RepStats> _repStats = [];
   ExerciseCounter? _counter;
-  final WristMonitor _wrist = WristMonitor();
+  // Needs a sustained tilt (2 frames within the rep) and follows slow drift.
+  final WristMonitor _wrist = WristMonitor(sustainFrames: 2, followDrift: true);
   double? _rangeMin;
   double? _rangeMax;
   Duration? _exerciseStart;
@@ -431,7 +432,9 @@ class CameraExerciseController extends ChangeNotifier {
         final target = _counter!.meter ?? p / 100;
         meter += (target - meter) * 0.5;
         meterMarker = _counter!.marker;
-        if (counted && _wrist.moved && !exercise.movesWrist) {
+        final cheated = counted && _wrist.moved && exercise.checksWrist;
+        if (counted) _wrist.endRep();
+        if (cheated) {
           // Made by bending the wrist (tenodesis), not the fingers.
           _recorder.close();
           compensatedReps++;

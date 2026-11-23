@@ -641,25 +641,55 @@ class SlideCounter extends ExerciseCounter {
 /// knuckle) when the set starts; with the forearm resting still, a change
 /// in that direction is wrist movement.
 class WristMonitor {
-  WristMonitor({this.limitDegrees = 25, this.referenceFrames = 10});
+  WristMonitor({
+    this.limitDegrees = 25,
+    this.referenceFrames = 10,
+    this.sustainFrames = 1,
+    this.followDrift = false,
+  });
 
   final double limitDegrees;
   final int referenceFrames;
 
+  /// [moved] needs this many frames over the limit within the current rep
+  /// (not necessarily in a row: a real tilt starts just as the rep ends), so
+  /// one noisy frame is not a wrist movement. [endRep] starts a new window.
+  final int sustainFrames;
+
+  /// Let the reference follow slow changes (the hand settling, fingers
+  /// curling shifting the tracked points) while still reacting to a quick
+  /// tilt. A tilt over the limit never moves the reference.
+  final bool followDrift;
+
   final List<Point3> _samples = [];
   Point3? _reference;
   double _deviation = 0;
+  int _over = 0;
+  int _quiet = 0;
 
   /// Degrees the hand has tilted from where it started.
   double get deviation => _deviation;
 
-  bool get moved => _deviation > limitDegrees;
+  bool get moved => _over >= sustainFrames;
 
   /// The starting direction has been recorded.
   bool get hasReference => _reference != null;
 
+  /// Back of the hand: wrist to the middle of the four knuckles. Steadier
+  /// than the single middle knuckle, which shifts as the fingers curl.
+  static Point3 _direction(List<Point3> p) {
+    var x = 0.0, y = 0.0, z = 0.0;
+    for (final i in HandIndex.fingerMcps) {
+      x += p[i].x;
+      y += p[i].y;
+      z += p[i].z;
+    }
+    final w = p[HandIndex.wrist];
+    return Point3(x / 4 - w.x, y / 4 - w.y, z / 4 - w.z);
+  }
+
   void update(List<Point3> points) {
-    final v = points[HandIndex.middleMcp] - points[HandIndex.wrist];
+    final v = _direction(points);
     if (_reference == null) {
       _samples.add(v);
       if (_samples.length >= referenceFrames) {
@@ -673,6 +703,23 @@ class WristMonitor {
     final d = r.length * v.length;
     _deviation =
         d == 0 ? 0 : math.acos((r.dot(v) / d).clamp(-1.0, 1.0)) * 180 / math.pi;
+    if (_deviation > limitDegrees) {
+      _over++;
+      _quiet = 0;
+    } else if (++_quiet >= 15) {
+      _over = 0; // steady for a second: forget stray frames
+    }
+    if (followDrift && _deviation <= limitDegrees) {
+      const rate = 0.03;
+      _reference = Point3(r.x + (v.x - r.x) * rate, r.y + (v.y - r.y) * rate,
+          r.z + (v.z - r.z) * rate);
+    }
+  }
+
+  /// A rep ended (counted or not): the next one is judged on its own.
+  void endRep() {
+    _over = 0;
+    _quiet = 0;
   }
 
   /// New reference, e.g. after the hand was out of view.
@@ -680,5 +727,7 @@ class WristMonitor {
     _samples.clear();
     _reference = null;
     _deviation = 0;
+    _over = 0;
+    _quiet = 0;
   }
 }

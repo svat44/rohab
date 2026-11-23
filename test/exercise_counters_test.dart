@@ -150,5 +150,68 @@ void main() {
       m.update(SyntheticHand.world(wristPitch: 40));
       expect(m.moved, isFalse);
     });
+  
+    test('one noisy frame is not a wrist movement when a sustain is set', () {
+      final m = WristMonitor(sustainFrames: 2);
+      for (var i = 0; i < 10; i++) {
+        m.update(SyntheticHand.world());
+      }
+      m.update(SyntheticHand.world(wristPitch: 40)); // one bad frame
+      m.update(SyntheticHand.world());
+      expect(m.moved, isFalse);
+      for (var i = 0; i < 2; i++) {
+        m.update(SyntheticHand.world(wristPitch: 40));
+      }
+      expect(m.moved, isTrue, reason: 'a real tilt stays over the limit');
+      m.endRep();
+      expect(m.moved, isFalse, reason: 'the next rep starts clean');
+    });
+
+    test('slow drift is followed, a quick tilt still flagged', () {
+      final m = WristMonitor(followDrift: true);
+      for (var i = 0; i < 10; i++) {
+        m.update(SyntheticHand.world());
+      }
+      // The hand settles 1 degree per 5 frames up to 30 degrees: no alarm.
+      for (var deg = 0; deg <= 30; deg++) {
+        for (var k = 0; k < 5; k++) {
+          m.update(SyntheticHand.world(wristPitch: deg.toDouble()));
+        }
+        expect(m.moved, isFalse, reason: 'drift at $deg degrees');
+      }
+      // Then a quick 40 degree tilt on top of it is flagged.
+      m.update(SyntheticHand.world(wristPitch: 75));
+      expect(m.moved, isTrue);
+    });
+
+    test('without drift-following the same slow drift is flagged', () {
+      final m = WristMonitor();
+      for (var i = 0; i < 10; i++) {
+        m.update(SyntheticHand.world());
+      }
+      for (var deg = 0; deg <= 30; deg++) {
+        m.update(SyntheticHand.world(wristPitch: deg.toDouble()));
+      }
+      expect(m.moved, isTrue);
+    });
+  });
+
+  group('which exercises check the wrist', () {
+    test('open/close style do; cup, pinch, tapping and lifting do not', () {
+      for (final id in [
+        'open_close', 'open_close_gentle', 'hold_open', 'hook_grip',
+        'hand_squeeze', 'spread_fingers',
+      ]) {
+        expect(ExerciseCatalog.byId(id)!.checksWrist, isTrue, reason: id);
+      }
+      for (final id in [
+        'cylinder_grasp', 'pinch', 'finger_touches', 'finger_lifts',
+        'tabletop_finger_lift', 'finger_walking', 'wrist_stretch',
+        'wrist_rotation', 'hand_slide', 'thumb_extension',
+        'finger_extension_assisted',
+      ]) {
+        expect(ExerciseCatalog.byId(id)!.checksWrist, isFalse, reason: id);
+      }
+    });
   });
 }

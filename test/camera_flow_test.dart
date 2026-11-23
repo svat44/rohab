@@ -340,6 +340,24 @@ void main() {
       await close(tester, h);
     });
 
+    testWidgets('gripping a cup with a tilted wrist counts and is never '
+        'called a wrist cheat', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'cylinder_grasp');
+      await tapPrimary(tester);
+      await passHandCheckAndCalibrate(tester, h);
+      for (var i = 0; i < 3; i++) {
+        h.tracker.pose = const HandPose(curl: 0.5, wristPitch: 40);
+        await tester.pump(const Duration(milliseconds: 2400)); // hold 2 s
+        expect(find.text('Wrist moved. That one did not count.'), findsNothing);
+        h.tracker.pose = HandPose.open;
+        await tester.pump(const Duration(milliseconds: 800));
+      }
+      expect(repsText(tester), '3 of 10');
+      expect(find.text('Wrist moved. That one did not count.'), findsNothing);
+      await close(tester, h);
+    });
+
     testWidgets('high pain before advises rest', (tester) async {
       final h = await launch(tester, baselineLevel: 1);
       await openProgram(tester);

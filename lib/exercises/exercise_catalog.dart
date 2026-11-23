@@ -127,6 +127,19 @@ class CameraExercise {
       kind == ExerciseKind.wristRotation ||
       kind == ExerciseKind.handSlide;
 
+  /// Whether a rep made by tilting the wrist is thrown out (tenodesis: bending
+  /// the wrist opens or closes the fingers for free). Only the open/close
+  /// style exercises can be cheated that way. Gripping a cup, pinching,
+  /// finger tapping and lifting tilt the hand naturally, so a wrist check
+  /// there only produces false "wrist moved" messages.
+  bool get checksWrist =>
+      kind == ExerciseKind.openCloseGentle ||
+      kind == ExerciseKind.openClose ||
+      kind == ExerciseKind.holdOpen ||
+      kind == ExerciseKind.hook ||
+      kind == ExerciseKind.squeeze ||
+      kind == ExerciseKind.spread;
+
   /// Whether the finger-bend range (degrees) says anything about this
   /// exercise. It does not when the wrist or the whole hand is the thing
   /// that moves, or when single fingers are lifted.
