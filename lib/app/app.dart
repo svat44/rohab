@@ -28,7 +28,7 @@ class RohabApp extends ConsumerWidget {
       title: RohabTokens.name,
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
+      themeMode: ThemeMode.light,
       routerConfig: ref.watch(routerProvider),
       // The chosen text size multiplies the phone's own text size.
       builder: (context, child) {

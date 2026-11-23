@@ -8,6 +8,7 @@ import '../../program/program_providers.dart';
 import '../../program/program_settings.dart';
 import '../../program/therapist_pin.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/rohab_icon.dart';
 import '../../widgets/surfaces.dart';
 import '../../widgets/action_area.dart';
 
@@ -368,7 +369,7 @@ class _Stepper extends StatelessWidget {
             borderRadius: BorderRadius.circular(RohabShape.radius),
           ),
         ),
-        child: Icon(up ? Icons.add : Icons.remove, size: RohabSize.icon),
+        child: RohabIcon(up ? RohabIconData.add : RohabIconData.remove),
       ),
     );
     return Padding(

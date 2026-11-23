@@ -7,7 +7,6 @@ import '../app/router.dart';
 import '../onboarding/onboarding.dart';
 import '../theme/app_theme.dart';
 import '../widgets/action_area.dart';
-import '../widgets/rohab_widgets.dart';
 
 /// First-run guide: four short steps, one idea each, then straight into
 /// measuring the hands. Big text, one main button, always a way back.
@@ -93,10 +92,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       const SizedBox(height: RohabSpace.s8),
                       Semantics(
                         header: true,
-                        child: Text(
-                          title,
-                          style: t.headlineMedium?.copyWith(fontSize: 36),
-                        ),
+                        child: Text(title, style: t.headlineMedium),
                       ),
                       const SizedBox(height: RohabSpace.s24),
                       body,
@@ -156,9 +152,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           style: t.bodyLarge,
         ),
         const SizedBox(height: RohabSpace.s24),
-        const _Fact(Icons.schedule, 'About 10 minutes a day'),
-        const _Fact(Icons.back_hand_outlined, 'No equipment needed'),
-        const _Fact(Icons.lock_outline, 'Your video is never saved'),
+        const _Fact('About 10 minutes a day'),
+        const _Fact('No equipment needed'),
+        const _Fact('Your video is never saved'),
       ],
     );
   }
@@ -189,15 +185,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _Fact(Icons.healing_outlined, 'Stop if anything hurts'),
-        const _Fact(
-          Icons.event_seat_outlined,
-          'Sit comfortably, take your time',
-        ),
-        const _Fact(
-          Icons.local_hospital_outlined,
-          'Ask your therapist before changing your exercises',
-        ),
+        const _Fact('Stop if anything hurts'),
+        const _Fact('Sit comfortably, take your time'),
+        const _Fact('Ask your therapist before changing your exercises'),
         const SizedBox(height: RohabSpace.s16),
         Text('Rohab is not a medical device.', style: t.labelMedium),
       ],
@@ -207,35 +197,25 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   Widget _setup(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _Fact(Icons.smartphone, 'Lean your phone upright against something'),
-      _Fact(Icons.straighten, 'Sit about an arm\'s length away'),
-      _Fact(Icons.light_mode_outlined, 'Face a light, not a window behind you'),
-      _Fact(Icons.pan_tool_outlined, 'Rest your forearm on a table'),
+      _Fact('Lean your phone upright against something'),
+      _Fact('Sit about an arm\'s length away'),
+      _Fact('Face a light, not a window behind you'),
+      _Fact('Rest your forearm on a table'),
     ],
   );
 }
 
-/// One icon and one sentence.
+/// One sentence.
 class _Fact extends StatelessWidget {
-  const _Fact(this.icon, this.text);
+  const _Fact(this.text);
 
-  final IconData icon;
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: RohabSpace.s16),
-      child: Row(
-        children: [
-          IconBadge(icon, size: 56),
-          const SizedBox(width: RohabSpace.s16),
-          Expanded(child: Text(text, style: t.bodyLarge)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: RohabSpace.s16),
+    child: Text(text, style: RohabType.body),
+  );
 }
 
 class _Numbered extends StatelessWidget {

@@ -5,9 +5,9 @@ import '../app/providers.dart';
 
 /// App-wide text size. Multiplies the phone's own text size setting.
 enum TextSize {
-  normal('Normal', 1.0),
+  normal('Standard', 1.0),
   large('Large', 1.25),
-  largest('Largest', 1.5);
+  largest('Extra large', 1.5);
 
   const TextSize(this.label, this.scale);
 
