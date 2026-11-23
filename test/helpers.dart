@@ -13,8 +13,8 @@ import 'package:rohab/data/exercise_session_repository.dart';
 import 'package:rohab/exercises/exercise_providers.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
 import 'package:rohab/onboarding/onboarding.dart';
-import 'package:rohab/screens/home_screen.dart';
-import 'package:rohab/widgets/bottom_nav.dart';
+import 'package:rohab/screens/glove/glove_session.dart';
+import 'package:rohab/widgets/rohab_nav_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Launches the full app on a 390 x 844 phone with a seeded mock glove.
@@ -37,19 +37,26 @@ Future<MockGloveService> pumpRohab(
   final g = glove ?? MockGloveService(random: Random(7));
   // Home shows today's plan, so every launch needs a database. Tests that
   // care pass their own (later overrides win).
-  final memoryDb = db ??
-      AppDatabase(DatabaseConnection(NativeDatabase.memory(),
-          closeStreamsSynchronously: true));
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      appDatabaseProvider.overrideWithValue(memoryDb),
-      gloveServiceProvider.overrideWithValue(g),
-      sharedPreferencesProvider.overrideWithValue(sp),
-      if (clock != null) clockProvider.overrideWithValue(clock),
-      ...overrides,
-    ],
-    child: const RohabApp(),
-  ));
+  final memoryDb =
+      db ??
+      AppDatabase(
+        DatabaseConnection(
+          NativeDatabase.memory(),
+          closeStreamsSynchronously: true,
+        ),
+      );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(memoryDb),
+        gloveServiceProvider.overrideWithValue(g),
+        sharedPreferencesProvider.overrideWithValue(sp),
+        if (clock != null) clockProvider.overrideWithValue(clock),
+        ...overrides,
+      ],
+      child: const RohabApp(),
+    ),
+  );
   await tester.pump();
   return g;
 }
@@ -61,17 +68,21 @@ Future<void> finish(WidgetTester tester, MockGloveService glove) async {
 }
 
 Future<void> tapTab(WidgetTester tester, String label) async {
-  await tester.tap(find.descendant(
-      of: find.byType(BottomNav), matching: find.text(label)));
+  await tester.tap(
+    find.descendant(of: find.byType(RohabNavBar), matching: find.text(label)),
+  );
   await tester.pump();
 }
 
 /// Taps the glove button on Home, scrolling it into view first.
 Future<void> tapHomePrimary(WidgetTester tester) async {
+  // The glove session lives on the Glove tab.
+  await tapTab(tester, 'Glove');
   await tester.ensureVisible(
-      find.byKey(HomeScreen.primaryButtonKey, skipOffstage: false));
+    find.byKey(GloveSession.primaryButtonKey, skipOffstage: false),
+  );
   await tester.pump();
-  await tester.tap(find.byKey(HomeScreen.primaryButtonKey));
+  await tester.tap(find.byKey(GloveSession.primaryButtonKey));
 }
 
 Future<void> connectFromHome(WidgetTester tester) async {
@@ -88,24 +99,29 @@ ExerciseSessionRecord session({
   double? rangeMax = 94,
   String unit = '%',
   required DateTime at,
-}) =>
-    ExerciseSessionRecord(
-      exerciseId: exercise,
-      mode: 'camera',
-      reps: reps,
-      targetReps: target,
-      rangeMin: rangeMin,
-      rangeMax: rangeMax,
-      durationSec: 40,
-      startedAt: at,
-      metricUnit: unit,
-    );
+}) => ExerciseSessionRecord(
+  exerciseId: exercise,
+  mode: 'camera',
+  reps: reps,
+  targetReps: target,
+  rangeMin: rangeMin,
+  rangeMax: rangeMax,
+  durationSec: 40,
+  startedAt: at,
+  metricUnit: unit,
+);
 
 /// An in-memory database with [seed] saved, for tests that read sessions.
 Future<AppDatabase> seededDb(
-    WidgetTester tester, List<ExerciseSessionRecord> seed) async {
-  final db = AppDatabase(DatabaseConnection(NativeDatabase.memory(),
-      closeStreamsSynchronously: true));
+  WidgetTester tester,
+  List<ExerciseSessionRecord> seed,
+) async {
+  final db = AppDatabase(
+    DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ),
+  );
   await tester.runAsync(() async {
     final repo = DriftExerciseSessionRepository(db);
     for (final r in seed) {
@@ -119,7 +135,8 @@ Future<AppDatabase> seededDb(
 Future<void> settleDb(WidgetTester tester) async {
   for (var i = 0; i < 5; i++) {
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
     await tester.pump();
   }
 }
@@ -130,11 +147,7 @@ Future<MockGloveService> pumpRohabOn(
   AppDatabase db, {
   required DateTime now,
   Map<String, Object> prefs = const {},
-}) =>
-    pumpRohab(tester,
-        prefs: prefs,
-        clock: () => now,
-        db: db);
+}) => pumpRohab(tester, prefs: prefs, clock: () => now, db: db);
 
 Future<void> closeDb(WidgetTester tester, AppDatabase db) async {
   await settleDb(tester);

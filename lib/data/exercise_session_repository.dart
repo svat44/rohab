@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../program/date_range.dart';
 import 'database.dart';
 
 /// A finished exercise, as saved.
@@ -85,6 +86,29 @@ abstract class ExerciseSessionRepository {
     }
     return WeeklySummary(sessions: sessions, reps: reps);
   }
+
+  /// Sessions started inside [range] (local time), newest first, for one
+  /// exercise or all of them. The Progress screen's only data source: change
+  /// the range and every number changes with it.
+  Future<List<ExerciseSessionRow>> sessionsIn(
+    DateRange range, {
+    String? exerciseId,
+  }) async {
+    final rows = [
+      for (final r in await all())
+        if (range.contains(r.startedAt) &&
+            (exerciseId == null || r.exerciseId == exerciseId))
+          r,
+    ]..sort(_newestFirst);
+    return rows;
+  }
+
+  /// Sessions, reps and practice days in [range].
+  Future<RangeSummary> summaryIn(DateRange range, {String? exerciseId}) async =>
+      summarize([
+        for (final r in await sessionsIn(range, exerciseId: exerciseId))
+          (startedAt: r.startedAt, reps: r.reps),
+      ], range);
 
   /// Deletes every saved session. Nothing else is touched.
   Future<void> deleteAll();

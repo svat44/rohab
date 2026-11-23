@@ -14,7 +14,6 @@ import 'package:rohab/glove/mock_glove_service.dart';
 import 'package:rohab/screens/calibration/calibration_screen.dart';
 import 'package:rohab/screens/calibration/review_step.dart';
 import 'package:rohab/screens/calibration/step_layout.dart';
-import 'package:rohab/screens/home_screen.dart';
 import 'package:rohab/widgets/app_shell.dart';
 import 'package:rohab/widgets/safety_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,14 +48,17 @@ class _FakeGlove extends Mock implements GloveService {}
 
 void main() {
   group('Calibration flow (widget)', () {
-    testWidgets('completing all 4 steps with Strong saves a threshold',
-        (tester) async {
+    testWidgets('completing all 4 steps with Strong saves a threshold', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await choosePreset(tester, MockEmgPreset.strong);
       await openCalibrationAndStart(tester);
 
-      expect(find.text('Rest your hand on the table. Stay relaxed.'),
-          findsOneWidget);
+      expect(
+        find.text('Rest your hand on the table. Stay relaxed.'),
+        findsOneWidget,
+      );
       await tester.pump(const Duration(seconds: 5, milliseconds: 100));
       expect(find.text('Try to make a fist.'), findsOneWidget);
       expect(find.text('Trial 1 of 3'), findsOneWidget);
@@ -75,7 +77,8 @@ void main() {
       final raw = prefs.getString(CalibrationRepository.storageKey);
       expect(raw, isNotNull);
       final saved = Calibration.fromJson(
-          jsonDecode(raw!) as Map<String, Object?>)!;
+        jsonDecode(raw!) as Map<String, Object?>,
+      )!;
       expect(saved.restMean, closeTo(60, 3));
       expect(saved.gripLevel, closeTo(380, 15));
       expect(saved.threshold, closeTo(188, 8));
@@ -98,14 +101,16 @@ void main() {
       await finish(tester, glove);
     });
 
-    testWidgets('Weak preset review: marker labels do not overlap',
-        (tester) async {
+    testWidgets('Weak preset review: marker labels do not overlap', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await choosePreset(tester, MockEmgPreset.weak);
       await openCalibrationAndStart(tester);
       await tester.pump(flowDuration);
-      Finder label(String name) => find.byWidgetPredicate((w) =>
-          w is Text && RegExp('^$name \\d+\$').hasMatch(w.data ?? ''));
+      Finder label(String name) => find.byWidgetPredicate(
+        (w) => w is Text && RegExp('^$name \\d+\$').hasMatch(w.data ?? ''),
+      );
       expect(label('Rest'), findsOneWidget);
       expect(label('Grip'), findsOneWidget);
       final rest = tester.getRect(label('Rest'));
@@ -126,13 +131,16 @@ void main() {
       // Redo goes back to Step 2.
       await tester.tap(find.byKey(StepLayout.primaryKey));
       await tester.pump();
-      expect(find.text('Rest your hand on the table. Stay relaxed.'),
-          findsOneWidget);
+      expect(
+        find.text('Rest your hand on the table. Stay relaxed.'),
+        findsOneWidget,
+      );
       await finish(tester, glove);
     });
 
-    testWidgets('Cancel on any step returns to start and saves nothing',
-        (tester) async {
+    testWidgets('Cancel on any step returns to start and saves nothing', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await openCalibrationAndStart(tester);
       // Cancel on rest, grip, and review.
@@ -165,67 +173,95 @@ void main() {
       await finish(tester, glove);
     });
 
-    testWidgets('start is blocked when disconnected or in a session',
-        (tester) async {
+    testWidgets('start is blocked when disconnected or in a session', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await tapTab(tester, 'Glove');
-      expect(find.text('Connect the glove on Home first.'), findsOneWidget);
+      expect(find.text('Connect your glove first.'), findsOneWidget);
       expect(
-          tester
-              .widget<FilledButton>(find.byKey(CalibrationScreen.startKey))
-              .onPressed,
-          isNull);
+        tester
+            .widget<FilledButton>(
+              find.descendant(
+                of: find.byKey(CalibrationScreen.startKey),
+                matching: find.byType(FilledButton),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
 
-      await tapTab(tester, 'Home');
+      await tapTab(tester, 'Today');
       await connectFromHome(tester);
       await tapHomePrimary(tester); // Start
       await tester.pump(const Duration(milliseconds: 100));
       await tapTab(tester, 'Glove');
-      expect(find.text('End the session on Home first.'), findsOneWidget);
+      expect(find.text('End the glove session first.'), findsOneWidget);
       await tester.tap(find.byKey(SafetyBanner.stopKey));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('End the session on Home first.'), findsNothing);
+      expect(find.text('End the glove session first.'), findsNothing);
       await finish(tester, glove);
     });
 
-    testWidgets('Home shows Calibration needed until calibrated, and after '
-        '24 hours', (tester) async {
-      var now = DateTime(2026, 11, 18, 9);
-      final glove = await pumpRohab(tester, clock: () => now);
-      expect(find.byKey(HomeScreen.calibrationNeededKey), findsOneWidget);
-      await finish(tester, glove);
+    testWidgets(
+      'Glove tab says how long calibration lasts: none, 23 hours, expired',
+      (tester) async {
+        var now = DateTime(2026, 11, 18, 9);
+        Finder goodFor() => find.text('Calibration is good for');
+        String value() => tester
+            .widget<Text>(
+              find
+                  .descendant(
+                    of: find
+                        .ancestor(of: goodFor(), matching: find.byType(Row))
+                        .first,
+                    matching: find.byType(Text),
+                  )
+                  .last,
+            )
+            .data!;
+        final glove = await pumpRohab(tester, clock: () => now);
+        await tapTab(tester, 'Glove');
+        expect(value(), 'Not calibrated yet');
+        await finish(tester, glove);
 
-      final fresh = Calibration(
-        restMean: 60,
-        restSd: 10,
-        gripLevel: 380,
-        threshold: 188,
-        timestamp: now.subtract(const Duration(hours: 1)),
-      );
-      final stored = {
-        CalibrationRepository.storageKey: jsonEncode(fresh.toJson())
-      };
-      final g2 = await pumpRohab(tester, prefs: stored, clock: () => now);
-      expect(find.byKey(HomeScreen.calibrationNeededKey), findsNothing);
-      await finish(tester, g2);
-
-      now = now.add(const Duration(hours: 24));
-      final g3 = await pumpRohab(tester, prefs: stored, clock: () => now);
-      expect(find.byKey(HomeScreen.calibrationNeededKey), findsOneWidget);
-      await finish(tester, g3);
-    });
-
-    testWidgets('saved threshold is sent to the glove on connect',
-        (tester) async {
-      final now = DateTime(2026, 11, 18, 9);
-      final stored = {
-        CalibrationRepository.storageKey: jsonEncode(Calibration(
+        final fresh = Calibration(
           restMean: 60,
           restSd: 10,
           gripLevel: 380,
           threshold: 188,
-          timestamp: now,
-        ).toJson()),
+          timestamp: now.subtract(const Duration(hours: 1)),
+        );
+        final stored = {
+          CalibrationRepository.storageKey: jsonEncode(fresh.toJson()),
+        };
+        final g2 = await pumpRohab(tester, prefs: stored, clock: () => now);
+        await tapTab(tester, 'Glove');
+        expect(value(), '23 more hours');
+        await finish(tester, g2);
+
+        now = now.add(const Duration(hours: 24));
+        final g3 = await pumpRohab(tester, prefs: stored, clock: () => now);
+        await tapTab(tester, 'Glove');
+        expect(value(), 'Expired');
+        await finish(tester, g3);
+      },
+    );
+
+    testWidgets('saved threshold is sent to the glove on connect', (
+      tester,
+    ) async {
+      final now = DateTime(2026, 11, 18, 9);
+      final stored = {
+        CalibrationRepository.storageKey: jsonEncode(
+          Calibration(
+            restMean: 60,
+            restSd: 10,
+            gripLevel: 380,
+            threshold: 188,
+            timestamp: now,
+          ).toJson(),
+        ),
       };
       final glove = await pumpRohab(tester, prefs: stored, clock: () => now);
       expect(glove.emgThreshold, isNull);
@@ -243,8 +279,9 @@ void main() {
 
     setUp(() async {
       glove = _FakeGlove();
-      snapshot = ValueNotifier(GloveSnapshot.initial
-          .copyWith(connection: GloveConnection.connected));
+      snapshot = ValueNotifier(
+        GloveSnapshot.initial.copyWith(connection: GloveConnection.connected),
+      );
       emg = StreamController<int>.broadcast(sync: true);
       when(() => glove.snapshot).thenReturn(snapshot);
       when(() => glove.emgSamples).thenAnswer((_) => emg.stream);
@@ -252,11 +289,13 @@ void main() {
       SharedPreferences.resetStatic();
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      container = ProviderContainer(overrides: [
-        gloveServiceProvider.overrideWithValue(glove),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        clockProvider.overrideWithValue(() => DateTime(2026, 11, 18, 9)),
-      ]);
+      container = ProviderContainer(
+        overrides: [
+          gloveServiceProvider.overrideWithValue(glove),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          clockProvider.overrideWithValue(() => DateTime(2026, 11, 18, 9)),
+        ],
+      );
     });
 
     tearDown(() {

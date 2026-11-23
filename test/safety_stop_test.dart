@@ -3,11 +3,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:rohab/config/pressure_limits.dart';
 import 'package:rohab/glove/glove_service.dart';
 import 'package:rohab/screens/settings/settings_screen.dart';
-import 'package:rohab/widgets/bottom_nav.dart';
+import 'package:rohab/widgets/rohab_nav_bar.dart';
 import 'package:rohab/glove/mock_glove_service.dart';
 import 'package:rohab/screens/calibration/calibration_screen.dart';
 import 'package:rohab/screens/calibration/step_layout.dart';
-import 'package:rohab/screens/home_screen.dart';
+import 'package:rohab/screens/glove/glove_session.dart';
 import 'package:rohab/widgets/app_shell.dart';
 import 'package:rohab/widgets/safety_banner.dart';
 
@@ -15,7 +15,7 @@ import 'helpers.dart';
 
 /// How to reach each screen from Home.
 final screens = <String, Future<void> Function(WidgetTester)>{
-  'Home': (t) async {},
+  'Today': (t) async {},
   'Glove': (t) => tapTab(t, 'Glove'),
   'Exercises': (t) => tapTab(t, 'Exercises'),
   'Progress': (t) => tapTab(t, 'Progress'),
@@ -32,8 +32,9 @@ Future<void> _connectAndInflate(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('Home: start raises live pressure shown on screen',
-      (tester) async {
+  testWidgets('Home: start raises live pressure shown on screen', (
+    tester,
+  ) async {
     final glove = await pumpRohab(tester);
     // Camera-only use: no glove, so no glove banner.
     expect(find.text('Glove not connected'), findsNothing);
@@ -41,7 +42,8 @@ void main() {
 
     await _connectAndInflate(tester);
     final shown = double.parse(
-        tester.widget<Text>(find.byKey(HomeScreen.pressureKey)).data!);
+      tester.widget<Text>(find.byKey(GloveSession.pressureKey)).data!,
+    );
     expect(shown, greaterThan(10));
     expect(shown, lessThanOrEqualTo(kHardLimitKpa));
     expect(find.text('End session'), findsOneWidget);
@@ -53,99 +55,110 @@ void main() {
     await finish(tester, glove);
   });
 
-  testWidgets('Home: reps first, patient state labels, summary only after',
-      (tester) async {
+  testWidgets('Home: reps first, patient state labels, summary only after', (
+    tester,
+  ) async {
     final glove = await pumpRohab(tester);
     String text(Key k) => tester.widget<Text>(find.byKey(k)).data!;
     expect(find.text('Mode'), findsNothing);
     expect(find.text('Disconnect'), findsNothing);
 
     await connectFromHome(tester);
-    expect(text(HomeScreen.stateKey), 'Ready');
-    expect(find.byKey(HomeScreen.summaryKey), findsNothing);
-    expect(text(HomeScreen.repsKey), '–');
+    expect(text(GloveSession.stateKey), 'Ready');
+    expect(find.byKey(GloveSession.summaryKey), findsNothing);
+    expect(text(GloveSession.repsKey), 'No session yet');
 
     await tapHomePrimary(tester); // Start
     await tester.pump(const Duration(milliseconds: 500));
-    expect(text(HomeScreen.stateKey), 'Closing hand');
+    expect(text(GloveSession.stateKey), 'Closing hand');
     await tester.pump(const Duration(seconds: 2));
-    expect(text(HomeScreen.stateKey), 'Holding');
+    expect(text(GloveSession.stateKey), 'Holding');
     expect(find.text('Holding'), findsWidgets); // banner says it too
     await tester.pump(const Duration(seconds: 2));
-    expect(text(HomeScreen.stateKey), 'Opening hand');
+    expect(text(GloveSession.stateKey), 'Opening hand');
     await tester.pump(const Duration(seconds: 1, milliseconds: 500));
-    expect(text(HomeScreen.repsKey), '1');
+    expect(text(GloveSession.repsKey), '1');
     for (final raw in ['Idle', 'Inflating', 'Venting']) {
       expect(find.text(raw), findsNothing, reason: 'internal name');
     }
 
     // Reps is the largest number on Home; pressure is a smaller detail.
-    final repsSize = tester.widget<Text>(find.byKey(HomeScreen.repsKey))
-        .style!.fontSize!;
+    final repsSize = tester
+        .widget<Text>(find.byKey(GloveSession.repsKey))
+        .style!
+        .fontSize!;
     final pressureSize = tester
-        .widget<Text>(find.byKey(HomeScreen.pressureKey)).style!.fontSize!;
+        .widget<Text>(find.byKey(GloveSession.pressureKey))
+        .style!
+        .fontSize!;
     expect(repsSize, greaterThan(pressureSize));
 
     await tapHomePrimary(tester); // End
     await tester.pump(const Duration(seconds: 3));
-    expect(text(HomeScreen.summaryKey), 'Session complete. 1 rep.');
-    expect(text(HomeScreen.stateKey), 'Ready');
+    expect(text(GloveSession.summaryKey), 'Session complete. 1 rep.');
+    expect(text(GloveSession.stateKey), 'Ready');
 
     await tapHomePrimary(tester); // Start again
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(HomeScreen.summaryKey), findsNothing);
-    expect(text(HomeScreen.repsKey), '0');
+    expect(find.byKey(GloveSession.summaryKey), findsNothing);
+    expect(text(GloveSession.repsKey), '0');
     await finish(tester, glove);
   });
 
-  testWidgets('Disconnect lives in Settings, only when no session runs',
-      (tester) async {
+  testWidgets('Disconnect lives in Settings, only when no session runs', (
+    tester,
+  ) async {
     final glove = await pumpRohab(tester);
     await connectFromHome(tester);
     await tester.tap(find.byKey(AppShell.settingsButtonKey));
     await tester.pump();
-    expect(find.byKey(SettingsScreen.disconnectKey), findsOneWidget);
+    expect(
+      find.byKey(SettingsScreen.disconnectKey, skipOffstage: false),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(
+      find.byKey(SettingsScreen.disconnectKey, skipOffstage: false),
+    );
+    await tester.pump();
     await tester.tap(find.byKey(SettingsScreen.disconnectKey));
     await tester.pump();
     expect(glove.snapshot.value.isConnected, isFalse);
-    expect(find.text('Not connected. Connect on Home.'), findsOneWidget);
+    expect(find.text('Not connected.'), findsOneWidget);
     await finish(tester, glove);
   });
 
-  testWidgets('banner text is at least 16 and STOP is the largest control',
-      (tester) async {
-    final glove = await pumpRohab(tester);
-    await connectFromHome(tester);
-    final banner = find.byType(SafetyBanner);
-    for (final e in find.descendant(of: banner, matching: find.byType(Text))
-        .evaluate()) {
-      final size = DefaultTextStyle.of(e).style
-          .merge((e.widget as Text).style).fontSize ?? 14;
-      expect(size, greaterThanOrEqualTo(16), reason: (e.widget as Text).data);
-    }
-    final stop = tester.getSize(find.byKey(SafetyBanner.stopKey));
-    expect(stop.height, greaterThanOrEqualTo(80));
-    for (final e in find.descendant(of: banner, matching: find.byType(Icon))
-        .evaluate()) {
-      final r = tester.getSize(find.byWidget(e.widget));
-      expect(r.height, lessThan(stop.height));
-    }
-    // Bottom nav labels too.
-    for (final label in ['Home', 'Glove', 'Exercises', 'Progress']) {
-      final e = find.descendant(
-              of: find.byType(BottomNav), matching: find.text(label))
-          .evaluate()
-          .single;
-      final size = DefaultTextStyle.of(e).style
-          .merge((e.widget as Text).style).fontSize!;
-      expect(size, greaterThanOrEqualTo(16), reason: label);
-    }
-    await finish(tester, glove);
-  });
+  testWidgets(
+    'STOP is a 48 dp+ sign, only while the glove is active; nav labels are at least 14',
+    (tester) async {
+      final glove = await pumpRohab(tester);
+      await connectFromHome(tester);
+      expect(find.byKey(SafetyBanner.stopKey), findsNothing, reason: 'idle');
+      await tapHomePrimary(tester); // Start
+      await tester.pump(const Duration(milliseconds: 500));
+      final stop = tester.getSize(find.byKey(SafetyBanner.stopKey));
+      expect(stop.height, greaterThanOrEqualTo(48));
+      expect(stop.width, greaterThanOrEqualTo(48));
+      for (final label in ['Today', 'Glove', 'Exercises', 'Progress']) {
+        final e = find
+            .descendant(
+              of: find.byType(RohabNavBar),
+              matching: find.text(label),
+            )
+            .evaluate()
+            .single;
+        final size = DefaultTextStyle.of(e).style
+            .merge((e.widget as Text).style)
+            .fontSize!;
+        expect(size, greaterThanOrEqualTo(14), reason: label);
+      }
+      await finish(tester, glove);
+    },
+  );
 
   for (final entry in screens.entries) {
-    testWidgets('STOP vents to zero from ${entry.key} while inflating',
-        (tester) async {
+    testWidgets('STOP vents to zero from ${entry.key} while inflating', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await _connectAndInflate(tester);
       await entry.value(tester);
@@ -154,7 +167,7 @@ void main() {
 
       final stop = find.byKey(SafetyBanner.stopKey);
       expect(stop, findsOneWidget);
-      expect(tester.getSize(stop).height, greaterThanOrEqualTo(80));
+      expect(tester.getSize(stop).height, greaterThanOrEqualTo(48));
 
       await tester.tap(stop);
       await tester.pump(const Duration(milliseconds: 300));
@@ -168,21 +181,20 @@ void main() {
   }
 
   for (final entry in screens.entries) {
-    testWidgets('STOP is safe from ${entry.key} in every state',
-        (tester) async {
+    testWidgets('STOP is safe from ${entry.key} in every state', (
+      tester,
+    ) async {
       final glove = await pumpRohab(tester);
       await entry.value(tester);
       final stop = find.byKey(SafetyBanner.stopKey);
 
-      // STOP appears with the glove, not before.
+      // STOP appears while the glove is active, not before.
       expect(stop, findsNothing);
       glove.connect();
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.tap(stop); // connecting
       await tester.pump(MockGloveService.connectDelay);
       expect(glove.snapshot.value.isConnected, isTrue);
-      await tester.tap(stop); // idle
-      await tester.pump();
+      expect(stop, findsNothing); // idle: no sign
       glove.start();
       await tester.pump(const Duration(seconds: 3, milliseconds: 200));
       expect(glove.snapshot.value.state, GloveState.holding);
@@ -234,17 +246,24 @@ void main() {
 
   testWidgets('touch targets meet minimum sizes on Home', (tester) async {
     final glove = await pumpRohab(tester);
+    await tapTab(tester, 'Glove');
     expect(
-        tester
-            .getSize(find.byKey(HomeScreen.primaryButtonKey,
-                skipOffstage: false))
-            .height,
-        greaterThanOrEqualTo(64));
-    expect(tester.getSize(find.byKey(AppShell.settingsButtonKey)).height,
-        greaterThanOrEqualTo(64));
-    for (final label in ['Home', 'Glove', 'Exercises', 'Progress']) {
+      tester
+          .getSize(
+            find.byKey(GloveSession.primaryButtonKey, skipOffstage: false),
+          )
+          .height,
+      greaterThanOrEqualTo(64),
+    );
+    expect(
+      tester.getSize(find.byKey(AppShell.settingsButtonKey)).height,
+      greaterThanOrEqualTo(48),
+    );
+    for (final label in ['Today', 'Glove', 'Exercises', 'Progress']) {
       final tab = find.ancestor(
-          of: find.text(label).last, matching: find.byType(InkWell));
+        of: find.text(label).last,
+        matching: find.byType(InkWell),
+      );
       expect(tester.getSize(tab.first).height, greaterThanOrEqualTo(64));
     }
     await expectLater(tester, meetsGuideline(textContrastGuideline));

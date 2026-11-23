@@ -23,17 +23,18 @@ Future<void> openSettings(WidgetTester tester) async {
   await tester.pump();
 }
 
-double scaleOf(WidgetTester tester) => MediaQuery.textScalerOf(
-        tester.element(find.byKey(AppShell.wordmarkKey)))
-    .scale(1);
+double scaleOf(WidgetTester tester) =>
+    MediaQuery.textScalerOf(tester.element(find.byKey(AppShell.wordmarkKey)))
+        .scale(1);
 
 Future<int> rowCount(WidgetTester tester, db) async =>
     (await tester.runAsync(() => DriftExerciseSessionRepository(db).all()))!
         .length;
 
 void main() {
-  testWidgets('text size applies app-wide and survives a restart',
-      (tester) async {
+  testWidgets('text size applies app-wide and survives a restart', (
+    tester,
+  ) async {
     final db = await seededDb(tester, const []);
     var glove = await pumpRohabOn(tester, db, now: now);
     expect(scaleOf(tester), 1.0);
@@ -58,31 +59,37 @@ void main() {
     expect(scaleOf(tester), 1.5);
     await openSettings(tester);
     await reveal(tester, SettingsScreen.textSizeKey(TextSize.largest));
-    final button = tester.widget<Material>(find.descendant(
-        of: find.byKey(SettingsScreen.textSizeKey(TextSize.largest)),
-        matching: find.byType(Material)).first);
-    expect(button, isNotNull);
     await finish(tester, glove);
     await closeDb(tester, db);
   });
 
   testWidgets('an unknown stored size falls back to Normal', (tester) async {
     final db = await seededDb(tester, const []);
-    final glove =
-        await pumpRohabOn(tester, db, now: now, prefs: {prefKey: 'huge'});
+    final glove = await pumpRohabOn(
+      tester,
+      db,
+      now: now,
+      prefs: {prefKey: 'huge'},
+    );
     expect(scaleOf(tester), 1.0);
     await finish(tester, glove);
     await closeDb(tester, db);
   });
 
-  testWidgets('clear all data: Cancel keeps sessions, Delete removes them',
-      (tester) async {
+  testWidgets('clear all data: Cancel keeps sessions, Delete removes them', (
+    tester,
+  ) async {
     final db = await seededDb(tester, [
       session(at: DateTime(2026, 11, 18)),
       session(exercise: 'spread_fingers', at: DateTime(2026, 11, 19)),
       session(exercise: 'finger_touches', at: DateTime(2026, 11, 20)),
     ]);
-    final glove = await pumpRohabOn(tester, db, now: now, prefs: {prefKey: 'large'});
+    final glove = await pumpRohabOn(
+      tester,
+      db,
+      now: now,
+      prefs: {prefKey: 'large'},
+    );
     await openSettings(tester);
     expect(await rowCount(tester, db), 3);
 
@@ -94,8 +101,10 @@ void main() {
 
     expect(find.byKey(SettingsScreen.confirmDeleteKey), findsNothing);
     await tapKey(SettingsScreen.clearKey);
-    expect(find.text('Delete all saved sessions? This cannot be undone.'),
-        findsOneWidget);
+    expect(
+      find.text('Delete all saved sessions? This cannot be undone.'),
+      findsOneWidget,
+    );
     expect(find.text('Delete'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     await tapKey(SettingsScreen.cancelDeleteKey);
@@ -128,6 +137,8 @@ void main() {
     final glove = await pumpRohabOn(tester, db, now: now);
     glove.connect();
     await tester.pump(MockGloveService.connectDelay);
+    glove.start(); // STOP shows while the glove is active
+    await tester.pump(const Duration(seconds: 1));
     await openSettings(tester);
     await reveal(tester, SettingsScreen.clearKey);
     await tester.tap(find.byKey(SettingsScreen.clearKey));
@@ -135,8 +146,10 @@ void main() {
     expect(find.text('STOP'), findsOneWidget);
     final stop = tester.getCenter(find.text('STOP'));
     final hit = tester.hitTestOnBinding(stop);
-    expect(hit.path.any((e) => e.target.runtimeType.toString().contains('Render')),
-        isTrue);
+    expect(
+      hit.path.any((e) => e.target.runtimeType.toString().contains('Render')),
+      isTrue,
+    );
     await finish(tester, glove);
     await closeDb(tester, db);
   });
@@ -148,32 +161,50 @@ void main() {
     await reveal(tester, SettingsScreen.aboutKey);
     expect(find.text('Rohab version $kAppVersion'), findsOneWidget);
     expect(
-        find.text('Rohab is not a medical device. Ask your therapist before '
-            'changing your exercises.'),
-        findsOneWidget);
+      find.text(
+        'Research prototype. Not a medical device. Ask your '
+        'therapist before changing your exercises.',
+      ),
+      findsOneWidget,
+    );
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    expect(RegExp(r'^version: ([\d.]+)', multiLine: true)
-        .firstMatch(pubspec)!.group(1), kAppVersion);
+    expect(
+      RegExp(
+        r'^version: ([\d.]+)',
+        multiLine: true,
+      ).firstMatch(pubspec)!.group(1),
+      kAppVersion,
+    );
     await finish(tester, glove);
     await closeDb(tester, db);
   });
 
-  testWidgets('no overflow at 1.5x on every tab and the therapist screen',
-      (tester) async {
+  testWidgets('no overflow at 1.5x on every tab and the therapist screen', (
+    tester,
+  ) async {
     final db = await seededDb(tester, [
       for (var i = 0; i < 10; i++)
-        session(reps: 5 + i, unit: 'deg', rangeMin: 12, rangeMax: 230,
-            at: DateTime(2026, 11, 11 + i, 9)),
+        session(
+          reps: 5 + i,
+          unit: 'deg',
+          rangeMin: 12,
+          rangeMax: 230,
+          at: DateTime(2026, 11, 11 + i, 9),
+        ),
     ]);
-    final glove =
-        await pumpRohabOn(tester, db, now: now, prefs: {prefKey: 'largest'});
+    final glove = await pumpRohabOn(
+      tester,
+      db,
+      now: now,
+      prefs: {prefKey: 'largest'},
+    );
     expect(scaleOf(tester), 1.5);
     Future<void> check(String where) async {
       await settleDb(tester);
       expect(tester.takeException(), isNull, reason: where);
     }
 
-    await check('Home');
+    await check('Today');
     await tapHomePrimary(tester);
     await tester.pump(const Duration(milliseconds: 800));
     await check('Home connected');
@@ -184,6 +215,7 @@ void main() {
     await tapTab(tester, 'Exercises');
     await tester.tap(find.byKey(ExercisesScreen.cameraKey));
     await check('Plan (not measured yet)');
+    await tapTab(tester, 'Today'); // the gear is on the tab roots
     await openSettings(tester);
     await check('Settings');
     await reveal(tester, SettingsScreen.clearKey);

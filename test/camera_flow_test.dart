@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rohab/app/app.dart';
+import 'package:rohab/widgets/rohab_tabs.dart';
+import 'package:rohab/exercises/exercise_setup.dart';
+import 'package:rohab/screens/exercises/exercise_setup_screen.dart';
 import 'package:rohab/program/program_providers.dart';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:drift/native.dart';
@@ -80,31 +84,42 @@ Future<Harness> launch(
 
   if (tracker == null) create();
   var first = true;
-  final db = AppDatabase(DatabaseConnection(NativeDatabase.memory(),
-      closeStreamsSynchronously: true));
+  final db = AppDatabase(
+    DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ),
+  );
   if (baselineLevel != null) {
-    await tester.runAsync(() => DriftProgramRepository(db).saveBaseline(
-          BaselineResult(
-            affectedHand: Handedness.left,
-            affected: const HandRange(open: 30, closed: 220),
-            other: const HandRange(open: 5, closed: 260),
-            level: baselineLevel,
-            cameraLimited: false,
-            takenAt: today,
-          ),
-        ));
+    await tester.runAsync(
+      () => DriftProgramRepository(db).saveBaseline(
+        BaselineResult(
+          affectedHand: Handedness.left,
+          affected: const HandRange(open: 30, closed: 220),
+          other: const HandRange(open: 5, closed: 260),
+          level: baselineLevel,
+          cameraLimited: false,
+          takenAt: today,
+        ),
+      ),
+    );
   }
   final permission = FakePermission(access, afterRequest: afterRequest);
-  final glove = await pumpRohab(tester, clock: () => today, db: db, overrides: [
-    handTrackerFactoryProvider.overrideWithValue(() {
-      if (first) {
-        first = false;
-        return trackers.last;
-      }
-      return create();
-    }),
-    cameraPermissionProvider.overrideWithValue(permission),
-  ]);
+  final glove = await pumpRohab(
+    tester,
+    clock: () => today,
+    db: db,
+    overrides: [
+      handTrackerFactoryProvider.overrideWithValue(() {
+        if (first) {
+          first = false;
+          return trackers.last;
+        }
+        return create();
+      }),
+      cameraPermissionProvider.overrideWithValue(permission),
+    ],
+  );
   return Harness(glove, trackers, db, permission);
 }
 
@@ -113,7 +128,8 @@ Future<Harness> launch(
 Future<void> settle(WidgetTester tester) async {
   for (var i = 0; i < 5; i++) {
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
     await tester.pump();
   }
 }
@@ -127,25 +143,45 @@ Future<void> close(WidgetTester tester, Harness h) async {
   await tester.runAsync(h.db.close);
 }
 
+/// Jumps straight to a route, as a tap on the screen that links to it would.
+Future<void> goTo(WidgetTester tester, String path) async {
+  GoRouter.of(tester.element(find.byType(AppShell))).go(path);
+  await tester.pump();
+}
+
+/// Today's plan screen: Exercises, then Camera.
 Future<void> openProgram(WidgetTester tester) async {
   await tapTab(tester, 'Exercises');
   await tester.tap(find.byKey(ExercisesScreen.cameraKey));
   await settle(tester);
 }
 
-/// Free practice of one exercise, outside the plan.
-Future<void> openFree(WidgetTester tester, String id) async {
-  await openProgram(tester);
-  await tap(tester, ProgramScreen.freePracticeKey);
-  await tap(tester, CameraExerciseListScreen.rowKey(id));
+/// Free practice of one exercise, outside the plan: Exercises, the exercise,
+/// its set-up page (reps per set set to [reps]), then Start.
+Future<void> openFree(WidgetTester tester, String id, {int reps = 10}) async {
+  await tapTab(tester, 'Exercises');
+  await tap(tester, ExercisesScreen.allKey);
+  await tap(tester, ExerciseListScreen.rowKey(id));
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(AppShell)),
+  );
+  final notifier = container.read(exerciseSetupsProvider.notifier);
+  await tester.runAsync(
+    () => notifier.update(id, notifier.of(id).copyWith(reps: reps, sets: 1)),
+  );
+  await tester.pump();
+  await tap(tester, ExerciseSetupScreen.startKey);
 }
 
 /// Taps [key], scrolling the visible list to it first if needed.
 Future<void> tap(WidgetTester tester, Key key) async {
   final target = find.byKey(key);
   if (target.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(target, 200,
-        scrollable: find.byType(Scrollable).hitTestable().first);
+    await tester.scrollUntilVisible(
+      target,
+      200,
+      scrollable: find.byType(Scrollable).hitTestable().first,
+    );
   }
   await tester.ensureVisible(target);
   await tester.pump();
@@ -169,15 +205,22 @@ Future<void> passHandCheckAndCalibrate(WidgetTester tester, Harness h) async {
 
 /// The first open after calibration (which ends in a fist) starts the
 /// first rep: a rep is open, closed, open again.
-Future<void> firstOpen(WidgetTester tester, Harness h,
-    {HandPose pose = HandPose.open}) async {
+Future<void> firstOpen(
+  WidgetTester tester,
+  Harness h, {
+  HandPose pose = HandPose.open,
+}) async {
   h.tracker.pose = pose;
   await tester.pump(const Duration(milliseconds: 600));
 }
 
 /// [n] reps from an open hand: close 600 ms, open 600 ms.
-Future<void> doReps(WidgetTester tester, Harness h, int n,
-    {HandPose open = HandPose.open}) async {
+Future<void> doReps(
+  WidgetTester tester,
+  Harness h,
+  int n, {
+  HandPose open = HandPose.open,
+}) async {
   for (var i = 0; i < n; i++) {
     h.tracker.pose = HandPose.fist;
     await tester.pump(const Duration(milliseconds: 600));
@@ -186,35 +229,66 @@ Future<void> doReps(WidgetTester tester, Harness h, int n,
   }
 }
 
-String repsText(WidgetTester tester) =>
-    tester.widget<Text>(find.byKey(CameraExerciseFlow.repsKey)).data!;
+/// "2 of 10", read from the info panel's "Rep 2 of 10, set 1 of 1" line.
+String repsText(WidgetTester tester) {
+  final line = tester
+      .widgetList<Text>(find.textContaining('Rep '))
+      .map((w) => w.data ?? '')
+      .firstWhere((t) => RegExp(r'^Rep \d+ of \d+').hasMatch(t));
+  final m = RegExp(r'^Rep (\d+) of (\d+)').firstMatch(line)!;
+  return '${m[1]} of ${m[2]}';
+}
 
 void main() {
-  testWidgets('Exercises shows Camera active and With glove disabled',
-      (tester) async {
-    final h = await launch(tester);
-    await tapTab(tester, 'Exercises');
-    expect(find.text("Practice with your phone's camera. No glove needed."),
-        findsOneWidget);
-    expect(find.text('Available when your glove is connected.'),
-        findsOneWidget);
-    await tester.tap(find.byKey(ExercisesScreen.gloveKey));
-    await tester.pump();
-    expect(find.byKey(ExercisesScreen.gloveKey), findsOneWidget);
-    await close(tester, h);
-  });
+  testWidgets(
+    'Exercises: Camera opens today\'s plan; the glove option is locked with a reason',
+    (tester) async {
+      final h = await launch(tester);
+      await tapTab(tester, 'Exercises');
+      expect(find.byKey(ExercisesScreen.cameraKey), findsOneWidget);
+      expect(find.text('Connect your glove to use this.'), findsOneWidget);
+      await tester.tap(find.byKey(ExercisesScreen.gloveKey));
+      await tester.pump();
+      expect(find.byKey(ExercisesScreen.gloveKey), findsOneWidget);
+      await tester.tap(find.byKey(ExercisesScreen.allKey));
+      await tester.pump();
+      expect(
+        find.byKey(
+          ExerciseListScreen.rowKey('open_close'),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('New'), findsWidgets);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(UnderlineTabs),
+          matching: find.text('Glove'),
+        ),
+      );
+      await tester.pump();
+      expect(
+        find.text('Connect your glove to use this', skipOffstage: false),
+        findsWidgets,
+      );
+      await close(tester, h);
+    },
+  );
 
   group('hand measurement', () {
-    testWidgets('measures both hands, sets level 2 and saves it',
-        (tester) async {
+    testWidgets('measures both hands, sets level 2 and saves it', (
+      tester,
+    ) async {
       final h = await launch(tester);
       await openProgram(tester);
       expect(find.text('First, measure your hands'), findsOneWidget);
       await tap(tester, ProgramScreen.primaryKey);
       await tap(tester, BaselineScreen.rightKey);
       await settle(tester);
-      expect(find.text('Hold your right hand inside the frame.'),
-          findsOneWidget);
+      expect(
+        find.text('Hold your right hand inside the frame.'),
+        findsOneWidget,
+      );
       // No glove: no glove banner during camera practice.
       expect(find.byKey(SafetyBanner.stopKey), findsNothing);
 
@@ -231,8 +305,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      await measure(const HandPose(curl: 0.15, rightHand: true),
-          const HandPose(curl: 0.8, rightHand: true));
+      await measure(
+        const HandPose(curl: 0.15, rightHand: true),
+        const HandPose(curl: 0.8, rightHand: true),
+      );
       expect(find.text('Now your left hand'), findsOneWidget);
       await tap(tester, BaselineScreen.primaryKey);
       await measure(const HandPose(), const HandPose(curl: 1));
@@ -240,7 +316,8 @@ void main() {
 
       expect(find.text('Starting level: 2'), findsOneWidget);
       final saved = await tester.runAsync(
-          () => DriftProgramRepository(h.db).latestBaseline());
+        () => DriftProgramRepository(h.db).latestBaseline(),
+      );
       expect(saved!.level, 2);
       expect(saved.affectedHand, Handedness.right);
       expect(saved.affected.range, closeTo(174, 15));
@@ -253,8 +330,7 @@ void main() {
       await close(tester, h);
     });
 
-    testWidgets('skipping the other hand still places a level',
-        (tester) async {
+    testWidgets('skipping the other hand still places a level', (tester) async {
       final h = await launch(tester);
       await openProgram(tester);
       await tap(tester, ProgramScreen.primaryKey);
@@ -285,13 +361,12 @@ void main() {
       expect(find.text('Open and close'), findsOneWidget);
 
       await tap(tester, ProgramScreen.primaryKey); // Start
-      expect(find.text('Pain right now?'),
-          findsOneWidget);
+      expect(find.text('Pain right now?'), findsOneWidget);
       await tap(tester, PainCheckScreen.scoreKey(2));
       await tap(tester, PainCheckScreen.primaryKey);
       await settle(tester);
 
-      expect(find.text('Set 1 of 4 · 10 reps each'), findsOneWidget);
+      expect(find.text('Set 1 of 4'), findsOneWidget);
       await tapPrimary(tester); // Start
       await passHandCheckAndCalibrate(tester, h);
       expect(repsText(tester), '0 of 10');
@@ -309,7 +384,7 @@ void main() {
 
       await tapPrimary(tester); // Next set
       await settle(tester);
-      expect(find.text('Set 2 of 4 · 10 reps each'), findsOneWidget);
+      expect(find.text('Set 2 of 4'), findsOneWidget);
       await tapPrimary(tester);
       // Same session: no second calibration.
       await tester.pump(const Duration(milliseconds: 1100));
@@ -318,8 +393,9 @@ void main() {
       await close(tester, h);
     });
 
-    testWidgets('by default a tilted wrist does not throw reps out',
-        (tester) async {
+    testWidgets('by default a tilted wrist does not throw reps out', (
+      tester,
+    ) async {
       final h = await launch(tester);
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
@@ -336,9 +412,13 @@ void main() {
         'count', (tester) async {
       final h = await launch(tester);
       final container = ProviderScope.containerOf(
-          tester.element(find.byType(RohabApp)));
-      await container.read(programSettingsProvider.notifier).save(
-          container.read(programSettingsProvider).copyWith(wristCheck: true));
+        tester.element(find.byType(RohabApp)),
+      );
+      await container
+          .read(programSettingsProvider.notifier)
+          .save(
+            container.read(programSettingsProvider).copyWith(wristCheck: true),
+          );
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
       await passHandCheckAndCalibrate(tester, h);
@@ -348,12 +428,13 @@ void main() {
       // Opening by tilting the wrist 40 degrees.
       await doReps(tester, h, 2, open: const HandPose(wristPitch: 40));
       expect(repsText(tester), '2 of 10');
-      expect(find.text('Wrist moved. That one did not count.'),
-          findsOneWidget);
-      await tester.tap(find.text('End exercise'));
+      expect(find.text('Wrist moved. That one did not count.'), findsOneWidget);
+      await tester.tap(find.text('End session'));
       await settle(tester);
-      expect(find.textContaining('did not count because the wrist moved'),
-          findsOneWidget);
+      expect(
+        find.textContaining('did not count because the wrist moved'),
+        findsOneWidget,
+      );
       final rows = await h.sessions(tester);
       expect(rows.single.compensatedReps, greaterThanOrEqualTo(1));
       expect(rows.single.level, isNull, reason: 'free practice');
@@ -388,8 +469,10 @@ void main() {
       expect(find.text('Your pain is high today'), findsOneWidget);
       await tap(tester, PainCheckScreen.primaryKey); // Rest today
       await settle(tester);
-      expect(find.textContaining('You reported high pain today.'),
-          findsOneWidget);
+      expect(
+        find.textContaining('You reported high pain today.'),
+        findsOneWidget,
+      );
       await close(tester, h);
     });
 
@@ -417,8 +500,9 @@ void main() {
   });
 
   group('therapist', () {
-    testWidgets('sets a PIN, changes the level, and the plan follows',
-        (tester) async {
+    testWidgets('sets a PIN, changes the level, and the plan follows', (
+      tester,
+    ) async {
       final h = await launch(tester, baselineLevel: 2);
       await tester.tap(find.byKey(AppShell.settingsButtonKey));
       await tester.pump();
@@ -437,12 +521,12 @@ void main() {
       await settle(tester);
       expect(find.text('Saved.'), findsOneWidget);
 
-      await tapTab(tester, 'Exercises');
-      await tester.tap(find.byKey(ExercisesScreen.cameraKey));
-      await settle(tester);
+      await openProgram(tester);
       expect(find.text('Level 3 · Single fingers'), findsOneWidget);
-      expect(find.textContaining('Level set by your therapist'),
-          findsOneWidget);
+      expect(
+        find.textContaining('Level set by your therapist'),
+        findsOneWidget,
+      );
       await close(tester, h);
     });
 
@@ -489,8 +573,10 @@ void main() {
     });
 
     testWidgets('low-confidence frames are ignored', (tester) async {
-      final h = await launch(tester,
-          tracker: MockHandTracker(lowConfidenceEvery: 1));
+      final h = await launch(
+        tester,
+        tracker: MockHandTracker(lowConfidenceEvery: 1),
+      );
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
       await tester.pump(const Duration(seconds: 3));
@@ -530,9 +616,11 @@ void main() {
         h.tracker.pose = HandPose.open;
         await tester.pump(const Duration(milliseconds: 600));
       }
-      expect(find.text('Movements are getting smaller. A rest may help.'),
-          findsOneWidget);
-      await tester.tap(find.text('End exercise'));
+      expect(
+        find.text('Movements are getting smaller. A rest may help.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('End session'));
       await settle(tester);
       expect(find.text('Set ended. 5 reps.'), findsOneWidget);
       final rows = await h.sessions(tester);
@@ -547,7 +635,7 @@ void main() {
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
       await passHandCheckAndCalibrate(tester, h);
-      await tester.tap(find.text('End exercise'));
+      await tester.tap(find.text('End session'));
       await settle(tester);
       expect(find.text('Set ended. 0 reps.'), findsOneWidget);
       expect(find.textContaining('nothing was saved'), findsOneWidget);
@@ -557,8 +645,8 @@ void main() {
 
     testWidgets('hold-open counts 3-second holds', (tester) async {
       final h = await launch(tester);
-      await openFree(tester, 'hold_open');
-      expect(find.text('Free practice'), findsOneWidget);
+      await openFree(tester, 'hold_open', reps: 5);
+      expect(find.text('Set 1 of 1'), findsOneWidget);
       await tapPrimary(tester);
       await passHandCheckAndCalibrate(tester, h);
       expect(repsText(tester), '0 of 5');
@@ -578,16 +666,23 @@ void main() {
   });
 
   group('camera permission', () {
-    testWidgets('explains, asks, and offers Settings when refused',
-        (tester) async {
-      final h = await launch(tester,
-          access: CameraAccess.notAsked, afterRequest: CameraAccess.denied);
+    testWidgets('explains, asks, and offers Settings when refused', (
+      tester,
+    ) async {
+      final h = await launch(
+        tester,
+        access: CameraAccess.notAsked,
+        afterRequest: CameraAccess.denied,
+      );
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
       expect(
-          find.text('Rohab uses the camera to count your exercises. '
-              'Video stays on this phone and is never saved.'),
-          findsOneWidget);
+        find.text(
+          'Rohab uses the camera to count your exercises. '
+          'Video stays on this phone and is never saved.',
+        ),
+        findsOneWidget,
+      );
       await tapPrimary(tester);
       expect(find.text('Open settings'), findsOneWidget);
       await tapPrimary(tester);
@@ -597,8 +692,9 @@ void main() {
   });
 
   group('distance', () {
-    testWidgets('too far: the hand check says so and does not move on',
-        (tester) async {
+    testWidgets('too far: the hand check says so and does not move on', (
+      tester,
+    ) async {
       final h = await launch(tester);
       await openFree(tester, 'open_close');
       await tapPrimary(tester);
