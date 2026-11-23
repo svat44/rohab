@@ -29,7 +29,7 @@ class LevelBar extends StatelessWidget {
     this.markers = const [],
   });
 
-  static const barHeight = 32.0;
+  static const barHeight = 24.0;
   static const markerWidth = 4.0;
 
   /// Fill, 0-1.
@@ -67,18 +67,11 @@ class LevelBar extends StatelessWidget {
               right: 0,
               top: top,
               height: LevelBar.barHeight,
-              // A plain track with a solid blue fill and a dark edge.
-              child: Container(
-                decoration: BoxDecoration(
-                  color: c.surface,
-                  borderRadius: BorderRadius.circular(RohabShape.radius),
-                  border: Border.all(
-                    color: c.controlEdge,
-                    width: RohabShape.strongBorder,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.zero,
+              // MIUI style: a thin rounded track with a solid blue fill.
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(LevelBar.barHeight / 2),
+                child: ColoredBox(
+                  color: c.divider,
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: FractionallySizedBox(

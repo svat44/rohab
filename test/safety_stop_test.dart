@@ -37,7 +37,7 @@ void main() {
     final glove = await pumpRohab(tester);
     // Camera-only use: no glove, so no glove banner.
     expect(find.text('Glove not connected'), findsNothing);
-    expect(find.text('Rohab'), findsOneWidget);
+    expect(find.byKey(AppShell.wordmarkKey), findsOneWidget);
 
     await _connectAndInflate(tester);
     final shown = double.parse(
@@ -149,7 +149,7 @@ void main() {
       final glove = await pumpRohab(tester);
       await _connectAndInflate(tester);
       await entry.value(tester);
-      expect(find.text(entry.key), findsWidgets);
+      expect(find.textContaining(entry.key), findsWidgets);
       expect(glove.snapshot.value.pressureKpa, greaterThan(10));
 
       final stop = find.byKey(SafetyBanner.stopKey);

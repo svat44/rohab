@@ -31,10 +31,10 @@ void main() {
       ('label on primary button', p.onAccent, p.accent, 4.5),
       ('label on STOP button', p.onDanger, p.danger, 4.5),
       ('danger text on card', p.danger, p.surface, 4.5),
-      ('label on header', const Color(0xFFFFFFFF), p.header, 4.5),
+      ('label on header', p.secondary, p.header, 4.5),
       ('disabled label', p.disabledText, p.disabledFill, 3.0),
       ('control edge on page', p.controlEdge, p.background, 3.0),
-      ('selected tab label', p.onAccent, p.accent, 4.5),
+      ('selected tab label', p.accent, p.accentSoft, 4.5),
     ];
     for (final (label, fg, bg, min) in pairs) {
       test('$name: $label is at least $min:1', () {

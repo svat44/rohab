@@ -9,6 +9,7 @@ import '../../exercises/exercise_providers.dart';
 import '../../glove/glove_service.dart';
 import '../../settings/settings_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/rohab_widgets.dart';
 import '../../widgets/surfaces.dart';
 import '../progress/overview.dart';
 import '../progress/progress_data.dart';
@@ -113,6 +114,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             child: Row(
               children: [
+                const IconBadge(Icons.assignment, size: 48),
+                const SizedBox(width: RohabSpace.s16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,8 +133,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  size: RohabSize.icon,
-                  color: c.secondary,
+                  size: RohabSize.icon + 8,
+                  color: c.accent,
                 ),
               ],
             ),

@@ -12,7 +12,7 @@ ThemeData buildTheme(Brightness brightness) {
       ? RohabPalette.light
       : RohabPalette.dark;
 
-  // Two weights only (regular and bold). Hierarchy by size and weight.
+  // System Roboto, like the rest of MIUI. Hierarchy by size and weight.
   final text = TextTheme(
     displayLarge: TextStyle(
       fontSize: RohabType.display,
@@ -115,7 +115,7 @@ ThemeData buildTheme(Brightness brightness) {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(RohabShape.card),
-        side: BorderSide(color: p.divider, width: RohabShape.border),
+        side: BorderSide.none,
       ),
     ),
     // Secondary actions: white buttons with a dark edge and bold blue label.

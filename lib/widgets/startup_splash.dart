@@ -48,7 +48,7 @@ class _StartupSplashState extends State<StartupSplash> {
       child: Semantics(
         label: 'Rohab is starting. Tap to skip.',
         child: ColoredBox(
-          color: c.header,
+          color: c.accent,
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(RohabSpace.s24),
@@ -57,13 +57,13 @@ class _StartupSplashState extends State<StartupSplash> {
                 children: [
                   Text(
                     RohabTokens.name,
-                    style: t.displayLarge?.copyWith(color: Colors.white),
+                    style: t.displayLarge?.copyWith(color: c.onAccent),
                   ),
                   const SizedBox(height: RohabSpace.s8),
                   Text(
                     'Hand exercises, every day',
                     textAlign: TextAlign.center,
-                    style: t.bodyLarge?.copyWith(color: Colors.white),
+                    style: t.bodyLarge?.copyWith(color: c.onAccent),
                   ),
                 ],
               ),

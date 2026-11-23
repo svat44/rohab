@@ -146,24 +146,27 @@ class _Header extends ConsumerWidget {
         key: key,
         behavior: HitTestBehavior.opaque,
         onTap: onToggleSettings,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
-          child: Center(
-            child: GestureDetector(
-              key: AppShell.wordmarkKey,
-              behavior: HitTestBehavior.opaque,
-              onLongPress: kDebugMode
-                  ? () => showDebugMenu(
-                      context,
-                      mockGlove: glove is MockGloveService ? glove : null,
-                    )
-                  : null,
-              child: Text(
-                '$title · Rohab',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium
-                    ?.copyWith(fontSize: 14),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
+            child: Center(
+              child: GestureDetector(
+                key: AppShell.wordmarkKey,
+                behavior: HitTestBehavior.opaque,
+                onLongPress: kDebugMode
+                    ? () => showDebugMenu(
+                        context,
+                        mockGlove: glove is MockGloveService ? glove : null,
+                      )
+                    : null,
+                child: Text(
+                  '$title · Rohab',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium
+                      ?.copyWith(fontSize: 18),
+                ),
               ),
             ),
           ),

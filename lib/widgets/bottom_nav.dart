@@ -30,9 +30,7 @@ class BottomNav extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(
-          top: BorderSide(color: c.controlEdge, width: RohabShape.strongBorder),
-        ),
+        border: Border(top: BorderSide(color: c.divider)),
       ),
       child: SafeArea(
         top: false,
@@ -78,12 +76,7 @@ class SideNav extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(
-          right: BorderSide(
-            color: c.controlEdge,
-            width: RohabShape.strongBorder,
-          ),
-        ),
+        border: Border(right: BorderSide(color: c.divider)),
       ),
       child: SizedBox(
         width: width,
@@ -129,8 +122,8 @@ class NavTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final style = Theme.of(context).textTheme.labelMedium!;
-    final fg = selected ? c.onAccent : c.text;
-    const radius = BorderRadius.all(Radius.circular(RohabShape.radius));
+    final fg = selected ? c.accent : c.secondary;
+    const radius = BorderRadius.all(Radius.circular(16));
     return Semantics(
       selected: selected,
       button: true,
@@ -149,7 +142,7 @@ class NavTab extends StatelessWidget {
             child: Ink(
               decoration: BoxDecoration(
                 borderRadius: radius,
-                color: selected ? c.accent : null,
+                color: selected ? c.accentSoft : null,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: minHeight),

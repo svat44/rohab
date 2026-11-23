@@ -8,7 +8,7 @@ class RohabTokens {
   RohabTokens._();
 
   static const name = 'Rohab';
-  static const fontFamily = 'Atkinson';
+  static const fontFamily = 'Roboto';
 }
 
 /// One palette per brightness. Rules: one accent, red only for STOP and
@@ -72,43 +72,42 @@ class RohabPalette {
   /// text on page 16:1, secondary on page 8:1, white on accent 6.6:1,
   /// white on danger 6.9:1, white on success 5.9:1.
   static const light = RohabPalette(
-    background: Color(0xFFF4F7FA),
+    background: Color(0xFFF7F7F7),
     surface: Color(0xFFFFFFFF),
-    text: Color(0xFF14212B),
-    secondary: Color(0xFF3F505E),
-    divider: Color(0xFF7F8F9C),
-    accent: Color(0xFF0B5CAD),
+    text: Color(0xFF000000),
+    secondary: Color(0xFF5C5F66),
+    divider: Color(0xFFE6E6E6),
+    accent: Color(0xFF1A63E0),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFE1EDF8),
-    danger: Color(0xFFB3170F),
+    accentSoft: Color(0xFFE8F0FE),
+    danger: Color(0xFFD92B2B),
     onDanger: Color(0xFFFFFFFF),
-    header: Color(0xFF0B5CAD),
-    controlFill: Color(0xFFFFFFFF),
-    controlEdge: Color(0xFF4B5C69),
-    disabledFill: Color(0xFFE3E8EC),
-    disabledText: Color(0xFF55646F),
-    success: Color(0xFF00703C),
+    header: Color(0xFFF7F7F7),
+    controlFill: Color(0xFFE8F0FE),
+    controlEdge: Color(0xFF6B7280),
+    disabledFill: Color(0xFFEBEBEB),
+    disabledText: Color(0xFF5F6368),
+    success: Color(0xFF0B7A3E),
     onSuccess: Color(0xFFFFFFFF),
     focus: Color(0xFFFFD21F),
   );
 
-  /// Dark twin, for people who choose it (or whose phone does).
   static const dark = RohabPalette(
-    background: Color(0xFF0F1A24),
-    surface: Color(0xFF17232F),
-    text: Color(0xFFF2F7FB),
-    secondary: Color(0xFFB4C4D2),
-    divider: Color(0xFF5E7385),
-    accent: Color(0xFF6FB7F2),
-    onAccent: Color(0xFF06223A),
-    accentSoft: Color(0xFF1B3550),
+    background: Color(0xFF000000),
+    surface: Color(0xFF1C1C1E),
+    text: Color(0xFFFFFFFF),
+    secondary: Color(0xFFB0B3B8),
+    divider: Color(0xFF38383A),
+    accent: Color(0xFF6FA8FF),
+    onAccent: Color(0xFF00122E),
+    accentSoft: Color(0xFF14284A),
     danger: Color(0xFFFF8A80),
     onDanger: Color(0xFF2A0505),
-    header: Color(0xFF0B3B6B),
-    controlFill: Color(0xFF17232F),
-    controlEdge: Color(0xFF8FA5B7),
-    disabledFill: Color(0xFF223442),
-    disabledText: Color(0xFFA9BDCC),
+    header: Color(0xFF000000),
+    controlFill: Color(0xFF14284A),
+    controlEdge: Color(0xFF8A8F98),
+    disabledFill: Color(0xFF2C2C2E),
+    disabledText: Color(0xFFA9ADB3),
     success: Color(0xFF6CD39A),
     onSuccess: Color(0xFF04210F),
     focus: Color(0xFFFFD21F),
@@ -140,17 +139,17 @@ class RohabShape {
 
   /// Square corners, on purpose: every box is an edge a person with low
   /// vision can follow, like the boxes on a paper form.
-  static const double radius = 0;
-  static const double card = 0;
+  static const double radius = 32;
+  static const double card = 20;
 
   /// Panels and list rows.
-  static const double border = 1.5;
+  static const double border = 1;
 
   /// Controls: buttons, choice boxes, the camera frame.
   static const double strongBorder = 2;
 
   /// Depth of a button's bottom edge. It sinks when pressed.
-  static const double buttonEdge = 4;
+  static const double buttonEdge = 0;
 
   /// Keyboard focus ring.
   static const double focusRing = 4;

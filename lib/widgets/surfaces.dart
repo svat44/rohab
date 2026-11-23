@@ -16,10 +16,7 @@ BoxDecoration panelDecoration(
 }) => BoxDecoration(
   color: tint ? c.accentSoft : c.surface,
   borderRadius: BorderRadius.circular(radius),
-  border: Border.all(
-    color: tint ? c.accent : c.divider,
-    width: tint ? RohabShape.strongBorder : RohabShape.border,
-  ),
+  // MIUI cards have no edge: white on the grey page.
 );
 
 /// A flat tile: the base for icon badges and other small non-button
@@ -30,7 +27,7 @@ class IconTile extends StatelessWidget {
     required this.color,
     required this.child,
     this.size,
-    this.radius = RohabShape.radius,
+    this.radius = 14,
     this.edge,
   });
 
@@ -78,35 +75,8 @@ ButtonStyle solidButton(ButtonStyle base, {required Color edge}) {
           width: RohabShape.focusRing,
         );
       }
-      return BorderSide(
-        color: s.contains(WidgetState.disabled) ? Colors.transparent : edge,
-        width: RohabShape.strongBorder,
-      );
+      return BorderSide.none;
     }),
-    backgroundBuilder: (context, states, child) {
-      final lip = states.contains(WidgetState.disabled)
-          ? 0.0
-          : states.contains(WidgetState.pressed)
-          ? 1.0
-          : RohabShape.buttonEdge;
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(RohabShape.radius),
-          border: Border(
-            bottom: lip == 0
-                ? BorderSide.none
-                : BorderSide(color: edge, width: lip),
-          ),
-        ),
-        child: child,
-      );
-    },
-    foregroundBuilder: (context, states, child) => Transform.translate(
-      offset: states.contains(WidgetState.pressed)
-          ? const Offset(0, 2)
-          : Offset.zero,
-      child: child,
-    ),
   );
 }
 
@@ -123,16 +93,10 @@ class ChoiceBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    const radius = BorderRadius.all(Radius.circular(RohabShape.radius));
+    const radius = BorderRadius.all(Radius.circular(16));
     return Material(
       color: selected ? c.accent : c.controlFill,
-      shape: RoundedRectangleBorder(
-        borderRadius: radius,
-        side: BorderSide(
-          color: selected ? c.accent : c.controlEdge,
-          width: RohabShape.strongBorder,
-        ),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: radius),
       clipBehavior: Clip.antiAlias,
       child: child,
     );

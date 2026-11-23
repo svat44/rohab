@@ -45,9 +45,7 @@ class SafetyBanner extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        border: Border(
-          bottom: BorderSide(color: c.controlEdge, width: RohabShape.strongBorder),
-        ),
+        border: Border(bottom: BorderSide(color: c.divider)),
       ),
       padding: const EdgeInsets.fromLTRB(
         RohabSpace.s16,
