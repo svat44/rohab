@@ -87,9 +87,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   if (sideNav)
                     SideNav(
                       destinations: _tabs,
-                      selectedIndex: _settingsOpen
-                          ? null
-                          : _shell.currentIndex,
+                      selectedIndex: _settingsOpen ? null : _shell.currentIndex,
                       onSelected: _goTab,
                     ),
                   // Wide windows keep a readable column instead of
@@ -148,28 +146,26 @@ class _Header extends ConsumerWidget {
         key: key,
         behavior: HitTestBehavior.opaque,
         onTap: onToggleSettings,
-        child: SizedBox(
-          height: RohabSize.touchTarget,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
-                key: AppShell.wordmarkKey,
-                behavior: HitTestBehavior.opaque,
-                onLongPress: kDebugMode
-                    ? () => showDebugMenu(
-                        context,
-                        mockGlove: glove is MockGloveService ? glove : null,
-                      )
-                    : null,
-                child: Text(
-                  '$title · Rohab',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium
-                      ?.copyWith(fontSize: 14),
-                ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            heightFactor: 1,
+            child: GestureDetector(
+              key: AppShell.wordmarkKey,
+              behavior: HitTestBehavior.opaque,
+              onLongPress: kDebugMode
+                  ? () => showDebugMenu(
+                      context,
+                      mockGlove: glove is MockGloveService ? glove : null,
+                    )
+                  : null,
+              child: Text(
+                '$title · Rohab',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium
+                    ?.copyWith(fontSize: 14),
               ),
             ),
           ),
