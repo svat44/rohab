@@ -159,16 +159,11 @@ class _Header extends ConsumerWidget {
     final t = Theme.of(context).textTheme;
     final glove = ref.watch(gloveServiceProvider);
 
-    // Solid blue title bar: the screen title on the left (small wordmark
-    // above it), a labelled Settings button on the right. On a short window
-    // the wordmark goes, so the bar takes less height.
-    final short = isShortWindow(context);
+    // Keep the header compact so it leaves room for the screen content.
     return DecoratedBox(
       decoration: BoxDecoration(color: c.header),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: RohabSize.touchTarget + (short ? 0 : RohabSpace.s16),
-        ),
+        constraints: BoxConstraints(minHeight: RohabSize.touchTarget),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             RohabSpace.s16,
@@ -183,25 +178,22 @@ class _Header extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (!short)
-                      GestureDetector(
-                        key: AppShell.wordmarkKey,
-                        behavior: HitTestBehavior.opaque,
-                        onLongPress: kDebugMode
-                            ? () => showDebugMenu(
-                                context,
-                                mockGlove: glove is MockGloveService
-                                    ? glove
-                                    : null,
-                              )
-                            : null,
-                        child: Text(
-                          RohabTokens.name,
-                          style: t.labelMedium?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
+                    GestureDetector(
+                      key: AppShell.wordmarkKey,
+                      behavior: HitTestBehavior.opaque,
+                      onLongPress: kDebugMode
+                          ? () => showDebugMenu(
+                              context,
+                              mockGlove: glove is MockGloveService
+                                  ? glove
+                                  : null,
+                            )
+                          : null,
+                      child: Text(
+                        RohabTokens.name,
+                        style: t.labelMedium?.copyWith(color: Colors.white),
                       ),
+                    ),
                     Semantics(
                       header: true,
                       child: FittedBox(
@@ -222,33 +214,18 @@ class _Header extends ConsumerWidget {
               ),
               Tooltip(
                 message: settingsOpen ? 'Close settings' : 'Settings',
-                child: TextButton.icon(
+                child: IconButton(
                   key: settingsOpen
                       ? AppShell.closeSettingsKey
                       : AppShell.settingsButtonKey,
                   onPressed: onToggleSettings,
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(
-                      RohabSize.touchTarget,
-                      RohabSize.touchTarget,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: RohabSpace.s16,
-                    ),
+                  constraints: const BoxConstraints.tightFor(
+                    width: RohabSize.touchTarget,
+                    height: RohabSize.touchTarget,
                   ),
-                  icon: Icon(
-                    settingsOpen ? Icons.close : Icons.settings,
-                    size: RohabSize.icon - 4,
-                  ),
-                  label: Text(
-                    settingsOpen ? 'Close' : 'Settings',
-                    maxLines: 1,
-                    softWrap: false,
-                    style: t.labelMedium?.copyWith(
-                      color: c.accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  iconSize: RohabSize.icon,
+                  color: c.accent,
+                  icon: Icon(settingsOpen ? Icons.close : Icons.settings),
                 ),
               ),
             ],
