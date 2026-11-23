@@ -153,7 +153,7 @@ class _OctagonPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFFFFFFFF)
+        ..color = RohabPalette.light.onAccent
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );

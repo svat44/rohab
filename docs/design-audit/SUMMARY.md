@@ -1,11 +1,28 @@
-# Design audit summary
+# Design redesign summary
 
-**Scope done:** a neumorphic redesign foundation (tokens, one raised-surface recipe, solid header and tab bar, one paper grain), the Continue-button box, streak removal and labelled counts, glove-only metrics hidden without a glove, decorative icons, disabled-button contrast and reason, 64 dp tab bar, a contrast unit test (24 pairs, light and dark). 9 issues logged in `issues.md`: 0 S0, 2 S1, 7 S2/S3, all fixed.
+## What was wrong
+Roboto and thin giant numbers, centred stacks, wireframe cards, a pill nav indicator, a dead Progress filter,
+two different "days" numbers, a missing reps-per-set control, a low-contrast disabled button, a duplicated Glove
+block on Home, 24 h time hard-coded, and jargon ("Trigger level").
 
-**Verified:** `flutter analyze` clean; `flutter test` 299 passing; before/after screenshots in a browser build at 360x800, 360x800 with the largest in-app text size, 412x915, normal no-glove state only.
+## What changed
+- Foundation: bundled fonts (Atkinson Hyperlegible Next, Source Sans 3, SIL OFL texts registered), one teal palette,
+  tokens, contrast script (`dart run tool/contrast.dart`) and test; all 24 pairs pass AA (`contrast.md`).
+- Components: RohabTheme, RohabAppBar, RohabNavBar, RohabRow/Group/SectionLabel, UnderlineTabs, SquareSegmented,
+  RohabButton, RohabStepper, ResultPanel, SegmentedBar, HeroBubbles, EmptyState, StopButton, MetricText, RohabIcon.
+- Screens: Today, Glove, Exercises (menu, list, setup), camera session, Progress (real 7/30/90 range), Settings.
+- STOP is now a top-right stop sign shown only while the glove is active (user request; needs safety review).
 
-**Not verified:** anything on the Redmi 7A (performance of the soft shadows on a low-end phone, camera fps, real touch behaviour); glove-connected states by screenshot; 200% system text size (tests cover 1.5x); colour-blind simulation; TalkBack.
+## Checks
+- `flutter analyze`: 0 issues. `flutter test`: 321 passed (baseline 299).
+- Pressure limits (35 / 50 kPa), BLE, EMG maths and rep thresholds: no diff (`git diff` on lib/config, lib/glove,
+  emg_calibrator, counters is empty; only two calibration-start copy strings changed).
+- Greps over `lib/` (excluding tokens/palette): `GoogleFonts` 0, `StadiumBorder` 0, `BoxShadow` 0, `Gradient` 0,
+  `Roboto` 0, `Colors.` 0; `fontFamily:` only in the theme, the STOP/debug screens; Material `Icons.` 0 outside debug.
+- Seen on the Redmi 7A (release build): Today, Glove, Exercises, Practice list, Progress.
 
-**Brief items not done** (see `issues.md`, "Not reproduced / not done"): the Progress range filter and charts library do not exist in this app; component set (`RohabButton`, `StopButton`, `RohabStepper`, `EmptyState`, `MetricBlock`); haptic and tone on rep count; hard-coded colour grep sweep.
-
-**Recommended next:** install on the phone and check scrolling smoothness first (dual shadows on every card are the main cost); then the component set and the hard-coded-value sweep; then glove-state screenshots from the debug menu.
+## Could NOT be verified
+- Real on-device camera fps: not measured, not improved. No figure is claimed.
+- 200% text and 412x915 captures; before/after pairs; Settings, setup, camera and STOP sign on device.
+- Glove behaviour with real hardware (mock glove only).
+- Remaining items are listed in `issues.md` under Open items.

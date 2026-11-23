@@ -85,9 +85,9 @@ class RohabRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: (titleStyle ?? RohabType.rowTitle).copyWith(
-                      color: locked ? c.disabledText : c.text,
-                    ),
+                    style: locked
+                        ? RohabType.rowTitle.copyWith(color: c.disabledText)
+                        : (titleStyle ?? RohabType.rowTitle),
                   ),
                   if (subtitle != null)
                     Padding(

@@ -101,14 +101,15 @@ class RohabPalette {
 class RohabFonts {
   RohabFonts._();
 
-  /// Body, UI and every number (with tabular figures).
+  /// Body and UI text.
   static const body = 'AtkinsonHyperlegibleNext';
 
-  /// Numbers use the body face too, so digits and words match.
-  static const numbers = body;
-
-  /// Screen titles and the wordmark only: the sans companion of Source Serif.
+  /// Screen titles and the wordmark: the sans companion of Source Serif.
   static const title = 'SourceSans3';
+
+  /// Every number. Atkinson's slashed zero looks odd at size, so numerals use
+  /// the same clean sans as the titles. Its default figures are tabular.
+  static const numbers = title;
 }
 
 /// Type scale in sp. Nothing under 14, no light weights. These are the only
@@ -204,8 +205,8 @@ class RohabType {
 
   static const metricXL = TextStyle(
     fontFamily: RohabFonts.numbers,
-    fontWeight: FontWeight.w700,
-    fontVariations: [FontVariation('wght', 700)],
+    fontWeight: FontWeight.w600,
+    fontVariations: [FontVariation('wght', 600)],
     fontSize: 48,
     height: 1.0,
     color: _text,
@@ -215,8 +216,8 @@ class RohabType {
   /// The live rep counter on the camera screen.
   static const metricCamera = TextStyle(
     fontFamily: RohabFonts.numbers,
-    fontWeight: FontWeight.w700,
-    fontVariations: [FontVariation('wght', 700)],
+    fontWeight: FontWeight.w600,
+    fontVariations: [FontVariation('wght', 600)],
     fontSize: 64,
     height: 1.0,
     color: _text,
@@ -225,8 +226,8 @@ class RohabType {
 
   static const metricL = TextStyle(
     fontFamily: RohabFonts.numbers,
-    fontWeight: FontWeight.w700,
-    fontVariations: [FontVariation('wght', 700)],
+    fontWeight: FontWeight.w600,
+    fontVariations: [FontVariation('wght', 600)],
     fontSize: 28,
     height: 1.1,
     color: _text,
@@ -235,8 +236,8 @@ class RohabType {
 
   static const metricS = TextStyle(
     fontFamily: RohabFonts.numbers,
-    fontWeight: FontWeight.w400,
-    fontVariations: [FontVariation('wght', 400)],
+    fontWeight: FontWeight.w500,
+    fontVariations: [FontVariation('wght', 500)],
     fontSize: 16,
     height: 1.2,
     color: _text,
