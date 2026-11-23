@@ -76,7 +76,7 @@ class _BackdropState extends State<_Backdrop> {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: linenDecoration(context.colors),
+    decoration: pageDecoration(context.colors),
     child: Stack(
       fit: StackFit.expand,
       children: [

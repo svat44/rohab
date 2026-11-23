@@ -125,7 +125,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: RohabSpace.s24),
             ],
-            // The reps and what the hand is doing share one card.
+            // Glove numbers appear only with a glove: no dashes in place of
+            // numbers. The STOP banner is separate and unaffected.
+            if (!s.isConnected)
+              RohabCard(
+                child: Text(
+                  'Glove not connected. Glove exercises are off.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              )
+            else ...[
             RohabCard(
               padding: const EdgeInsets.all(RohabSpace.s24),
               child: Column(
@@ -143,6 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(height: RohabSpace.s16),
             RohabCard(child: _PressureRow(snapshot: s)),
+            ],
             const SizedBox(height: RohabSpace.s16),
             _Actions(
               snapshot: s,

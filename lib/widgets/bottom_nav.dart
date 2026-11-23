@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
-import 'skeuo.dart';
 
 class NavDestination {
   const NavDestination(this.label, this.icon);
@@ -29,18 +28,19 @@ class BottomNav extends StatelessWidget {
     final c = context.colors;
     final label = Theme.of(context).textTheme.labelMedium!;
 
-    // Brushed steel bar. The selected tab is pressed in and lit.
+    // Solid bar with a 1 px top border. The current tab is a filled shape
+    // with a bold label, so it never depends on colour alone.
     return DecoratedBox(
-      decoration: steelDecoration(c).copyWith(
-        border: const Border(
-          top: BorderSide(color: Color(0x66FFFFFF), width: 1.5),
-        ),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.divider)),
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: RohabSize.touchTarget + RohabSpace.s16,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
           child: Center(
+            heightFactor: 1,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: Padding(
@@ -83,8 +83,7 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    const lit = Color(0xFF7FD3FA);
-    final fg = selected ? lit : c.onSteel;
+    final fg = selected ? c.onAccent : c.secondary;
     const radius = BorderRadius.all(Radius.circular(RohabShape.radius));
     return Semantics(
       selected: selected,
@@ -96,50 +95,37 @@ class _Tab extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: radius,
-            splashColor: const Color(0x33FFFFFF),
-            highlightColor: const Color(0x22FFFFFF),
             child: Ink(
               decoration: BoxDecoration(
                 borderRadius: radius,
-                // Pressed-in slot for the current tab.
-                color: selected ? const Color(0x59000000) : null,
-                border: selected
-                    ? Border.all(color: const Color(0x66000000), width: 1.5)
-                    : null,
+                color: selected ? c.accent : null,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    destination.icon,
-                    size: RohabSize.icon,
-                    color: fg,
-                    shadows: const [
-                      Shadow(color: Color(0x99000000), offset: Offset(0, -1)),
-                    ],
-                  ),
-                  const SizedBox(height: RohabSpace.s8 / 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      destination.label,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: style.copyWith(
-                        color: selected ? Colors.white : fg,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w600,
-                        shadows: const [
-                          Shadow(
-                            color: Color(0x99000000),
-                            offset: Offset(0, -1),
-                          ),
-                        ],
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: RohabSize.touchTarget,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(destination.icon, size: RohabSize.icon, color: fg),
+                    const SizedBox(height: RohabSpace.s8 / 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        destination.label,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: style.copyWith(
+                          color: fg,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

@@ -119,14 +119,13 @@ ThemeData buildTheme(Brightness brightness) {
         OutlinedButton.styleFrom(
           foregroundColor: p.accent,
           backgroundColor: p.silver,
-          disabledBackgroundColor: p.divider,
-          disabledForegroundColor: p.secondary,
+          disabledBackgroundColor: p.disabledFill,
+          disabledForegroundColor: p.disabledText,
           minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
           side: BorderSide(color: p.silverEdge, width: RohabShape.border),
           shape: RoundedRectangleBorder(borderRadius: radius),
           textStyle: text.labelLarge,
         ),
-        darkText: true,
       ),
     ),
     switchTheme: SwitchThemeData(
@@ -141,8 +140,8 @@ ThemeData buildTheme(Brightness brightness) {
         FilledButton.styleFrom(
           backgroundColor: p.accent,
           foregroundColor: p.onAccent,
-          disabledBackgroundColor: p.divider,
-          disabledForegroundColor: p.secondary,
+          disabledBackgroundColor: p.disabledFill,
+          disabledForegroundColor: p.disabledText,
           minimumSize: const Size.fromHeight(RohabSize.primaryButtonHeight),
           side: BorderSide(
             color: Color.lerp(p.accent, const Color(0xFF000000), 0.45)!,
@@ -151,7 +150,6 @@ ThemeData buildTheme(Brightness brightness) {
           shape: RoundedRectangleBorder(borderRadius: radius),
           textStyle: text.labelLarge,
         ),
-        darkText: false,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -159,14 +157,13 @@ ThemeData buildTheme(Brightness brightness) {
         TextButton.styleFrom(
           foregroundColor: p.accent,
           backgroundColor: p.silver,
-          disabledBackgroundColor: p.divider,
-          disabledForegroundColor: p.secondary,
+          disabledBackgroundColor: p.disabledFill,
+          disabledForegroundColor: p.disabledText,
           minimumSize: const Size(RohabSize.touchTarget, RohabSize.touchTarget),
           side: BorderSide(color: p.silverEdge, width: RohabShape.border),
           shape: RoundedRectangleBorder(borderRadius: radius),
           textStyle: text.labelLarge,
         ),
-        darkText: true,
       ),
     ),
     extensions: [AppColors(p)],

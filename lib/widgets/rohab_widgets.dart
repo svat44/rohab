@@ -75,11 +75,6 @@ class IconBadge extends StatelessWidget {
           icon,
           size: size * 0.55,
           color: solid ? c.onAccent : c.accent,
-          shadows: [
-            solid
-                ? const Shadow(color: Color(0x66000000), offset: Offset(0, -1))
-                : const Shadow(color: Color(0xCCFFFFFF), offset: Offset(0, 1)),
-          ],
         ),
       ),
     );
@@ -139,20 +134,10 @@ class SectionTitle extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: t.labelLarge?.copyWith(
-                shadows: context.colors.letterpress,
-              ),
-            ),
+            Text(title, style: t.labelLarge),
             if (subtitle != null) ...[
               const SizedBox(height: RohabSpace.s8 / 2),
-              Text(
-                subtitle!,
-                style: t.labelMedium?.copyWith(
-                  shadows: context.colors.letterpress,
-                ),
-              ),
+              Text(subtitle!, style: t.labelMedium),
             ],
           ],
         ),
@@ -180,5 +165,5 @@ IconData exerciseIcon(ExerciseKind kind) => switch (kind) {
   ExerciseKind.fingerLifts => Icons.looks_one_outlined,
   ExerciseKind.spread => Icons.open_in_full,
   ExerciseKind.flatFingerLifts => Icons.keyboard_double_arrow_up,
-  ExerciseKind.fingerWalking => Icons.directions_walk,
+  ExerciseKind.fingerWalking => Icons.arrow_forward,
 };

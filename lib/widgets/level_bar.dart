@@ -183,21 +183,15 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) {
   return w;
 }
 
-/// Shadow cast into the groove from its top edge.
+/// The groove is cut into the page: a dark line along its top edge.
 class _GroovePainter extends CustomPainter {
   const _GroovePainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, 9);
     canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x40000000), Color(0x00000000)],
-        ).createShader(rect),
+      Rect.fromLTWH(0, 0, size.width, 3),
+      Paint()..color = const Color(0x33000000),
     );
   }
 

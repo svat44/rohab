@@ -7,7 +7,6 @@ import '../app/providers.dart';
 import '../glove/mock_glove_service.dart';
 import '../theme/app_theme.dart';
 import 'bottom_nav.dart';
-import 'skeuo.dart';
 import 'immersive.dart';
 import '../debug/debug_menu.dart';
 import 'safety_banner.dart';
@@ -72,10 +71,10 @@ class _AppShellState extends ConsumerState<AppShell> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Leather runs up under the status bar, so the title bar has no
+            // The header colour runs up under the status bar, so the title bar has no
             // gap above it.
             if (!immersive)
-              _StatusBarLeather(height: MediaQuery.paddingOf(context).top)
+              _StatusBarFill(height: MediaQuery.paddingOf(context).top)
             else
               SizedBox(height: MediaQuery.paddingOf(context).top),
             const SafetyBanner(),
@@ -114,14 +113,14 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-class _StatusBarLeather extends StatelessWidget {
-  const _StatusBarLeather({required this.height});
+class _StatusBarFill extends StatelessWidget {
+  const _StatusBarFill({required this.height});
 
   final double height;
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: leatherDecoration(context.colors),
+    decoration: BoxDecoration(color: context.colors.header),
     child: SizedBox(height: height),
   );
 }
@@ -142,16 +141,13 @@ class _Header extends ConsumerWidget {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
     final glove = ref.watch(gloveServiceProvider);
-    const engraved = [Shadow(color: Color(0xB0000000), offset: Offset(0, -1))];
 
-    // Blue leather bar with a stitched seam: the screen title on the left
+    // Solid header: the screen title on the left
     // (small wordmark above it), a labelled Settings button on the right.
     return DecoratedBox(
-      decoration: leatherDecoration(c).copyWith(
-        border: const Border(
-          bottom: BorderSide(color: Color(0xAA000000), width: 2),
-        ),
-        boxShadow: raisedShadow(c, lift: 1.2),
+      decoration: BoxDecoration(
+        color: c.header,
+        border: Border(bottom: BorderSide(color: c.accent)),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(
@@ -159,15 +155,6 @@ class _Header extends ConsumerWidget {
         ),
         child: Stack(
           children: [
-            Positioned(
-              left: RohabSpace.s8,
-              right: RohabSpace.s8,
-              bottom: 5,
-              height: 3,
-              child: const CustomPaint(
-                painter: StitchPainter(Color(0x66FFFFFF)),
-              ),
-            ),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: AppShell.maxWidth),
@@ -200,7 +187,6 @@ class _Header extends ConsumerWidget {
                                 RohabTokens.name,
                                 style: t.labelMedium?.copyWith(
                                   color: const Color(0xFFCFE3F3),
-                                  shadows: engraved,
                                 ),
                               ),
                             ),

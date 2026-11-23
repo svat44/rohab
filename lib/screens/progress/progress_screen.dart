@@ -70,7 +70,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final exercise = ExerciseCatalog.byId(_id)!;
     final week = d.week;
     final summary =
-        'This week: ${week.sessions} '
+        'Last 7 days: ${week.sessions} '
         '${week.sessions == 1 ? 'session' : 'sessions'}, ${week.reps} '
         '${week.reps == 1 ? 'rep' : 'reps'}.';
 

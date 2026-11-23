@@ -93,10 +93,7 @@ class _StartupSplashState extends State<StartupSplash>
                         opacity: name,
                         child: Text(
                           RohabTokens.name,
-                          style: t.headlineMedium?.copyWith(
-                            fontSize: 44,
-                            shadows: c.letterpress,
-                          ),
+                          style: t.headlineMedium?.copyWith(fontSize: 44),
                         ),
                       ),
                       const SizedBox(height: RohabSpace.s8),

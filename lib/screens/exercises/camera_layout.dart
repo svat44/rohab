@@ -109,17 +109,18 @@ class _Preview extends StatelessWidget {
     final outer = BorderRadius.circular(RohabShape.card);
     final inner = BorderRadius.circular(RohabShape.card - bezel / 2);
     final aspect = tracker?.previewAspect ?? 3 / 4;
-    // A steel bezel around the picture, like a monitor. The bezel is
+    // A raised frame around the picture. The bezel is
     // outside the AspectRatio, so the preview keeps its exact shape and the
     // hand drawing stays aligned with it.
     return Semantics(
       label: 'Camera view',
       child: Center(
         child: DecoratedBox(
-          decoration: steelDecoration(c).copyWith(
+          decoration: BoxDecoration(
+            color: c.surface,
             borderRadius: outer,
-            border: Border.all(color: const Color(0xAA000000)),
-            boxShadow: raisedShadow(c, lift: 1.4),
+            border: Border.all(color: c.silverEdge),
+            boxShadow: raisedShadow(c),
           ),
           child: Padding(
             padding: const EdgeInsets.all(bezel),

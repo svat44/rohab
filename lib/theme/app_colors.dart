@@ -20,17 +20,12 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get danger => palette.danger;
   Color get onDanger => palette.onDanger;
   Color get shadow => palette.shadow;
-  Color get leather => palette.leather;
-  Color get steel => palette.steel;
-  Color get onSteel => palette.onSteel;
+  Color get header => palette.header;
+  Color get highlight => palette.highlight;
   Color get silver => palette.silver;
   Color get silverEdge => palette.silverEdge;
-
-  /// Letterpress effect: light text sits on a light edge below it on the
-  /// light theme, dark text on a dark edge above it on the dark theme.
-  List<Shadow> get letterpress => palette == RohabPalette.dark
-      ? const [Shadow(color: Color(0xAA000000), offset: Offset(0, -1))]
-      : const [Shadow(color: Color(0xCCFFFFFF), offset: Offset(0, 1))];
+  Color get disabledFill => palette.disabledFill;
+  Color get disabledText => palette.disabledText;
 
   @override
   AppColors copyWith() => this;

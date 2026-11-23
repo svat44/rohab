@@ -18,24 +18,14 @@ void main() {
     expect(o.activeDays, 2);
   });
 
-  test('streak counts back from today', () {
-    final o = buildOverview([s(20, 5), s(19, 5), s(18, 5), s(16, 5)], now);
-    expect(o.streak, 3);
-  });
-
-  test('streak survives a day not yet done today', () {
-    final o = buildOverview([s(19, 5), s(18, 5)], now);
-    expect(o.streak, 2);
-  });
-
-  test('a missed day breaks the streak', () {
-    final o = buildOverview([s(19, 5), s(17, 5)], now);
-    expect(o.streak, 1);
+  test('practice days counts distinct dates, not sessions', () {
+    final o = buildOverview([s(20, 5), s(20, 5), s(19, 5), s(16, 5)], now);
+    expect(o.activeDays, 3);
   });
 
   test('no sessions: empty week', () {
     final o = buildOverview([], now);
-    expect(o.streak, 0);
+    expect(o.activeDays, 0);
     expect(o.totalReps, 0);
     expect(o.days.every((d) => d.reps == 0), isTrue);
   });

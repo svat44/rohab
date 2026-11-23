@@ -131,7 +131,6 @@ class _Today extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: InfoChip(
                   'Level ${plan.level} · ${ProgramScreen.levelNames[plan.level]}',
-                  icon: Icons.stairs_outlined,
                 ),
               ),
               const SizedBox(height: RohabSpace.s16),

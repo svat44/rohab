@@ -17,7 +17,6 @@ class DayTotal {
 class ProgressOverview {
   const ProgressOverview({
     required this.days,
-    required this.streak,
     required this.activeDays,
     required this.totalReps,
   });
@@ -25,11 +24,7 @@ class ProgressOverview {
   /// The last 7 days, oldest first; the last one is today.
   final List<DayTotal> days;
 
-  /// Days in a row with any exercise, counting back from today (or from
-  /// yesterday, if today has not been done yet).
-  final int streak;
-
-  /// Days with any exercise in the last 7.
+  /// Practice days: distinct dates with at least one session, in the last 7.
   final int activeDays;
   final int totalReps;
 }
@@ -49,18 +44,8 @@ ProgressOverview buildOverview(
       DayTotal(DateTime(today.year, today.month, today.day - i),
           byDay[DateTime(today.year, today.month, today.day - i)] ?? 0),
   ];
-  var streak = 0;
-  var cursor = today;
-  if ((byDay[cursor] ?? 0) == 0) {
-    cursor = DateTime(today.year, today.month, today.day - 1);
-  }
-  while ((byDay[cursor] ?? 0) > 0) {
-    streak++;
-    cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
-  }
   return ProgressOverview(
     days: days,
-    streak: streak,
     activeDays: days.where((d) => d.reps > 0).length,
     totalReps: days.fold(0, (a, d) => a + d.reps),
   );
@@ -74,15 +59,14 @@ final progressOverviewProvider = FutureProvider<ProgressOverview>((ref) async {
       [for (final r in rows) (startedAt: r.startedAt, reps: r.reps)], now);
 });
 
-/// "Your week": a bar for each of the last 7 days, the days in a row, and
-/// plain totals. Flat bars, labelled with their numbers.
+/// The last 7 days: a bar for each day, the practice days and the reps. Flat bars, labelled with their numbers.
 class WeekOverview extends StatelessWidget {
   const WeekOverview({super.key, required this.overview});
 
   final ProgressOverview overview;
 
   static const chartKey = Key('progress-week-chart');
-  static const streakKey = Key('progress-streak');
+  static const practiceKey = Key('progress-practice-days');
   static const _letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   @override
@@ -91,23 +75,18 @@ class WeekOverview extends StatelessWidget {
     final c = context.colors;
     final o = overview;
     final peak = o.days.fold<int>(0, (a, d) => d.reps > a ? d.reps : a);
-    final streakText = o.streak == 0
-        ? 'No days in a row yet'
-        : o.streak == 1
-            ? '1 day in a row'
-            : '${o.streak} days in a row';
     return RohabCard(
       padding: const EdgeInsets.all(RohabSpace.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Your week', style: t.labelMedium),
+          Text('Last 7 days', style: t.labelMedium),
           const SizedBox(height: RohabSpace.s8),
-          Text(streakText, key: streakKey, style: t.headlineMedium),
+          Text('Practice days: ${o.activeDays} of the last 7',
+              key: practiceKey, style: t.headlineMedium),
           const SizedBox(height: RohabSpace.s8),
           Text(
-            '${o.activeDays} of 7 days exercised · ${o.totalReps} '
-            '${o.totalReps == 1 ? 'rep' : 'reps'}',
+            '${o.totalReps} ${o.totalReps == 1 ? 'rep' : 'reps'} in the last 7 days',
             style: t.bodyLarge,
           ),
           const SizedBox(height: RohabSpace.s16),

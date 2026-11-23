@@ -26,11 +26,12 @@ class RohabPalette {
     required this.danger,
     required this.onDanger,
     required this.shadow,
-    required this.leather,
-    required this.steel,
+    required this.header,
+    required this.highlight,
     required this.silver,
     required this.silverEdge,
-    required this.onSteel,
+    required this.disabledFill,
+    required this.disabledText,
   });
 
   final Color background;
@@ -46,62 +47,69 @@ class RohabPalette {
   final Color danger;
   final Color onDanger;
 
-  /// Drop shadow under raised panels and buttons.
+  /// Dark side of the soft extruded look: shadow falling to the bottom right.
   final Color shadow;
 
-  /// Blue leather of the title bar.
-  final Color leather;
+  /// Light side: the glow on the top left of a raised surface.
+  final Color highlight;
 
-  /// Brushed steel of the tab bar, and the light text and icons on it.
-  final Color steel;
-  final Color onSteel;
+  /// Solid title bar.
+  final Color header;
 
-  /// Secondary (silver) buttons and their edge.
+  /// Secondary buttons and choice tiles: same material as the page, raised.
   final Color silver;
+
+  /// 3:1 edge for controls, so they never depend on the shadow alone.
   final Color silverEdge;
+
+  /// Disabled controls: flat, with a label that is still readable.
+  final Color disabledFill;
+  final Color disabledText;
 
   /// Light blue and deep blue, from the app icon (#54C5F8, #29B6F6,
   /// #01579B). The base colours of the classic raised-and-textured look
   /// (see widgets/skeuo.dart). Contrast (WCAG): text on background 12:1,
   /// secondary on background 6:1, white on accent 7.6:1.
   static const light = RohabPalette(
-    background: Color(0xFFD6E4EF),
-    surface: Color(0xFFFFFFFF),
+    background: Color(0xFFDFE7EF),
+    surface: Color(0xFFE9EFF5),
     text: Color(0xFF0B1F2E),
     secondary: Color(0xFF3B5367),
     divider: Color(0xFFB3C8D8),
     accent: Color(0xFF01579B),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFFE3F1FB),
-    danger: Color(0xFFD32020),
+    accentSoft: Color(0xFFD3E6F5),
+    danger: Color(0xFFC62020),
     onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x40102030),
-    leather: Color(0xFF0B5CA8),
-    steel: Color(0xFF3F5A74),
-    onSteel: Color(0xFFD3E0EA),
-    silver: Color(0xFFE6EEF5),
-    silverEdge: Color(0xFF7F99AE),
+    shadow: Color(0x4D5B7691),
+    highlight: Color(0xCCFFFFFF),
+    header: Color(0xFF01579B),
+    silver: Color(0xFFE9EFF5),
+    silverEdge: Color(0xFF5A7388),
+    disabledFill: Color(0xFFD0D9E2),
+    disabledText: Color(0xFF465B6D),
   );
 
   /// Dark twin. Accent keeps dark text on it (white on #54C5F8 is about
   /// 1.9:1).
   static const dark = RohabPalette(
-    background: Color(0xFF0A1621),
-    surface: Color(0xFF112331),
+    background: Color(0xFF0E1A25),
+    surface: Color(0xFF142331),
     text: Color(0xFFEAF3FA),
     secondary: Color(0xFF9DB4C6),
     divider: Color(0xFF244058),
     accent: Color(0xFF54C5F8),
     onAccent: Color(0xFF04202F),
     accentSoft: Color(0xFF143650),
-    danger: Color(0xFFDC2626),
-    onDanger: Color(0xFFFFFFFF),
-    shadow: Color(0x99000000),
-    leather: Color(0xFF123B5F),
-    steel: Color(0xFF1E3144),
-    onSteel: Color(0xFFC4D5E3),
-    silver: Color(0xFF2C4559),
+    danger: Color(0xFFF07070),
+    onDanger: Color(0xFF1A0505),
+    shadow: Color(0xB3000000),
+    highlight: Color(0x14FFFFFF),
+    header: Color(0xFF123B5F),
+    silver: Color(0xFF142331),
     silverEdge: Color(0xFF557692),
+    disabledFill: Color(0xFF1E3141),
+    disabledText: Color(0xFFA9BDCC),
   );
 }
 
@@ -128,10 +136,10 @@ class RohabShape {
   RohabShape._();
 
   /// Buttons and small tiles: the gently rounded corners of classic apps.
-  static const double radius = 10;
+  static const double radius = 12;
 
   /// Cards and panels.
-  static const double card = 12;
+  static const double card = 20;
   static const double border = 1;
 
   /// Marker lines and the camera's hand frame.

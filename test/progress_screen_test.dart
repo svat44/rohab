@@ -36,14 +36,15 @@ void main() {
     final glove = await pumpRohabOn(tester, db, now: now);
     await openProgress(tester);
 
-    // The week at a glance sits on top: a bar per day and the streak.
+    // The week at a glance sits on top: a bar per day and the practice days.
     expect(find.byKey(WeekOverview.chartKey), findsOneWidget);
-    expect(textOf(tester, WeekOverview.streakKey), '10 days in a row');
+    expect(textOf(tester, WeekOverview.practiceKey),
+        'Practice days: 7 of the last 7');
     await reveal(tester, ProgressScreen.summaryKey);
     expect(textOf(tester, ProgressScreen.summaryKey),
         // Nov 13 09:30 is outside the 7 days before Nov 20 12:00; Nov 14-20
         // are inside: reps 8 to 14.
-        'This week: 7 sessions, ${8 + 9 + 10 + 11 + 12 + 13 + 14} reps.');
+        'Last 7 days: 7 sessions, ${8 + 9 + 10 + 11 + 12 + 13 + 14} reps.');
     await reveal(tester, ProgressScreen.repsChartKey);
     expect(find.byKey(ProgressScreen.repsChartKey), findsOneWidget);
     await reveal(tester, ProgressScreen.rangeChartKey);
@@ -85,7 +86,7 @@ void main() {
     expect(textOf(tester, ProgressScreen.emptyKey),
         'No sessions yet. Start one from Exercises.');
     expect(textOf(tester, ProgressScreen.summaryKey),
-        'This week: 0 sessions, 0 reps.');
+        'Last 7 days: 0 sessions, 0 reps.');
     expect(find.byKey(ProgressScreen.repsChartKey), findsNothing);
     await reveal(tester, ProgressScreen.goToExercisesKey);
     final button = find.byKey(ProgressScreen.goToExercisesKey);

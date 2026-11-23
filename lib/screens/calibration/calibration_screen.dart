@@ -59,7 +59,6 @@ class _StartView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
-    final c = context.colors;
     final state = ref.watch(calibrationControllerProvider);
     final saved = ref.watch(savedCalibrationProvider);
     final needed = ref.watch(calibrationNeededProvider);
@@ -121,17 +120,6 @@ class _StartView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(
-                    height: RohabSize.touchTarget,
-                    child: Center(
-                      child: Text(
-                        blocked ?? '',
-                        textAlign: TextAlign.center,
-                        style: t.labelMedium?.copyWith(color: c.text),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: RohabSpace.s8),
-                  SizedBox(
                     height: RohabSize.primaryButtonHeight,
                     child: FilledButton(
                       key: CalibrationScreen.startKey,
@@ -143,6 +131,15 @@ class _StartView extends ConsumerWidget {
                       child: const Text('Start calibration'),
                     ),
                   ),
+                  // Why the button is off, right under it.
+                  if (blocked != null) ...[
+                    const SizedBox(height: RohabSpace.s8),
+                    Text(
+                      blocked,
+                      textAlign: TextAlign.center,
+                      style: t.labelMedium,
+                    ),
+                  ],
                 ],
               ),
             ),

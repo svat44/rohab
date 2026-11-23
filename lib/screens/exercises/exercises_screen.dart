@@ -37,7 +37,7 @@ class ExercisesScreen extends ConsumerWidget {
           _PathRow(
             key: gloveKey,
             title: 'With glove',
-            icon: Icons.sports_handball_outlined,
+            icon: Icons.bluetooth,
             // Glove exercises are not built yet, so this stays disabled
             // even when a glove is connected.
             description: s.isConnected
