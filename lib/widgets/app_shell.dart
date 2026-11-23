@@ -148,9 +148,7 @@ class _Header extends ConsumerWidget {
         onTap: onToggleSettings,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            heightFactor: 1,
+          child: Center(
             child: GestureDetector(
               key: AppShell.wordmarkKey,
               behavior: HitTestBehavior.opaque,
