@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/skeuo.dart';
+import '../widgets/startup_splash.dart';
 import '../settings/settings_controller.dart';
 import 'providers.dart';
 import 'router.dart';
@@ -15,7 +16,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 class RohabApp extends ConsumerWidget {
-  const RohabApp({super.key});
+  const RohabApp({super.key, this.showSplash = false});
+
+  /// The opening animation. On in the real app, off in tests.
+  final bool showSplash;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +40,9 @@ class RohabApp extends ConsumerWidget {
             textScaler: TextScaler.linear((system * scale).clamp(1.0, 2.0)),
           ),
           // Linen cloth behind every screen.
-          child: _Backdrop(child: child ?? const SizedBox.shrink()),
+          child: _Backdrop(
+              showSplash: showSplash,
+              child: child ?? const SizedBox.shrink()),
         );
       },
     );
@@ -45,7 +51,9 @@ class RohabApp extends ConsumerWidget {
 
 /// Linen cloth behind every screen. Loads the textures once, up front.
 class _Backdrop extends StatefulWidget {
-  const _Backdrop({required this.child});
+  const _Backdrop({required this.child, required this.showSplash});
+
+  final bool showSplash;
 
   final Widget child;
 
@@ -55,6 +63,7 @@ class _Backdrop extends StatefulWidget {
 
 class _BackdropState extends State<_Backdrop> {
   bool _loading = false;
+  late bool _splash = widget.showSplash;
 
   @override
   void didChangeDependencies() {
@@ -68,6 +77,13 @@ class _BackdropState extends State<_Backdrop> {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: linenDecoration(context.colors),
-    child: widget.child,
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        widget.child,
+        if (_splash)
+          StartupSplash(onDone: () => setState(() => _splash = false)),
+      ],
+    ),
   );
 }
