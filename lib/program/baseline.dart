@@ -87,13 +87,12 @@ class LevelPlacement {
     required HandRange affected,
     HandRange? other,
     required DateTime takenAt,
-  }) =>
-      BaselineResult(
-        affectedHand: affectedHand,
-        affected: affected,
-        other: other,
-        level: place(affected, other),
-        cameraLimited: affected.range < minCameraRange,
-        takenAt: takenAt,
-      );
+  }) => BaselineResult(
+    affectedHand: affectedHand,
+    affected: affected,
+    other: other,
+    level: place(affected, other),
+    cameraLimited: affected.range < minCameraRange,
+    takenAt: takenAt,
+  );
 }

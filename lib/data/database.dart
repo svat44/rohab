@@ -80,21 +80,20 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.addColumn(exerciseSessions, exerciseSessions.metricUnit);
-            await m.addColumn(exerciseSessions, exerciseSessions.avgAmplitude);
-            await m.addColumn(exerciseSessions, exerciseSessions.avgPeakSpeed);
-            await m.addColumn(exerciseSessions, exerciseSessions.avgSmoothness);
-            await m.addColumn(exerciseSessions, exerciseSessions.fatigued);
-          }
-          if (from < 3) {
-            await m.addColumn(
-                exerciseSessions, exerciseSessions.compensatedReps);
-            await m.addColumn(exerciseSessions, exerciseSessions.level);
-            await m.createTable(assessments);
-            await m.createTable(painChecks);
-          }
-        },
-      );
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(exerciseSessions, exerciseSessions.metricUnit);
+        await m.addColumn(exerciseSessions, exerciseSessions.avgAmplitude);
+        await m.addColumn(exerciseSessions, exerciseSessions.avgPeakSpeed);
+        await m.addColumn(exerciseSessions, exerciseSessions.avgSmoothness);
+        await m.addColumn(exerciseSessions, exerciseSessions.fatigued);
+      }
+      if (from < 3) {
+        await m.addColumn(exerciseSessions, exerciseSessions.compensatedReps);
+        await m.addColumn(exerciseSessions, exerciseSessions.level);
+        await m.createTable(assessments);
+        await m.createTable(painChecks);
+      }
+    },
+  );
 }

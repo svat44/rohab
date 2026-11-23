@@ -26,7 +26,8 @@ class RepsChart extends StatelessWidget {
     final scaler = MediaQuery.textScalerOf(context);
     final labelHeight = scaler.scale(style.fontSize! * 1.3) + RohabSpace.s8;
     return Semantics(
-      label: 'Reps per session, oldest to newest. '
+      label:
+          'Reps per session, oldest to newest. '
           '${[for (final r in sessions) '${shortDate(r.startedAt)}: ${repsText(r, unit)}'].join('. ')}.',
       excludeSemantics: true,
       child: SizedBox(
@@ -78,13 +79,20 @@ class _RepsPainter extends CustomPainter {
     // The newest session's target is the reference line.
     final target = sessions.last.targetReps.toDouble();
     final top = math.max(
-        target, sessions.map((r) => r.reps).reduce(math.max).toDouble());
+      target,
+      sessions.map((r) => r.reps).reduce(math.max).toDouble(),
+    );
     double y(double v) => h - (v / top) * h;
     double cx(int i) => slot * i + slot / 2;
 
     // Baseline.
-    canvas.drawLine(Offset(0, h), Offset(size.width, h),
-        Paint()..color = track..strokeWidth = 1);
+    canvas.drawLine(
+      Offset(0, h),
+      Offset(size.width, h),
+      Paint()
+        ..color = track
+        ..strokeWidth = 1,
+    );
 
     for (var i = 0; i < n; i++) {
       final v = sessions[i].reps.toDouble();
@@ -97,8 +105,13 @@ class _RepsPainter extends CustomPainter {
     }
 
     // Target: a 1 dp hairline across the chart.
-    canvas.drawLine(Offset(0, y(target)), Offset(size.width, y(target)),
-        Paint()..color = hairline..strokeWidth = 1);
+    canvas.drawLine(
+      Offset(0, y(target)),
+      Offset(size.width, y(target)),
+      Paint()
+        ..color = hairline
+        ..strokeWidth = 1,
+    );
 
     // Dates under as many bars as fit, first and last always.
     final labels = [
@@ -107,7 +120,7 @@ class _RepsPainter extends CustomPainter {
           text: TextSpan(text: shortDate(r.startedAt), style: labelStyle),
           textDirection: TextDirection.ltr,
           textScaler: scaler,
-        )..layout()
+        )..layout(),
     ];
     final widest = labels.map((l) => l.width).reduce(math.max);
     final fit = math.max(1, (size.width / (widest + RohabSpace.s8)).floor());

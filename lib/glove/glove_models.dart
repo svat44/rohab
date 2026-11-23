@@ -14,36 +14,36 @@ enum GloveFault { overpressure, timeout }
 
 extension GloveModeLabel on GloveMode {
   String get label => switch (this) {
-        GloveMode.assist => 'Assisted grip',
-        GloveMode.passive => 'Passive range of motion',
-        GloveMode.mirror => 'Mirror',
-      };
+    GloveMode.assist => 'Assisted grip',
+    GloveMode.passive => 'Passive range of motion',
+    GloveMode.mirror => 'Mirror',
+  };
 }
 
 extension GloveStateLabel on GloveState {
   /// Internal name, matching the firmware states. For logs and tests; not
   /// shown to patients.
   String get label => switch (this) {
-        GloveState.idle => 'Idle',
-        GloveState.inflating => 'Inflating',
-        GloveState.holding => 'Holding',
-        GloveState.venting => 'Venting',
-      };
+    GloveState.idle => 'Idle',
+    GloveState.inflating => 'Inflating',
+    GloveState.holding => 'Holding',
+    GloveState.venting => 'Venting',
+  };
 
   /// What the hand is doing, in the patient's words.
   String get patientLabel => switch (this) {
-        GloveState.idle => 'Ready',
-        GloveState.inflating => 'Closing hand',
-        GloveState.holding => 'Holding',
-        GloveState.venting => 'Opening hand',
-      };
+    GloveState.idle => 'Ready',
+    GloveState.inflating => 'Closing hand',
+    GloveState.holding => 'Holding',
+    GloveState.venting => 'Opening hand',
+  };
 }
 
 extension GloveFaultLabel on GloveFault {
   String get label => switch (this) {
-        GloveFault.overpressure => 'Pressure too high',
-        GloveFault.timeout => 'Target pressure not reached',
-      };
+    GloveFault.overpressure => 'Pressure too high',
+    GloveFault.timeout => 'Target pressure not reached',
+  };
 }
 
 /// Everything the app knows about the glove at one moment.

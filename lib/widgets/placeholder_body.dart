@@ -11,7 +11,12 @@ class PlaceholderBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
+      padding: const EdgeInsets.fromLTRB(
+        RohabSpace.s24,
+        0,
+        RohabSpace.s24,
+        RohabSpace.s24,
+      ),
       children: [
         Text(description, style: Theme.of(context).textTheme.bodyLarge),
       ],

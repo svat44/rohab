@@ -87,7 +87,15 @@ class ProtocolLimits {
 String formatProtocolTable(List<PoseResult> results) {
   String pad(String s, int w) => s.length >= w ? s : s + ' ' * (w - s.length);
   final rows = <List<String>>[
-    ['Pose', 'Avg FPS', 'Detect %', 'Dropouts >0.5 s', 'Reps', '10 reps/60 s', 'Verdict'],
+    [
+      'Pose',
+      'Avg FPS',
+      'Detect %',
+      'Dropouts >0.5 s',
+      'Reps',
+      '10 reps/60 s',
+      'Verdict',
+    ],
     for (final r in results)
       [
         r.pose.title,
@@ -98,16 +106,20 @@ String formatProtocolTable(List<PoseResult> results) {
         r.note != null
             ? '-'
             : '${r.tenRepsIn60 ? 'yes' : 'no'}${r.projected ? ' (projected)' : ''}',
-        r.note != null ? 'NOT RUN: ${r.note}' : (r.reliable ? 'OK' : 'UNRELIABLE'),
+        r.note != null
+            ? 'NOT RUN: ${r.note}'
+            : (r.reliable ? 'OK' : 'UNRELIABLE'),
       ],
   ];
   final widths = [
     for (var c = 0; c < rows.first.length; c++)
-      rows.map((r) => r[c].length).reduce((a, b) => a > b ? a : b)
+      rows.map((r) => r[c].length).reduce((a, b) => a > b ? a : b),
   ];
   final lines = [
     for (final r in rows)
-      [for (var c = 0; c < r.length; c++) pad(r[c], widths[c])].join(' | ').trimRight(),
+      [for (var c = 0; c < r.length; c++) pad(r[c], widths[c])]
+          .join(' | ')
+          .trimRight(),
   ];
   lines.insert(1, [for (final w in widths) '-' * w].join('-|-'));
   return '${lines.join('\n')}\n'

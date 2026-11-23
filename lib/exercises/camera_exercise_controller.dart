@@ -222,7 +222,6 @@ class CameraExerciseController extends ChangeNotifier {
   HandTracker? get tracker => _tracker;
   TrackerStats get stats => _tracker?.stats ?? const TrackerStats();
 
-
   // ---- Steps ---------------------------------------------------------------
 
   /// "Start" on the instructions.
@@ -316,8 +315,11 @@ class CameraExerciseController extends ChangeNotifier {
     handLost = false;
     _rangeMin = null;
     _rangeMax = null;
-    _counter = ExerciseCounter.forKind(exercise.kind,
-        high: exercise.repHigh, low: exercise.repLow);
+    _counter = ExerciseCounter.forKind(
+      exercise.kind,
+      high: exercise.repHigh,
+      low: exercise.repLow,
+    );
     _wrist.reset();
     wristCue = false;
     compensatedReps = 0;
@@ -360,23 +362,25 @@ class CameraExerciseController extends ChangeNotifier {
     _go(FlowStep.done);
     await _stopCamera();
     if (reps > 0) {
-      await _repository.save(ExerciseSessionRecord(
-        exerciseId: exercise.id,
-        mode: 'camera',
-        reps: reps,
-        targetReps: setSize,
-        rangeMin: s.rangeMin,
-        rangeMax: s.rangeMax,
-        metricUnit: s.unit,
-        avgAmplitude: s.avgAmplitude,
-        avgPeakSpeed: s.avgPeakSpeed,
-        avgSmoothness: s.avgSmoothness,
-        fatigued: s.fatigued,
-        compensatedReps: s.compensatedReps,
-        level: level,
-        durationSec: duration.inSeconds,
-        startedAt: _startedAt ?? _wallClock(),
-      ));
+      await _repository.save(
+        ExerciseSessionRecord(
+          exerciseId: exercise.id,
+          mode: 'camera',
+          reps: reps,
+          targetReps: setSize,
+          rangeMin: s.rangeMin,
+          rangeMax: s.rangeMax,
+          metricUnit: s.unit,
+          avgAmplitude: s.avgAmplitude,
+          avgPeakSpeed: s.avgPeakSpeed,
+          avgSmoothness: s.avgSmoothness,
+          fatigued: s.fatigued,
+          compensatedReps: s.compensatedReps,
+          level: level,
+          durationSec: duration.inSeconds,
+          startedAt: _startedAt ?? _wallClock(),
+        ),
+      );
     }
     if (!_saved.isCompleted) _saved.complete();
   }
@@ -413,7 +417,9 @@ class CameraExerciseController extends ChangeNotifier {
         }
         final range = _range!;
         final angles = JointAngles.compute(lm, frame.handedness);
-        final raw = exercise.usesSpread ? HandMetrics.rawSpread(lm) : -angles.closure;
+        final raw = exercise.usesSpread
+            ? HandMetrics.rawSpread(lm)
+            : -angles.closure;
         final filtered = _filter.filter(raw, frame.timestamp);
         final p = range.percent(filtered);
         percent = p;
@@ -430,9 +436,14 @@ class CameraExerciseController extends ChangeNotifier {
         }
         _wrist.update(lm);
         final counted = _counter!.update(
-            HandSample(
-                points: lm, angles: angles, percent: p, image: frame.points),
-            frame.timestamp);
+          HandSample(
+            points: lm,
+            angles: angles,
+            percent: p,
+            image: frame.points,
+          ),
+          frame.timestamp,
+        );
         hint = _counter!.hint;
         final target = _counter!.meter ?? p / 100;
         meter += (target - meter) * 0.5;
@@ -488,7 +499,8 @@ class CameraExerciseController extends ChangeNotifier {
         }
         // Seen at a good distance (after 8 s the distance no longer blocks:
         // some setups cannot do better, and waiting forever is worse).
-        final okDistance = distance == HandDistance.good ||
+        final okDistance =
+            distance == HandDistance.good ||
             _now - _handCheckStart >= distanceGiveUp;
         if (!seen || !okDistance) {
           _presentSince = null;

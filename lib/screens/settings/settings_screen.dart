@@ -64,149 +64,154 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         RohabSpace.s24,
       ),
       children: [
-        const Divider(),
-        ValueListenableBuilder<GloveSnapshot>(
-          valueListenable: glove.snapshot,
-          builder: (context, s, _) {
-            final canDisconnect = s.isConnected && !s.sessionActive;
-            final detail = switch (s.connection) {
-              GloveConnection.disconnected => 'Not connected. Connect on Home.',
-              GloveConnection.connecting => 'Connecting.',
-              GloveConnection.connected when s.sessionActive =>
-                'Connected. End the session on Home before disconnecting.',
-              GloveConnection.connected => 'Connected.',
-            };
-            return ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: RohabSize.touchTarget * 1.25,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+        RohabGroup(
+          dividerInset: RohabRow.textInset,
+          children: [
+            ValueListenableBuilder<GloveSnapshot>(
+              valueListenable: glove.snapshot,
+              builder: (context, s, _) {
+                final canDisconnect = s.isConnected && !s.sessionActive;
+                final detail = switch (s.connection) {
+                  GloveConnection.disconnected =>
+                    'Not connected. Connect on Home.',
+                  GloveConnection.connecting => 'Connecting.',
+                  GloveConnection.connected when s.sessionActive =>
+                    'Connected. End the session on Home before disconnecting.',
+                  GloveConnection.connected => 'Connected.',
+                };
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: RohabSize.touchTarget,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: RohabSpace.s16,
+                      vertical: RohabSpace.s8 + 4,
+                    ),
+                    child: Row(
                       children: [
-                        Text('Glove', style: t.labelLarge),
-                        const SizedBox(height: RohabSpace.s8 / 2),
-                        Text(detail, style: t.labelMedium),
+                        const IconBadge(Icons.bluetooth, size: 48),
+                        const SizedBox(width: RohabSpace.s16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Glove', style: t.bodyLarge),
+                              const SizedBox(height: RohabSpace.s8 / 2),
+                              Text(detail, style: t.labelMedium),
+                              if (canDisconnect) ...[
+                                const SizedBox(height: RohabSpace.s8),
+                                TextButton(
+                                  key: SettingsScreen.disconnectKey,
+                                  onPressed: glove.disconnect,
+                                  child: const Text('Disconnect'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  if (canDisconnect)
-                    TextButton(
-                      key: SettingsScreen.disconnectKey,
-                      onPressed: glove.disconnect,
-                      child: const Text('Disconnect'),
+                );
+              },
+            ),
+            RohabRow(
+              key: SettingsScreen.therapistKey,
+              icon: Icons.assignment,
+              title: 'Therapist plan',
+              subtitle:
+                  'Level, daily goal, sets and pain limits. '
+                  'Needs the therapist PIN.',
+              onTap: () => context.go(Routes.therapist),
+            ),
+          ],
+        ),
+        const SectionTitle('Text size'),
+        RohabGroup(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(RohabSpace.s8),
+              child: Row(
+                children: [
+                  for (final s in TextSize.values) ...[
+                    if (s != TextSize.values.first)
+                      const SizedBox(width: RohabSpace.s8),
+                    Expanded(
+                      child: _Segment(
+                        key: SettingsScreen.textSizeKey(s),
+                        label: s.label,
+                        selected: s == size,
+                        onTap: () => ref.read(textSizeProvider.notifier).set(s),
+                      ),
                     ),
+                  ],
                 ],
               ),
-            );
-          },
-        ),
-        const Divider(),
-        InkWell(
-          key: SettingsScreen.therapistKey,
-          onTap: () => context.go(Routes.therapist),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: RohabSize.touchTarget * 1.25,
             ),
-            child: Row(
-              children: [
-                const IconBadge(Icons.assignment, size: 48),
-                const SizedBox(width: RohabSpace.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Therapist plan', style: t.labelLarge),
-                      const SizedBox(height: RohabSpace.s8 / 2),
-                      Text(
-                        'Level, daily goal, sets and pain limits. '
-                        'Needs the therapist PIN.',
-                        style: t.labelMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: RohabSize.icon + 8,
-                  color: c.accent,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const Divider(),
-        const SizedBox(height: RohabSpace.s24),
-        Text('Text size', style: t.labelLarge),
-        const SizedBox(height: RohabSpace.s8),
-        Row(
-          children: [
-            for (final s in TextSize.values) ...[
-              if (s != TextSize.values.first)
-                const SizedBox(width: RohabSpace.s8),
-              Expanded(
-                child: _Segment(
-                  key: SettingsScreen.textSizeKey(s),
-                  label: s.label,
-                  selected: s == size,
-                  onTap: () => ref.read(textSizeProvider.notifier).set(s),
-                ),
-              ),
-            ],
           ],
         ),
         const SizedBox(height: RohabSpace.s24),
-        const Divider(),
         if (_confirming)
           _ConfirmDelete(
             onDelete: _delete,
             onCancel: () => setState(() => _confirming = false),
           )
         else ...[
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
+          RohabGroup(
+            children: [
+              RohabRow(
                 key: SettingsScreen.clearKey,
-                onPressed: () => setState(() {
+                title: 'Clear all data',
+                titleColor: c.danger,
+                onTap: () => setState(() {
                   _confirming = true;
                   _cleared = false;
                 }),
-                style: TextButton.styleFrom(foregroundColor: c.danger),
-                child: const Text('Clear all data'),
               ),
-            ),
+            ],
           ),
           if (_cleared)
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                'All saved sessions were deleted.',
-                key: SettingsScreen.clearedKey,
-                style: t.labelMedium,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                RohabSpace.s8,
+                RohabSpace.s8,
+                RohabSpace.s8,
+                0,
+              ),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  'All saved sessions were deleted.',
+                  key: SettingsScreen.clearedKey,
+                  style: t.labelMedium,
+                ),
               ),
             ),
         ],
-        const Divider(),
-        const SizedBox(height: RohabSpace.s24),
-        Text('About', style: t.labelLarge),
-        const SizedBox(height: RohabSpace.s8),
-        Text(
-          'Rohab version $kAppVersion',
-          key: SettingsScreen.aboutKey,
-          style: t.bodyLarge,
-        ),
-        const SizedBox(height: RohabSpace.s8),
-        Text(
-          'Rohab is not a medical device. Ask your therapist before changing '
-          'your exercises.',
-          style: t.bodyLarge,
+        const SectionTitle('About'),
+        RohabGroup(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(RohabSpace.s16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rohab version $kAppVersion',
+                    key: SettingsScreen.aboutKey,
+                    style: t.bodyLarge,
+                  ),
+                  const SizedBox(height: RohabSpace.s8),
+                  Text(
+                    'Rohab is not a medical device. Ask your therapist before '
+                    'changing your exercises.',
+                    style: t.labelMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -228,7 +233,7 @@ class _Segment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final radius = BorderRadius.circular(RohabShape.radius);
+    final radius = BorderRadius.circular(RohabShape.card);
     return Semantics(
       button: true,
       selected: selected,
@@ -240,7 +245,10 @@ class _Segment extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
             child: Padding(
-              padding: const EdgeInsets.all(RohabSpace.s8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: RohabSpace.s8,
+              ),
               child: Center(
                 child: Text.rich(
                   TextSpan(

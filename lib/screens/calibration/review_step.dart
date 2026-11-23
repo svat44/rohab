@@ -55,11 +55,13 @@ class ReviewStep extends StatelessWidget {
           samples: samples,
           markers: [
             EffortMarker(result.restMean, 'Rest ${result.restMean.round()}'),
-            EffortMarker(
-                result.gripLevel, 'Grip ${result.gripLevel.round()}'),
+            EffortMarker(result.gripLevel, 'Grip ${result.gripLevel.round()}'),
             if (valid)
-              EffortMarker(result.threshold, 'Trigger ${result.threshold}',
-                  above: true),
+              EffortMarker(
+                result.threshold,
+                'Trigger ${result.threshold}',
+                above: true,
+              ),
           ],
         ),
         const SizedBox(height: RohabSpace.s24),
@@ -92,8 +94,7 @@ class _Level extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label,
-                style: strong ? t.labelLarge : t.bodyLarge),
+            child: Text(label, style: strong ? t.labelLarge : t.bodyLarge),
           ),
           Text(
             '$value',

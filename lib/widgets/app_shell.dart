@@ -99,7 +99,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           maxWidth: window.contentMaxWidth,
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.only(top: RohabSpace.s16),
+                          padding: const EdgeInsets.only(top: RohabSpace.s8),
                           child: _shell,
                         ),
                       ),
@@ -136,41 +136,69 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final glove = ref.watch(gloveServiceProvider);
-    final key = settingsOpen
-        ? AppShell.closeSettingsKey
-        : AppShell.settingsButtonKey;
-    return Semantics(
+    final c = context.colors;
+    // MIUI title bar: the title is centred and black; a bare back chevron sits
+    // at the left on Settings, and a bare gear at the right everywhere else.
+    // Both are 64 dp touch targets.
+    final button = Semantics(
       button: true,
       label: settingsOpen ? 'Close settings' : 'Open settings',
+      excludeSemantics: true,
       child: GestureDetector(
-        key: key,
+        key: settingsOpen
+            ? AppShell.closeSettingsKey
+            : AppShell.settingsButtonKey,
         behavior: HitTestBehavior.opaque,
         onTap: onToggleSettings,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s16),
-            child: Center(
-              child: GestureDetector(
-                key: AppShell.wordmarkKey,
-                behavior: HitTestBehavior.opaque,
-                onLongPress: kDebugMode
-                    ? () => showDebugMenu(
-                        context,
-                        mockGlove: glove is MockGloveService ? glove : null,
-                      )
-                    : null,
+        child: SizedBox(
+          width: RohabSize.touchTarget,
+          height: RohabSize.touchTarget,
+          child: Icon(
+            settingsOpen ? Icons.arrow_back_ios_new : Icons.settings_outlined,
+            size: RohabSize.icon,
+            color: c.text,
+          ),
+        ),
+      ),
+    );
+    return SizedBox(
+      height: RohabSize.touchTarget,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Room for the button on both sides keeps the title truly centred.
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: RohabSize.touchTarget,
+            ),
+            child: GestureDetector(
+              key: AppShell.wordmarkKey,
+              behavior: HitTestBehavior.opaque,
+              onLongPress: kDebugMode
+                  ? () => showDebugMenu(
+                      context,
+                      mockGlove: glove is MockGloveService ? glove : null,
+                    )
+                  : null,
+              child: Semantics(
+                header: true,
                 child: Text(
-                  '$title · Rohab',
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium
-                      ?.copyWith(fontSize: 18),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
             ),
           ),
-        ),
+          Align(
+            alignment: settingsOpen
+                ? Alignment.centerLeft
+                : Alignment.centerRight,
+            child: button,
+          ),
+        ],
       ),
     );
   }

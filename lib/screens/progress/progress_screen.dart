@@ -184,7 +184,7 @@ class _Selector extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = Theme.of(context).textTheme;
-    final radius = BorderRadius.circular(RohabShape.radius);
+    final radius = BorderRadius.circular(RohabShape.card);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,

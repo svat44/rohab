@@ -49,9 +49,12 @@ class _HandPainter extends CustomPainter {
     // flip to sit on it; landmarks from an already mirrored frame do not.
     Offset at(int i) {
       final x = f.landmarks[i].x;
-      return Offset((f.mirrored ? x : 1 - x) * size.width,
-          f.landmarks[i].y * size.height);
+      return Offset(
+        (f.mirrored ? x : 1 - x) * size.width,
+        f.landmarks[i].y * size.height,
+      );
     }
+
     // A light outline under the line keeps it visible on any background.
     final under = Paint()
       ..color = outline
@@ -69,7 +72,11 @@ class _HandPainter extends CustomPainter {
     }
     for (var i = 0; i < 21; i++) {
       canvas.drawCircle(at(i), 6, under);
-      canvas.drawCircle(at(i), i % 4 == 0 && i > 0 ? 5 : 3.5, Paint()..color = color);
+      canvas.drawCircle(
+        at(i),
+        i % 4 == 0 && i > 0 ? 5 : 3.5,
+        Paint()..color = color,
+      );
     }
   }
 

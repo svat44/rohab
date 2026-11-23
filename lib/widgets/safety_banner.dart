@@ -84,7 +84,9 @@ class SafetyBanner extends ConsumerWidget {
                             // Wraps instead of cutting off on narrow phones.
                             Text(
                               title,
-                              style: textTheme.labelLarge,
+                              style: textTheme.labelLarge?.copyWith(
+                                fontSize: RohabType.bannerTitle,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -92,6 +94,7 @@ class SafetyBanner extends ConsumerWidget {
                               Text(
                                 detail,
                                 style: textTheme.labelMedium?.copyWith(
+                                  fontSize: RohabType.bannerDetail,
                                   color: hasFault ? c.danger : c.secondary,
                                   fontWeight: hasFault
                                       ? FontWeight.w700
@@ -168,7 +171,7 @@ class _StopButton extends StatelessWidget {
               ),
               textStyle: const TextStyle(
                 fontFamily: RohabTokens.fontFamily,
-                fontSize: RohabType.title,
+                fontSize: RohabType.stop,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
               ),

@@ -123,7 +123,7 @@ class NavTab extends StatelessWidget {
     final c = context.colors;
     final style = Theme.of(context).textTheme.labelMedium!;
     final fg = selected ? c.accent : c.secondary;
-    const radius = BorderRadius.all(Radius.circular(16));
+    final radius = BorderRadius.circular(RohabShape.card);
     return Semantics(
       selected: selected,
       button: true,

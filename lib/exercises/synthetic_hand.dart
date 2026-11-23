@@ -52,10 +52,10 @@ class SyntheticHand {
       final mcp = _mcps[f];
       // Direction in the image plane (fan), bending toward the camera (-z).
       Point3 dir(double bend) => Point3(
-            math.sin(fan) * math.cos(bend),
-            -math.cos(fan) * math.cos(bend),
-            -math.sin(bend),
-          );
+        math.sin(fan) * math.cos(bend),
+        -math.cos(fan) * math.cos(bend),
+        -math.sin(bend),
+      );
       final pip = _add(mcp, dir(mcpBend), _segment);
       final dip = _add(pip, dir(mcpBend + pipBend), _segment * 0.8);
       final tip = _add(dip, dir(mcpBend + pipBend + dipBend), _segment * 0.7);

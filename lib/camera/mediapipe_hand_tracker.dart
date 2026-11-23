@@ -42,10 +42,10 @@ class MediaPipeHandTracker implements HandTracker {
 
   @override
   TrackerStats get stats => TrackerStats(
-        framesPerSecond: _fps,
-        droppedFrames: _landmarker?.droppedFrames ?? 0,
-        resultsTotal: _resultsTotal,
-      );
+    framesPerSecond: _fps,
+    droppedFrames: _landmarker?.droppedFrames ?? 0,
+    resultsTotal: _resultsTotal,
+  );
 
   @override
   Future<void> start() async {
@@ -81,8 +81,9 @@ class MediaPipeHandTracker implements HandTracker {
       front,
       ResolutionPreset.low,
       enableAudio: false,
-      imageFormatGroup:
-          Platform.isIOS ? ImageFormatGroup.bgra8888 : ImageFormatGroup.nv21,
+      imageFormatGroup: Platform.isIOS
+          ? ImageFormatGroup.bgra8888
+          : ImageFormatGroup.nv21,
     );
     try {
       await camera.initialize();
@@ -90,7 +91,8 @@ class MediaPipeHandTracker implements HandTracker {
       await camera.dispose();
       await _disposeLandmarker();
       throw const HandTrackerException(
-          'The camera could not start. Close other apps that use it and try again.');
+        'The camera could not start. Close other apps that use it and try again.',
+      );
     }
     _camera = camera;
     _sensorOrientation = front.sensorOrientation;
@@ -159,8 +161,9 @@ class MediaPipeHandTracker implements HandTracker {
         : result.handWorldLandmarks.first;
     final geometry = _geometry;
     if (geometry == null) return;
-    final category =
-        result.handedness.isEmpty ? null : result.handedness.first.firstOrNull;
+    final category = result.handedness.isEmpty
+        ? null
+        : result.handedness.first.firstOrNull;
     final stamp = Duration(milliseconds: result.timestampMilliseconds ?? now);
     // Smooth the points so the skeleton and the counting thresholds do not
     // shake with tracking noise.
@@ -178,21 +181,23 @@ class MediaPipeHandTracker implements HandTracker {
           return Point3(x, y, p.z);
         }(),
     ];
-    _frames.add(HandFrame(
-      landmarks: confident ? _smoother.smoothImage(upright, stamp) : upright,
-      handedness:
-          _userHand(category?.categoryName, geometry.alreadyMirrored),
-      confidence: category?.score ?? 0,
-      timestamp: stamp,
-      aspectRatio: geometry.aspect,
-      mirrored: geometry.alreadyMirrored,
-      worldLandmarks: world == null
-          ? null
-          : confident
-              ? _smoother.smoothWorld(
-                  [for (final p in world) Point3(p.x, p.y, p.z)], stamp)
-              : [for (final p in world) Point3(p.x, p.y, p.z)],
-    ));
+    _frames.add(
+      HandFrame(
+        landmarks: confident ? _smoother.smoothImage(upright, stamp) : upright,
+        handedness: _userHand(category?.categoryName, geometry.alreadyMirrored),
+        confidence: category?.score ?? 0,
+        timestamp: stamp,
+        aspectRatio: geometry.aspect,
+        mirrored: geometry.alreadyMirrored,
+        worldLandmarks: world == null
+            ? null
+            : confident
+            ? _smoother.smoothWorld([
+                for (final p in world) Point3(p.x, p.y, p.z),
+              ], stamp)
+            : [for (final p in world) Point3(p.x, p.y, p.z)],
+      ),
+    );
   }
 
   /// MediaPipe Tasks labels the subject's own hand when the image is not
@@ -202,10 +207,10 @@ class MediaPipeHandTracker implements HandTracker {
   ///
   /// A mirrored frame (iOS front camera) swaps the two labels.
   static Handedness _userHand(String? label, bool mirrored) => switch (label) {
-        'Left' => mirrored ? Handedness.right : Handedness.left,
-        'Right' => mirrored ? Handedness.left : Handedness.right,
-        _ => Handedness.unknown,
-      };
+    'Left' => mirrored ? Handedness.right : Handedness.left,
+    'Right' => mirrored ? Handedness.left : Handedness.right,
+    _ => Handedness.unknown,
+  };
 
   @override
   double? get previewAspect {

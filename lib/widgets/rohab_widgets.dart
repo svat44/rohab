@@ -51,8 +51,8 @@ class RohabCard extends StatelessWidget {
                         padding: const EdgeInsets.only(right: RohabSpace.s16),
                         child: Icon(
                           Icons.chevron_right,
-                          size: RohabSize.icon + 8,
-                          color: c.accent,
+                          size: RohabSize.icon,
+                          color: c.secondary,
                         ),
                       ),
                     ],
@@ -64,10 +64,11 @@ class RohabCard extends StatelessWidget {
   }
 }
 
-/// A flat square icon tile. [solid] is the blue one (done, or next);
-/// otherwise light blue with a blue edge.
+/// A flat rounded-square icon tile, MIUI style: a solid fill with a white
+/// glyph. [solid] is the blue one (done, or next); otherwise light blue with
+/// a blue glyph. No outline.
 class IconBadge extends StatelessWidget {
-  const IconBadge(this.icon, {super.key, this.size = 56, this.solid = false});
+  const IconBadge(this.icon, {super.key, this.size = 48, this.solid = true});
 
   final IconData icon;
   final double size;
@@ -80,7 +81,6 @@ class IconBadge extends StatelessWidget {
       child: IconTile(
         size: size,
         color: solid ? c.accent : c.accentSoft,
-        edge: solid ? null : c.accent,
         child: Icon(
           icon,
           size: size * 0.55,
@@ -124,7 +124,9 @@ class InfoChip extends StatelessWidget {
   }
 }
 
-/// Section title above a group of cards.
+/// Label above a group of rows, MIUI style: small, gray, set in from the
+/// group edge. More space above than below, so it belongs to the group under
+/// it.
 class SectionTitle extends StatelessWidget {
   const SectionTitle(this.title, {super.key, this.subtitle});
 
@@ -134,22 +136,171 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final c = context.colors;
     return Semantics(
       header: true,
       child: Padding(
-        padding: const EdgeInsets.only(
-          top: RohabSpace.s16,
-          bottom: RohabSpace.s8,
+        padding: const EdgeInsets.fromLTRB(
+          RohabSpace.s8,
+          RohabSpace.s24,
+          RohabSpace.s8,
+          RohabSpace.s8,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: t.headlineSmall),
+            Text(
+              title,
+              style: t.labelMedium?.copyWith(
+                color: c.secondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             if (subtitle != null) ...[
               const SizedBox(height: RohabSpace.s8 / 2),
               Text(subtitle!, style: t.labelMedium),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One white block holding several rows, split by hairlines, like a MIUI
+/// settings group. Replaces one card per row. Hairlines start after the
+/// leading tile so the text edge lines up.
+class RohabGroup extends StatelessWidget {
+  const RohabGroup({super.key, required this.children, this.dividerInset = 0});
+
+  final List<Widget> children;
+
+  /// Left inset of the hairlines, so they start at the text, not the tile.
+  final double dividerInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return DecoratedBox(
+      decoration: panelDecoration(c),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(RohabShape.card),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0)
+                Padding(
+                  padding: EdgeInsets.only(left: dividerInset),
+                  child: Divider(color: c.divider),
+                ),
+              children[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A row of a [RohabGroup]: optional tile, a title, an optional gray line
+/// under it, an optional gray value, and a small gray chevron when it opens
+/// something. At least 64 dp tall; the whole row is the touch target.
+class RohabRow extends StatelessWidget {
+  const RohabRow({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.value,
+    this.icon,
+    this.onTap,
+    this.enabled = true,
+    this.titleColor,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  /// Gray text before the chevron ("On", "Level 2").
+  final String? value;
+  final IconData? icon;
+
+  /// Null makes it a plain, non-tappable row (no chevron).
+  final VoidCallback? onTap;
+  final bool enabled;
+  final Color? titleColor;
+
+  /// Left edge of the text when there is a tile: 16 + 48 + 16.
+  static const textInset = 80.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    final dim = !enabled;
+    return Semantics(
+      button: onTap != null,
+      enabled: enabled,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: c.accent.withValues(alpha: 0.12),
+        focusColor: c.focus.withValues(alpha: 0.5),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: RohabSize.touchTarget),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: RohabSpace.s16,
+              vertical: RohabSpace.s8 + 4,
+            ),
+            child: Row(
+              children: [
+                if (icon != null) ...[
+                  Opacity(
+                    opacity: dim ? 0.4 : 1,
+                    child: IconBadge(icon!, size: 48),
+                  ),
+                  const SizedBox(width: RohabSpace.s16),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: t.bodyLarge?.copyWith(
+                          color: dim ? c.secondary : titleColor ?? c.text,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: RohabSpace.s8 / 2),
+                        Text(subtitle!, style: t.labelMedium),
+                      ],
+                    ],
+                  ),
+                ),
+                if (value != null) ...[
+                  const SizedBox(width: RohabSpace.s8),
+                  Flexible(
+                    child: Text(
+                      value!,
+                      textAlign: TextAlign.end,
+                      style: t.labelMedium,
+                    ),
+                  ),
+                ],
+                if (onTap != null && enabled) ...[
+                  const SizedBox(width: RohabSpace.s8),
+                  Icon(
+                    Icons.chevron_right,
+                    size: RohabSize.icon,
+                    color: c.secondary,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

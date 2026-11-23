@@ -16,7 +16,7 @@ BoxDecoration panelDecoration(
 }) => BoxDecoration(
   color: tint ? c.accentSoft : c.surface,
   borderRadius: BorderRadius.circular(radius),
-  // MIUI cards have no edge: white on the grey page.
+  border: Border.all(color: c.divider, width: RohabShape.border),
 );
 
 /// A flat tile: the base for icon badges and other small non-button
@@ -27,7 +27,7 @@ class IconTile extends StatelessWidget {
     required this.color,
     required this.child,
     this.size,
-    this.radius = 14,
+    this.radius = RohabShape.tile,
     this.edge,
   });
 
@@ -93,10 +93,10 @@ class ChoiceBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    const radius = BorderRadius.all(Radius.circular(16));
+    final radius = BorderRadius.circular(RohabShape.card);
     return Material(
       color: selected ? c.accent : c.controlFill,
-      shape: const RoundedRectangleBorder(borderRadius: radius),
+      shape: RoundedRectangleBorder(borderRadius: radius),
       clipBehavior: Clip.antiAlias,
       child: child,
     );

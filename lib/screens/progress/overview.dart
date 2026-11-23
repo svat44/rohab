@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/providers.dart';
 import '../../exercises/exercise_providers.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/hero.dart';
 import '../../widgets/rohab_widgets.dart';
 
 /// Reps done on one calendar day.
@@ -31,7 +32,9 @@ class ProgressOverview {
 
 /// Pure: builds the overview from sessions (any order) and today's date.
 ProgressOverview buildOverview(
-    List<({DateTime startedAt, int reps})> sessions, DateTime now) {
+  List<({DateTime startedAt, int reps})> sessions,
+  DateTime now,
+) {
   final today = DateTime(now.year, now.month, now.day);
   final byDay = <DateTime, int>{};
   for (final s in sessions) {
@@ -41,8 +44,10 @@ ProgressOverview buildOverview(
   }
   final days = [
     for (var i = 6; i >= 0; i--)
-      DayTotal(DateTime(today.year, today.month, today.day - i),
-          byDay[DateTime(today.year, today.month, today.day - i)] ?? 0),
+      DayTotal(
+        DateTime(today.year, today.month, today.day - i),
+        byDay[DateTime(today.year, today.month, today.day - i)] ?? 0,
+      ),
   ];
   return ProgressOverview(
     days: days,
@@ -55,8 +60,9 @@ final progressOverviewProvider = FutureProvider<ProgressOverview>((ref) async {
   final repo = ref.watch(exerciseSessionRepositoryProvider);
   final now = ref.watch(clockProvider)();
   final rows = await repo.all();
-  return buildOverview(
-      [for (final r in rows) (startedAt: r.startedAt, reps: r.reps)], now);
+  return buildOverview([
+    for (final r in rows) (startedAt: r.startedAt, reps: r.reps),
+  ], now);
 });
 
 /// The last 7 days: a bar for each day, the practice days and the reps. Flat bars, labelled with their numbers.
@@ -75,49 +81,58 @@ class WeekOverview extends StatelessWidget {
     final c = context.colors;
     final o = overview;
     final peak = o.days.fold<int>(0, (a, d) => d.reps > a ? d.reps : a);
-    return RohabCard(
-      padding: const EdgeInsets.all(RohabSpace.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Last 7 days', style: t.labelMedium),
-          const SizedBox(height: RohabSpace.s8),
-          Text('Practice days: ${o.activeDays} of the last 7',
-              key: practiceKey, style: t.headlineMedium),
-          const SizedBox(height: RohabSpace.s8),
-          Text(
-            '${o.totalReps} ${o.totalReps == 1 ? 'rep' : 'reps'} in the last 7 days',
-            style: t.bodyLarge,
-          ),
-          const SizedBox(height: RohabSpace.s16),
-          Semantics(
-            label: 'Reps per day, last 7 days: '
-                '${o.days.map((d) => d.reps).join(', ')}',
-            excludeSemantics: true,
-            child: SizedBox(
-              key: chartKey,
-              height: 140,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < o.days.length; i++) ...[
-                    if (i > 0) const SizedBox(width: RohabSpace.s8),
-                    Expanded(
-                      child: _Bar(
-                        reps: o.days[i].reps,
-                        peak: peak,
-                        letter: _letters[o.days[i].day.weekday - 1],
-                        today: i == o.days.length - 1,
-                        color: c.accent,
-                        track: c.accentSoft,
+    return HeroBackdrop(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: RohabSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            HeroNumber(
+              value: '${o.totalReps}',
+              caption: o.totalReps == 1
+                  ? 'rep in the last 7 days'
+                  : 'reps in the last 7 days',
+              semanticsLabel:
+                  '${o.totalReps} ${o.totalReps == 1 ? 'rep' : 'reps'} in the last 7 days',
+            ),
+            const SizedBox(height: RohabSpace.s8),
+            Text(
+              'Practice days: ${o.activeDays} of the last 7',
+              key: practiceKey,
+              textAlign: TextAlign.center,
+              style: t.labelLarge,
+            ),
+            const SizedBox(height: RohabSpace.s24),
+            Semantics(
+              label:
+                  'Reps per day, last 7 days: '
+                  '${o.days.map((d) => d.reps).join(', ')}',
+              excludeSemantics: true,
+              child: SizedBox(
+                key: chartKey,
+                height: 140,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < o.days.length; i++) ...[
+                      if (i > 0) const SizedBox(width: RohabSpace.s8),
+                      Expanded(
+                        child: _Bar(
+                          reps: o.days[i].reps,
+                          peak: peak,
+                          letter: _letters[o.days[i].day.weekday - 1],
+                          today: i == o.days.length - 1,
+                          color: c.accent,
+                          track: c.accentSoft,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -148,8 +163,10 @@ class _Bar extends StatelessWidget {
       children: [
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(reps == 0 ? '' : '$reps',
-              style: t.labelMedium?.copyWith(color: c.text)),
+          child: Text(
+            reps == 0 ? '' : '$reps',
+            style: t.labelMedium?.copyWith(color: c.text),
+          ),
         ),
         const SizedBox(height: RohabSpace.s8 / 2),
         Expanded(
@@ -165,10 +182,13 @@ class _Bar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: RohabSpace.s8 / 2),
-        Text(letter,
-            style: t.labelMedium?.copyWith(
-                color: today ? c.accent : c.secondary,
-                fontWeight: today ? FontWeight.w700 : FontWeight.w400)),
+        Text(
+          letter,
+          style: t.labelMedium?.copyWith(
+            color: today ? c.accent : c.secondary,
+            fontWeight: today ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
       ],
     );
   }
@@ -203,9 +223,9 @@ class ImprovementCard extends StatelessWidget {
     final summary = change == 0
         ? 'About the same as when you started.'
         : up
-            ? 'Up $change$unit since $since.'
-            : 'Down ${-change}$unit since $since. A bad day is normal; '
-                'rest and try again.';
+        ? 'Up $change$unit since $since.'
+        : 'Down ${-change}$unit since $since. A bad day is normal; '
+              'rest and try again.';
     return RohabCard(
       key: key0,
       padding: const EdgeInsets.all(RohabSpace.s16),
@@ -219,8 +239,8 @@ class ImprovementCard extends StatelessWidget {
               Expanded(child: _Figure('Start', '${first.round()}$unit')),
               Icon(Icons.arrow_forward, color: c.secondary),
               Expanded(
-                  child: _Figure('Now', '${latest.round()}$unit',
-                      emphasis: true)),
+                child: _Figure('Now', '${latest.round()}$unit', emphasis: true),
+              ),
             ],
           ),
           const SizedBox(height: RohabSpace.s16),
@@ -246,10 +266,13 @@ class _Figure extends StatelessWidget {
         Text(label, style: t.labelMedium),
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(value,
-              style: t.displayLarge?.copyWith(
-                  fontSize: 44,
-                  color: emphasis ? context.colors.accent : context.colors.text)),
+          child: Text(
+            value,
+            style: t.displayLarge?.copyWith(
+              fontSize: 44,
+              color: emphasis ? context.colors.accent : context.colors.text,
+            ),
+          ),
         ),
       ],
     );

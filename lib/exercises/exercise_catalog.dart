@@ -497,8 +497,10 @@ class ExerciseCatalog {
     fingerWalking,
   ];
 
-  static List<CameraExercise> forLevel(int level) =>
-      [for (final e in all) if (e.level == level) e];
+  static List<CameraExercise> forLevel(int level) => [
+    for (final e in all)
+      if (e.level == level) e,
+  ];
 
   static CameraExercise? byId(String id) {
     for (final e in all) {

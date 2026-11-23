@@ -114,14 +114,25 @@ class RohabPalette {
   );
 }
 
-/// Type scale in sp. Labels never go below [label].
+/// Type scale in sp: regular Android sizes. People who want larger text use
+/// Settings > Text size (Large, Largest), which scales all of it.
 class RohabType {
   RohabType._();
-  static const double display = 56;
-  static const double title = 28;
-  static const double heading = 24;
-  static const double body = 20;
-  static const double label = 18;
+  static const double display = 48;
+
+  /// The one big number on a screen (MIUI's 95 and 90).
+  static const double hero = 96;
+  static const double title = 22;
+  static const double heading = 20;
+  static const double body = 17;
+  static const double label = 16;
+
+  /// The safety banner keeps its original sizes, whatever the scale above.
+  static const double bannerTitle = 20;
+  static const double bannerDetail = 18;
+
+  /// The STOP button label. Fixed, so it never changes with the scale above.
+  static const double stop = 28;
 }
 
 /// 8pt grid.
@@ -138,9 +149,13 @@ class RohabShape {
   RohabShape._();
 
   /// Square corners, on purpose: every box is an edge a person with low
-  /// vision can follow, like the boxes on a paper form.
-  static const double radius = 32;
-  static const double card = 20;
+  /// vision can follow, like the boxes on a paper form. Groups, tiles,
+  /// choice boxes and buttons are all square.
+  static const double radius = 0;
+  static const double card = 0;
+
+  /// Icon tiles.
+  static const double tile = 0;
 
   /// Panels and list rows.
   static const double border = 1;

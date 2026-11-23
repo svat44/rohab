@@ -62,46 +62,49 @@ class ProgramSettings {
     int? painRiseLimit,
     int? painHighLimit,
     bool? wristCheck,
-  }) =>
-      ProgramSettings(
-        levelOverride:
-            levelOverride == null ? this.levelOverride : levelOverride(),
-        startingGoal: startingGoal ?? this.startingGoal,
-        maxGoal: maxGoal ?? this.maxGoal,
-        setSize: setSize ?? this.setSize,
-        restSeconds: restSeconds ?? this.restSeconds,
-        autoProgress: autoProgress ?? this.autoProgress,
-        painRiseLimit: painRiseLimit ?? this.painRiseLimit,
-        painHighLimit: painHighLimit ?? this.painHighLimit,
-        wristCheck: wristCheck ?? this.wristCheck,
-      );
+  }) => ProgramSettings(
+    levelOverride: levelOverride == null ? this.levelOverride : levelOverride(),
+    startingGoal: startingGoal ?? this.startingGoal,
+    maxGoal: maxGoal ?? this.maxGoal,
+    setSize: setSize ?? this.setSize,
+    restSeconds: restSeconds ?? this.restSeconds,
+    autoProgress: autoProgress ?? this.autoProgress,
+    painRiseLimit: painRiseLimit ?? this.painRiseLimit,
+    painHighLimit: painHighLimit ?? this.painHighLimit,
+    wristCheck: wristCheck ?? this.wristCheck,
+  );
 
   Map<String, Object?> toJson() => {
-        'levelOverride': levelOverride,
-        'startingGoal': startingGoal,
-        'maxGoal': maxGoal,
-        'setSize': setSize,
-        'restSeconds': restSeconds,
-        'autoProgress': autoProgress,
-        'painRiseLimit': painRiseLimit,
-        'painHighLimit': painHighLimit,
-        'wristCheck': wristCheck,
-      };
+    'levelOverride': levelOverride,
+    'startingGoal': startingGoal,
+    'maxGoal': maxGoal,
+    'setSize': setSize,
+    'restSeconds': restSeconds,
+    'autoProgress': autoProgress,
+    'painRiseLimit': painRiseLimit,
+    'painHighLimit': painHighLimit,
+    'wristCheck': wristCheck,
+  };
 
   static ProgramSettings fromJson(Map<String, Object?> j) {
     int i(String k, int d) => j[k] is int ? j[k] as int : d;
     const d = defaults;
     return ProgramSettings(
-      levelOverride: j['levelOverride'] is int ? j['levelOverride'] as int : null,
+      levelOverride: j['levelOverride'] is int
+          ? j['levelOverride'] as int
+          : null,
       startingGoal: i('startingGoal', d.startingGoal),
       maxGoal: i('maxGoal', d.maxGoal),
       setSize: i('setSize', d.setSize),
       restSeconds: i('restSeconds', d.restSeconds),
-      autoProgress: j['autoProgress'] is bool ? j['autoProgress'] as bool : d.autoProgress,
+      autoProgress: j['autoProgress'] is bool
+          ? j['autoProgress'] as bool
+          : d.autoProgress,
       painRiseLimit: i('painRiseLimit', d.painRiseLimit),
       painHighLimit: i('painHighLimit', d.painHighLimit),
-      wristCheck:
-          j['wristCheck'] is bool ? j['wristCheck'] as bool : d.wristCheck,
+      wristCheck: j['wristCheck'] is bool
+          ? j['wristCheck'] as bool
+          : d.wristCheck,
     );
   }
 }

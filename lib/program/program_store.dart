@@ -47,7 +47,9 @@ class ProgramStore {
   }
 
   Future<void> saveGoal(int goal, DateTime day) => _prefs.setString(
-      goalKey, jsonEncode({'goal': goal, 'date': dayKey(day)}));
+    goalKey,
+    jsonEncode({'goal': goal, 'date': dayKey(day)}),
+  );
 
   static String dayKey(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'

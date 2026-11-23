@@ -54,7 +54,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
+                    RohabSpace.s24,
+                    RohabSpace.s16,
+                    RohabSpace.s24,
+                    0,
+                  ),
                   child: Semantics(
                     label: 'Step ${_step + 1} of $_steps',
                     excludeSemantics: true,
@@ -75,16 +79,24 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 ),
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(RohabSpace.s24,
-                        RohabSpace.s24, RohabSpace.s24, RohabSpace.s16),
+                    padding: const EdgeInsets.fromLTRB(
+                      RohabSpace.s24,
+                      RohabSpace.s24,
+                      RohabSpace.s24,
+                      RohabSpace.s16,
+                    ),
                     children: [
-                      Text('Step ${_step + 1} of $_steps',
-                          style: t.labelMedium),
+                      Text(
+                        'Step ${_step + 1} of $_steps',
+                        style: t.labelMedium,
+                      ),
                       const SizedBox(height: RohabSpace.s8),
                       Semantics(
                         header: true,
-                        child: Text(title,
-                            style: t.headlineMedium?.copyWith(fontSize: 36)),
+                        child: Text(
+                          title,
+                          style: t.headlineMedium?.copyWith(fontSize: 36),
+                        ),
                       ),
                       const SizedBox(height: RohabSpace.s24),
                       body,
@@ -114,7 +126,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 if (last)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
-                        RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s16),
+                      RohabSpace.s24,
+                      0,
+                      RohabSpace.s24,
+                      RohabSpace.s16,
+                    ),
                     child: TextButton(
                       key: WelcomeScreen.skipKey,
                       onPressed: () => _finish(Routes.home),
@@ -148,16 +164,25 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Widget _how(BuildContext context) => const Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Numbered(1, 'We measure your hands',
-              'Open and close each hand twice. It takes about 2 minutes.'),
-          _Numbered(2, 'You do your exercises',
-              'Short sets, with rests. The camera counts for you.'),
-          _Numbered(3, 'You see your progress',
-              'Rohab shows how far your hand moves, week by week.'),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _Numbered(
+        1,
+        'We measure your hands',
+        'Open and close each hand twice. It takes about 2 minutes.',
+      ),
+      _Numbered(
+        2,
+        'You do your exercises',
+        'Short sets, with rests. The camera counts for you.',
+      ),
+      _Numbered(
+        3,
+        'You see your progress',
+        'Rohab shows how far your hand moves, week by week.',
+      ),
+    ],
+  );
 
   Widget _care(BuildContext context) {
     final t = Theme.of(context).textTheme;
@@ -165,9 +190,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _Fact(Icons.healing_outlined, 'Stop if anything hurts'),
-        const _Fact(Icons.event_seat_outlined, 'Sit comfortably, take your time'),
-        const _Fact(Icons.local_hospital_outlined,
-            'Ask your therapist before changing your exercises'),
+        const _Fact(
+          Icons.event_seat_outlined,
+          'Sit comfortably, take your time',
+        ),
+        const _Fact(
+          Icons.local_hospital_outlined,
+          'Ask your therapist before changing your exercises',
+        ),
         const SizedBox(height: RohabSpace.s16),
         Text('Rohab is not a medical device.', style: t.labelMedium),
       ],
@@ -175,14 +205,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Widget _setup(BuildContext context) => const Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Fact(Icons.smartphone, 'Lean your phone upright against something'),
-          _Fact(Icons.straighten, 'Sit about an arm\'s length away'),
-          _Fact(Icons.light_mode_outlined, 'Face a light, not a window behind you'),
-          _Fact(Icons.pan_tool_outlined, 'Rest your forearm on a table'),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _Fact(Icons.smartphone, 'Lean your phone upright against something'),
+      _Fact(Icons.straighten, 'Sit about an arm\'s length away'),
+      _Fact(Icons.light_mode_outlined, 'Face a light, not a window behind you'),
+      _Fact(Icons.pan_tool_outlined, 'Rest your forearm on a table'),
+    ],
+  );
 }
 
 /// One icon and one sentence.
@@ -229,8 +259,10 @@ class _Numbered extends StatelessWidget {
             height: 48,
             alignment: Alignment.center,
             color: c.accent,
-            child: Text('$number',
-                style: t.labelLarge?.copyWith(color: c.onAccent)),
+            child: Text(
+              '$number',
+              style: t.labelLarge?.copyWith(color: c.onAccent),
+            ),
           ),
           const SizedBox(width: RohabSpace.s16),
           Expanded(

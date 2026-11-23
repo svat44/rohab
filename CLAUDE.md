@@ -7,8 +7,8 @@ Test device: Redmi 7A (low-end, Android). See README.md for structure.
 
 ## Design rules (for /impeccable and any UI work)
 
-- Calm, clinical, trustworthy. Flat blue palette, soft radii, no shadows,
-  floating nav, pills or heavy transitions. Do not undo the "flatten the UI"
+- Calm, clinical, trustworthy. Flat blue palette, square corners (radius 0 in `lib/theme/tokens.dart`, on purpose, buttons included), MIUI
+  structure (grouped rows, centred title bar), no shadows, floating nav or heavy transitions. Do not undo the "flatten the UI"
   direction.
 - Accessibility comes first: touch targets of at least 56dp, body text at
   least 18sp, contrast at least 4.5:1, and the layout must survive 200% text

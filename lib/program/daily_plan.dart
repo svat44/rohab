@@ -61,9 +61,9 @@ class DailyPlan {
 
   /// Done toward the plan, weighted the same way and capped per exercise.
   int get doneTotal => items.fold(
-      0,
-      (a, i) =>
-          a + ((i.done > i.target ? i.target : i.done) * i.weight).round());
+    0,
+    (a, i) => a + ((i.done > i.target ? i.target : i.done) * i.weight).round(),
+  );
 
   /// The next exercise to do, or null when everything is done.
   PlanItem? get next {
@@ -106,7 +106,12 @@ class DailyPlan {
         }(),
     ];
     final repsToday = doneById.values.fold(0, (a, b) => a + b);
-    return DailyPlan(level: level, goal: goal, items: items, repsToday: repsToday);
+    return DailyPlan(
+      level: level,
+      goal: goal,
+      items: items,
+      repsToday: repsToday,
+    );
   }
 }
 

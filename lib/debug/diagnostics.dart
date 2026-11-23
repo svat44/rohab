@@ -45,8 +45,11 @@ class RunSummary {
     return RunSummary(
       seconds: seconds,
       avgFps: seconds > 0 ? results / seconds : 0,
-      detectionPercent:
-          results > 0 ? ((b.confident - a.confident) / results * 100).clamp(0, 100).toDouble() : 0,
+      detectionPercent: results > 0
+          ? ((b.confident - a.confident) / results * 100)
+                .clamp(0, 100)
+                .toDouble()
+          : 0,
       dropouts: b.dropouts - a.dropouts,
     );
   }
@@ -134,7 +137,9 @@ class DiagnosticsCollector extends ChangeNotifier {
     final first = _samples.first;
     final results = s.results - first.results;
     detectionPercent = results > 0
-        ? ((s.confident - first.confident) / results * 100).clamp(0, 100).toDouble()
+        ? ((s.confident - first.confident) / results * 100)
+              .clamp(0, 100)
+              .toDouble()
         : 0;
     if (now - _lastNotify >= _notifyEvery) {
       _lastNotify = now;
@@ -147,14 +152,15 @@ class DiagnosticsCollector extends ChangeNotifier {
   }
 
   DiagnosticsSnapshot snapshot(Duration now) => DiagnosticsSnapshot(
-        at: now,
-        results: _results,
-        confident: _confident,
-        dropouts: _dropouts,
-      );
+    at: now,
+    results: _results,
+    confident: _confident,
+    dropouts: _dropouts,
+  );
 
   /// One line, for the log.
-  String describe() => 'fps=${fps.toStringAsFixed(1)} '
+  String describe() =>
+      'fps=${fps.toStringAsFixed(1)} '
       'detect10s=${detectionPercent.toStringAsFixed(0)}% '
       'dropout=${(dropout.inMilliseconds / 1000).toStringAsFixed(1)}s'
       '${extra == null ? '' : ' ${extra!()}'}';

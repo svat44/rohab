@@ -61,8 +61,10 @@ abstract class ExerciseSessionRepository {
   Future<List<ExerciseSessionRow>> allSessions() => all();
 
   /// The newest [limit] sessions of one exercise, newest first.
-  Future<List<ExerciseSessionRow>> sessionsFor(String exerciseId,
-      {int limit = 10}) async {
+  Future<List<ExerciseSessionRow>> sessionsFor(
+    String exerciseId, {
+    int limit = 10,
+  }) async {
     final rows = [
       for (final r in await all())
         if (r.exerciseId == exerciseId) r,
@@ -122,33 +124,38 @@ class DriftExerciseSessionRepository extends ExerciseSessionRepository {
   final AppDatabase _db;
 
   @override
-  Future<int> save(ExerciseSessionRecord r) =>
-      _db.into(_db.exerciseSessions).insert(ExerciseSessionsCompanion.insert(
-            exerciseId: r.exerciseId,
-            mode: Value(r.mode),
-            reps: r.reps,
-            targetReps: r.targetReps,
-            rangeMin: Value(r.rangeMin),
-            rangeMax: Value(r.rangeMax),
-            durationSec: r.durationSec,
-            startedAt: r.startedAt,
-            metricUnit: Value(r.metricUnit),
-            avgAmplitude: Value(r.avgAmplitude),
-            avgPeakSpeed: Value(r.avgPeakSpeed),
-            avgSmoothness: Value(r.avgSmoothness),
-            fatigued: Value(r.fatigued),
-            compensatedReps: Value(r.compensatedReps),
-            level: Value(r.level),
-          ));
+  Future<int> save(ExerciseSessionRecord r) => _db
+      .into(_db.exerciseSessions)
+      .insert(
+        ExerciseSessionsCompanion.insert(
+          exerciseId: r.exerciseId,
+          mode: Value(r.mode),
+          reps: r.reps,
+          targetReps: r.targetReps,
+          rangeMin: Value(r.rangeMin),
+          rangeMax: Value(r.rangeMax),
+          durationSec: r.durationSec,
+          startedAt: r.startedAt,
+          metricUnit: Value(r.metricUnit),
+          avgAmplitude: Value(r.avgAmplitude),
+          avgPeakSpeed: Value(r.avgPeakSpeed),
+          avgSmoothness: Value(r.avgSmoothness),
+          fatigued: Value(r.fatigued),
+          compensatedReps: Value(r.compensatedReps),
+          level: Value(r.level),
+        ),
+      );
 
   @override
-  Future<List<ExerciseSessionRow>> all() => (_db.select(_db.exerciseSessions)
-        ..orderBy([(s) => OrderingTerm.asc(s.startedAt)]))
-      .get();
+  Future<List<ExerciseSessionRow>> all() => (_db.select(
+    _db.exerciseSessions,
+  )..orderBy([(s) => OrderingTerm.asc(s.startedAt)])).get();
 
   @override
-  Future<List<ExerciseSessionRow>> sessionsFor(String exerciseId,
-          {int limit = 10}) =>
+  Future<List<ExerciseSessionRow>> sessionsFor(
+    String exerciseId, {
+    int limit = 10,
+  }) =>
       (_db.select(_db.exerciseSessions)
             ..where((s) => s.exerciseId.equals(exerciseId))
             ..orderBy([
@@ -170,24 +177,26 @@ class InMemoryExerciseSessionRepository extends ExerciseSessionRepository {
   @override
   Future<int> save(ExerciseSessionRecord r) async {
     final id = _rows.length + 1;
-    _rows.add(ExerciseSessionRow(
-      id: id,
-      exerciseId: r.exerciseId,
-      mode: r.mode,
-      reps: r.reps,
-      targetReps: r.targetReps,
-      rangeMin: r.rangeMin,
-      rangeMax: r.rangeMax,
-      durationSec: r.durationSec,
-      startedAt: r.startedAt,
-      metricUnit: r.metricUnit,
-      avgAmplitude: r.avgAmplitude,
-      avgPeakSpeed: r.avgPeakSpeed,
-      avgSmoothness: r.avgSmoothness,
-      fatigued: r.fatigued,
-      compensatedReps: r.compensatedReps,
-      level: r.level,
-    ));
+    _rows.add(
+      ExerciseSessionRow(
+        id: id,
+        exerciseId: r.exerciseId,
+        mode: r.mode,
+        reps: r.reps,
+        targetReps: r.targetReps,
+        rangeMin: r.rangeMin,
+        rangeMax: r.rangeMax,
+        durationSec: r.durationSec,
+        startedAt: r.startedAt,
+        metricUnit: r.metricUnit,
+        avgAmplitude: r.avgAmplitude,
+        avgPeakSpeed: r.avgPeakSpeed,
+        avgSmoothness: r.avgSmoothness,
+        fatigued: r.fatigued,
+        compensatedReps: r.compensatedReps,
+        level: r.level,
+      ),
+    );
     return id;
   }
 

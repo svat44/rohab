@@ -58,8 +58,9 @@ class HandFrame {
   /// Landmarks with x scaled so x and y share units, for angle and
   /// distance math.
   List<Point3> get points => [
-        for (final p in landmarks) Point3(p.x * aspectRatio, p.y, p.z * aspectRatio),
-      ];
+    for (final p in landmarks)
+      Point3(p.x * aspectRatio, p.y, p.z * aspectRatio),
+  ];
 }
 
 class TrackerStats {

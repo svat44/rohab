@@ -33,12 +33,13 @@ class GripStep extends StatelessWidget {
     return StepLayout(
       step: 3,
       name: 'Grip',
-      instruction:
-          phase == GripPhase.grip ? gripInstruction : relaxInstruction,
+      instruction: phase == GripPhase.grip ? gripInstruction : relaxInstruction,
       secondary: CancelButton(onPressed: onCancel),
       children: [
-        Text('Trial $trial of ${EmgCalibrator.trialCount}',
-            style: t.labelLarge),
+        Text(
+          'Trial $trial of ${EmgCalibrator.trialCount}',
+          style: t.labelLarge,
+        ),
         const SizedBox(height: RohabSpace.s16),
         CountdownNumber(seconds: secondsLeft),
         const SizedBox(height: RohabSpace.s32),

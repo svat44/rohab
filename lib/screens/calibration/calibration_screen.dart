@@ -27,28 +27,28 @@ class CalibrationScreen extends ConsumerWidget {
     return switch (state.step) {
       CalibrationStep.start => const _StartView(),
       CalibrationStep.prepare => PrepareStep(
-          onReady: controller.ready,
-          onCancel: controller.cancel,
-        ),
+        onReady: controller.ready,
+        onCancel: controller.cancel,
+      ),
       CalibrationStep.rest => RestStep(
-          secondsLeft: state.secondsLeft,
-          samples: samples,
-          onCancel: controller.cancel,
-        ),
+        secondsLeft: state.secondsLeft,
+        samples: samples,
+        onCancel: controller.cancel,
+      ),
       CalibrationStep.grip => GripStep(
-          phase: state.gripPhase,
-          trial: state.trial,
-          secondsLeft: state.secondsLeft,
-          samples: samples,
-          onCancel: controller.cancel,
-        ),
+        phase: state.gripPhase,
+        trial: state.trial,
+        secondsLeft: state.secondsLeft,
+        samples: samples,
+        onCancel: controller.cancel,
+      ),
       CalibrationStep.review => ReviewStep(
-          result: state.result!,
-          samples: samples,
-          onSave: controller.save,
-          onRedo: controller.redo,
-          onCancel: controller.cancel,
-        ),
+        result: state.result!,
+        samples: samples,
+        onSave: controller.save,
+        onRedo: controller.redo,
+        onCancel: controller.cancel,
+      ),
     };
   }
 }
@@ -74,8 +74,7 @@ class _StartView extends ConsumerWidget {
           children: [
             Expanded(
               child: ListView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+                padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
                 children: [
                   if (state.notice != null) ...[
                     Text(state.notice!, style: t.labelLarge),
@@ -113,8 +112,12 @@ class _StartView extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(RohabSpace.s24,
-                  RohabSpace.s16, RohabSpace.s24, RohabSpace.s16),
+              padding: const EdgeInsets.fromLTRB(
+                RohabSpace.s24,
+                RohabSpace.s16,
+                RohabSpace.s24,
+                RohabSpace.s16,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,8 +128,8 @@ class _StartView extends ConsumerWidget {
                       key: CalibrationScreen.startKey,
                       onPressed: blocked == null
                           ? ref
-                              .read(calibrationControllerProvider.notifier)
-                              .begin
+                                .read(calibrationControllerProvider.notifier)
+                                .begin
                           : null,
                       child: const Text('Start calibration'),
                     ),
@@ -167,7 +170,8 @@ class _Row extends StatelessWidget {
           const SizedBox(width: RohabSpace.s16),
           ConstrainedBox(
             constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.5),
+              maxWidth: MediaQuery.sizeOf(context).width * 0.5,
+            ),
             child: Text(value, textAlign: TextAlign.end, style: t.labelLarge),
           ),
         ],
@@ -177,14 +181,25 @@ class _Row extends StatelessWidget {
 }
 
 const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// "Today at 14:05", "Yesterday at 09:30", "3 Nov at 18:00".
 String formatWhen(DateTime time, DateTime now) {
   final t = time.toLocal();
-  final hm = '${t.hour.toString().padLeft(2, '0')}:'
+  final hm =
+      '${t.hour.toString().padLeft(2, '0')}:'
       '${t.minute.toString().padLeft(2, '0')}';
   final day = DateTime(t.year, t.month, t.day);
   final today = DateTime(now.year, now.month, now.day);

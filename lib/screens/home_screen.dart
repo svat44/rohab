@@ -8,6 +8,7 @@ import '../glove/glove_service.dart';
 import '../program/program_providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surfaces.dart';
+import '../widgets/hero.dart';
 import '../widgets/level_bar.dart';
 import '../widgets/rohab_widgets.dart';
 
@@ -128,30 +129,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Glove numbers appear only with a glove: no dashes in place of
             // numbers. The STOP banner is separate and unaffected.
             if (!s.isConnected)
-              RohabCard(
-                child: Text(
-                  'Glove not connected. Glove exercises are off.',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+              const RohabGroup(
+                children: [
+                  RohabRow(
+                    title: 'Glove',
+                    subtitle: 'Not connected. Glove exercises are off.',
+                  ),
+                ],
               )
             else ...[
-            RohabCard(
-              padding: const EdgeInsets.all(RohabSpace.s24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _RepsReadout(
-                    reps: s.sessionActive || _summary != null
-                        ? s.reps - _repsAtStart
-                        : null,
-                  ),
-                  const SizedBox(height: RohabSpace.s16),
-                  _HandState(snapshot: s),
-                ],
+              RohabCard(
+                padding: const EdgeInsets.all(RohabSpace.s24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RepsReadout(
+                      reps: s.sessionActive || _summary != null
+                          ? s.reps - _repsAtStart
+                          : null,
+                    ),
+                    const SizedBox(height: RohabSpace.s16),
+                    _HandState(snapshot: s),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: RohabSpace.s16),
-            RohabCard(child: _PressureRow(snapshot: s)),
+              const SizedBox(height: RohabSpace.s16),
+              RohabCard(child: _PressureRow(snapshot: s)),
             ],
             const SizedBox(height: RohabSpace.s16),
             _Actions(
@@ -224,55 +227,57 @@ class _TodayCard extends ConsumerWidget {
       action = null;
     }
     final c = context.colors;
-    return RohabCard(
+    return HeroBackdrop(
       key: HomeScreen.todayKey,
-      tint: next != null,
-      padding: const EdgeInsets.all(RohabSpace.s24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              if (next == null) ...[
-                ExcludeSemantics(
-                  child: Icon(
-                    Icons.check_circle,
-                    size: RohabSize.icon + 8,
-                    color: c.success,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: RohabSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (next == null) ...[
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.check_circle,
+                      size: RohabSize.icon + 8,
+                      color: c.success,
+                    ),
+                  ),
+                  const SizedBox(width: RohabSpace.s8),
+                ],
+                Flexible(
+                  child: Text(
+                    next == null ? 'Well done' : "Today's exercises",
+                    textAlign: TextAlign.center,
+                    style: t.headlineMedium,
                   ),
                 ),
-                const SizedBox(width: RohabSpace.s8),
               ],
-              Expanded(
-                child: Text(
-                  next == null ? 'Well done' : "Today's exercises",
-                  style: t.headlineMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: RohabSpace.s8),
-          Text(
-            next == null
-                ? 'You finished your exercises for today.'
-                : 'Next: ${next.exercise.title}',
-            style: t.bodyLarge,
-          ),
-          const SizedBox(height: RohabSpace.s16),
-          Text('$done of $total sets done', style: t.labelLarge),
-          const SizedBox(height: RohabSpace.s8),
-          LevelBar(
-            value: total == 0 ? 0 : done / total,
-            semanticsLabel: 'Sets today',
-            semanticsValue: '$done of $total',
-          ),
-          const SizedBox(height: RohabSpace.s24),
-          FilledButton(
-            key: HomeScreen.todayPrimaryKey,
-            onPressed: action,
-            child: Text(label),
-          ),
-        ],
+            ),
+            const SizedBox(height: RohabSpace.s24),
+            HeroNumber(
+              value: '$done',
+              caption: 'of $total sets done',
+              semanticsLabel: '$done of $total sets done',
+            ),
+            const SizedBox(height: RohabSpace.s16),
+            Text(
+              next == null
+                  ? 'You finished your exercises for today.'
+                  : 'Next: ${next.exercise.title}',
+              textAlign: TextAlign.center,
+              style: t.bodyLarge,
+            ),
+            const SizedBox(height: RohabSpace.s24),
+            FilledButton(
+              key: HomeScreen.todayPrimaryKey,
+              onPressed: action,
+              child: Text(label),
+            ),
+          ],
+        ),
       ),
     );
   }

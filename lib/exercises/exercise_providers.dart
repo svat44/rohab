@@ -21,8 +21,10 @@ final handTrackerFactoryProvider = Provider<HandTracker Function()>((ref) {
   return MediaPipeHandTracker.new;
 });
 
-final cameraPermissionProvider = Provider<CameraPermission>((ref) =>
-    kIsWeb ? const GrantedCameraPermission() : const SystemCameraPermission());
+final cameraPermissionProvider = Provider<CameraPermission>(
+  (ref) =>
+      kIsWeb ? const GrantedCameraPermission() : const SystemCameraPermission(),
+);
 
 final appDatabaseProvider = Provider<AppDatabase?>((ref) {
   final executor = openAppDatabase();
@@ -32,8 +34,9 @@ final appDatabaseProvider = Provider<AppDatabase?>((ref) {
   return db;
 });
 
-final exerciseSessionRepositoryProvider =
-    Provider<ExerciseSessionRepository>((ref) {
+final exerciseSessionRepositoryProvider = Provider<ExerciseSessionRepository>((
+  ref,
+) {
   final db = ref.watch(appDatabaseProvider);
   return db == null
       ? InMemoryExerciseSessionRepository()
@@ -51,16 +54,16 @@ class CameraSessionRanges {
   CameraSessionRanges copyWith({
     RangeCalibration? openness,
     RangeCalibration? spread,
-  }) =>
-      CameraSessionRanges(
-        openness: openness ?? this.openness,
-        spread: spread ?? this.spread,
-      );
+  }) => CameraSessionRanges(
+    openness: openness ?? this.openness,
+    spread: spread ?? this.spread,
+  );
 }
 
 final cameraSessionRangesProvider =
     NotifierProvider<CameraSessionRangesNotifier, CameraSessionRanges>(
-        CameraSessionRangesNotifier.new);
+      CameraSessionRangesNotifier.new,
+    );
 
 class CameraSessionRangesNotifier extends Notifier<CameraSessionRanges> {
   @override

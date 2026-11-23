@@ -88,7 +88,8 @@ class _EffortBarState extends State<EffortBar> {
     return LevelBar(
       value: _shown / widget.scaleMax,
       semanticsLabel: 'Muscle effort',
-      semanticsValue: '${_shown.round()}'
+      semanticsValue:
+          '${_shown.round()}'
           '${trigger == null ? '' : ', trigger at ${trigger.value.round()}'}',
       markers: [
         for (final m in widget.markers)

@@ -30,8 +30,8 @@ class HandDistanceCheck {
   }
 
   static String? advice(HandDistance d) => switch (d) {
-        HandDistance.tooFar => 'Move your hand closer to the camera.',
-        HandDistance.tooClose => 'Move your hand back a little.',
-        HandDistance.good => null,
-      };
+    HandDistance.tooFar => 'Move your hand closer to the camera.',
+    HandDistance.tooClose => 'Move your hand back a little.',
+    HandDistance.good => null,
+  };
 }

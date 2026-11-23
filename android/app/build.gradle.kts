@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.rohab.rohab"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -42,7 +42,9 @@ class ProgramScreen extends ConsumerWidget {
       ),
       error: (e, _) => _Frame(
         top: back,
-        children: [Text('Your plan could not load. ${e.toString()}', style: t.bodyLarge)],
+        children: [
+          Text('Your plan could not load. ${e.toString()}', style: t.bodyLarge),
+        ],
       ),
       data: (o) {
         if (o.plan == null) {
@@ -99,9 +101,11 @@ class _Today extends StatelessWidget {
       primary = FilledButton(
         key: ProgramScreen.primaryKey,
         // Pain is asked once a day, before the first set.
-        onPressed: () => context.go(o.painBefore == null
-            ? Routes.painCheck('before', next: next.exercise.id)
-            : Routes.cameraExercise(next.exercise.id)),
+        onPressed: () => context.go(
+          o.painBefore == null
+              ? Routes.painCheck('before', next: next.exercise.id)
+              : Routes.cameraExercise(next.exercise.id),
+        ),
         child: Text(plan.setsDoneTotal == 0 ? 'Start' : 'Continue'),
       );
     } else if (o.painAfter == null && o.painBefore != null) {
@@ -139,8 +143,9 @@ class _Today extends StatelessWidget {
                     '${plan.setsDoneTotal} of ${plan.setsTotal} sets done today',
                 excludeSemantics: true,
                 child: Text(
-                    '${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
-                    style: t.headlineMedium),
+                  '${plan.setsDoneTotal} of ${plan.setsTotal} sets today',
+                  style: t.headlineMedium,
+                ),
               ),
               const SizedBox(height: RohabSpace.s16),
               LevelBar(
@@ -233,11 +238,14 @@ class _PlanRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.exercise.title,
-                      style: isNext
-                          ? t.labelLarge
-                          : t.bodyLarge?.copyWith(
-                              color: item.complete ? c.secondary : c.text)),
+                  Text(
+                    item.exercise.title,
+                    style: isNext
+                        ? t.labelLarge
+                        : t.bodyLarge?.copyWith(
+                            color: item.complete ? c.secondary : c.text,
+                          ),
+                  ),
                   const SizedBox(height: RohabSpace.s8 / 2),
                   Text(status, style: t.labelMedium),
                 ],
@@ -275,8 +283,10 @@ class _InlineAction extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(text,
-                  style: t.labelMedium?.copyWith(color: context.colors.text)),
+              child: Text(
+                text,
+                style: t.labelMedium?.copyWith(color: context.colors.text),
+              ),
             ),
             TextButton(onPressed: onPressed, child: Text(action)),
           ],
@@ -302,7 +312,11 @@ class _Frame extends StatelessWidget {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(
-                RohabSpace.s8, 0, RohabSpace.s24, RohabSpace.s16),
+              RohabSpace.s8,
+              0,
+              RohabSpace.s24,
+              RohabSpace.s16,
+            ),
             children: [
               Align(alignment: Alignment.centerLeft, child: top),
               Padding(

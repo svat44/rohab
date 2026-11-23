@@ -34,10 +34,15 @@ class EmgCalibrator {
   static List<int> trimTrial(List<int> trial) {
     if (trial.length <= 2 * trialTrimSampleCount) {
       throw ArgumentError.value(
-          trial.length, 'trial', 'too short to trim 0.5 s from each end');
+        trial.length,
+        'trial',
+        'too short to trim 0.5 s from each end',
+      );
     }
     return trial.sublist(
-        trialTrimSampleCount, trial.length - trialTrimSampleCount);
+      trialTrimSampleCount,
+      trial.length - trialTrimSampleCount,
+    );
   }
 
   /// restMean + 0.4 x (gripLevel - restMean), rounded to an integer
@@ -58,8 +63,8 @@ class EmgCalibrator {
     final restMean = mean(rest);
     final restSd = populationSd(rest);
     final gripLevel = median([for (final t in trials) mean(t)]);
-    final valid = gripLevel >= restMean + 3 * restSd &&
-        gripLevel >= 1.5 * restMean;
+    final valid =
+        gripLevel >= restMean + 3 * restSd && gripLevel >= 1.5 * restMean;
     return CalibrationResult(
       restMean: restMean,
       restSd: restSd,
@@ -83,9 +88,7 @@ class EmgCalibrator {
   static double median(List<num> xs) {
     final s = [...xs]..sort();
     final mid = s.length ~/ 2;
-    return s.length.isOdd
-        ? s[mid].toDouble()
-        : (s[mid - 1] + s[mid]) / 2;
+    return s.length.isOdd ? s[mid].toDouble() : (s[mid - 1] + s[mid]) / 2;
   }
 }
 
@@ -138,12 +141,12 @@ class Calibration {
   bool isExpiredAt(DateTime now) => now.difference(timestamp) >= validFor;
 
   Map<String, Object> toJson() => {
-        'restMean': restMean,
-        'restSD': restSd,
-        'gripLevel': gripLevel,
-        'threshold': threshold,
-        'timestamp': timestamp.toUtc().toIso8601String(),
-      };
+    'restMean': restMean,
+    'restSD': restSd,
+    'gripLevel': gripLevel,
+    'threshold': threshold,
+    'timestamp': timestamp.toUtc().toIso8601String(),
+  };
 
   /// Returns null for missing or malformed data.
   static Calibration? fromJson(Map<String, Object?> json) {

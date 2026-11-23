@@ -103,9 +103,11 @@ class _TestProtocolScreenState extends ConsumerState<TestProtocolScreen>
       FlowStep.calibrationFailed,
     };
     if (failed.contains(c.step)) {
-      _finish(note: c.step == FlowStep.calibrationFailed
-          ? 'range too small to calibrate'
-          : 'camera: ${c.step.name}');
+      _finish(
+        note: c.step == FlowStep.calibrationFailed
+            ? 'range too small to calibrate'
+            : 'camera: ${c.step.name}',
+      );
       return;
     }
     if (c.step != FlowStep.exercise) return;
@@ -127,8 +129,14 @@ class _TestProtocolScreenState extends ConsumerState<TestProtocolScreen>
     PoseResult result;
     if (note != null || _runStart == null) {
       result = PoseResult(
-          pose: spec, seconds: 0, avgFps: 0, detectionPercent: 0,
-          dropouts: 0, reps: 0, note: note ?? 'did not reach counting');
+        pose: spec,
+        seconds: 0,
+        avgFps: 0,
+        detectionPercent: 0,
+        dropouts: 0,
+        reps: 0,
+        note: note ?? 'did not reach counting',
+      );
     } else {
       final s = RunSummary.between(_runStart!, diag.snapshot(c.now));
       result = PoseResult(
@@ -193,11 +201,13 @@ class _TestProtocolScreenState extends ConsumerState<TestProtocolScreen>
             ? null
             : (kProtocolRun - (c.now - _runStartNow)).inSeconds.clamp(0, 999);
         final text = switch (c.step) {
-          FlowStep.exercise => 'Keep going. ${left ?? kProtocolRun.inSeconds} s '
-              'left. Reps: ${c.reps}',
-          FlowStep.calibrate => c.calibratePhase == CalibratePhase.high
-              ? 'Open as wide as this pose allows.'
-              : 'Now close as far as this pose allows.',
+          FlowStep.exercise =>
+            'Keep going. ${left ?? kProtocolRun.inSeconds} s '
+                'left. Reps: ${c.reps}',
+          FlowStep.calibrate =>
+            c.calibratePhase == CalibratePhase.high
+                ? 'Open as wide as this pose allows.'
+                : 'Now close as far as this pose allows.',
           _ => 'Hold your hand inside the frame.',
         };
         return CameraPage(
@@ -206,8 +216,9 @@ class _TestProtocolScreenState extends ConsumerState<TestProtocolScreen>
           diagnostics: _diag,
           stats: () => c.stats,
           action: TextButton(
-              onPressed: () => _finish(note: 'stopped'),
-              child: const Text('Stop this pose')),
+            onPressed: () => _finish(note: 'stopped'),
+            child: const Text('Stop this pose'),
+          ),
           children: [
             Text(PoseSpec.all[_pose].title, style: t.labelMedium),
             Text(text, style: t.titleLarge),
@@ -231,7 +242,9 @@ class _TestProtocolScreenState extends ConsumerState<TestProtocolScreen>
                 table,
                 key: TestProtocolScreen.tableKey,
                 style: t.labelMedium?.copyWith(
-                    fontFamily: 'monospace', color: context.colors.text),
+                  fontFamily: 'monospace',
+                  color: context.colors.text,
+                ),
               ),
             ),
           ],
@@ -249,16 +262,20 @@ class _Page extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                  RohabSpace.s24, RohabSpace.s16, RohabSpace.s24, 0),
-              children: children,
-            ),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            RohabSpace.s24,
+            RohabSpace.s16,
+            RohabSpace.s24,
+            0,
           ),
-          ActionArea(secondary: secondary, primary: primary),
-        ],
-      );
+          children: children,
+        ),
+      ),
+      ActionArea(secondary: secondary, primary: primary),
+    ],
+  );
 }

@@ -71,11 +71,16 @@ class JointAngles {
     }
     // Axis across the palm, index MCP toward little-finger MCP. Flexion is
     // rotation about this axis.
-    final across = _normalize(world[HandIndex.pinkyMcp] - world[HandIndex.indexMcp]);
+    final across = _normalize(
+      world[HandIndex.pinkyMcp] - world[HandIndex.indexMcp],
+    );
 
     List<double> rawFinger(int mcp) {
       final wrist = world[HandIndex.wrist];
-      final m = world[mcp], p = world[mcp + 1], d = world[mcp + 2], t = world[mcp + 3];
+      final m = world[mcp],
+          p = world[mcp + 1],
+          d = world[mcp + 2],
+          t = world[mcp + 3];
       return [
         signedAngle(m - wrist, p - m, across),
         signedAngle(p - m, d - p, across),
@@ -106,8 +111,10 @@ class JointAngles {
     final w = world;
     final thumbMcp = flexion(w[1], w[2], w[3]);
     final thumbIp = flexion(w[2], w[3], w[4]);
-    final thumbAbduction =
-        _angleBetween(w[2] - w[1], w[HandIndex.indexMcp] - w[HandIndex.wrist]);
+    final thumbAbduction = _angleBetween(
+      w[2] - w[1],
+      w[HandIndex.indexMcp] - w[HandIndex.wrist],
+    );
 
     return HandAngles(
       fingers: [
@@ -141,10 +148,10 @@ class JointAngles {
   }
 
   static Point3 _cross(Point3 a, Point3 b) => Point3(
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x,
-      );
+    a.y * b.z - a.z * b.y,
+    a.z * b.x - a.x * b.z,
+    a.x * b.y - a.y * b.x,
+  );
 
   static Point3 _normalize(Point3 v) {
     final l = v.length;

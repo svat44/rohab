@@ -53,16 +53,16 @@ class _PresetSheetState extends State<_PresetSheet> {
                         ),
                       ),
                       if (widget.glove.preset == preset)
-                        Icon(Icons.check, color: c.accent,
-                            size: RohabSize.icon),
+                        Icon(
+                          Icons.check,
+                          color: c.accent,
+                          size: RohabSize.icon,
+                        ),
                     ],
                   ),
                 ),
               ),
-            TextButton(
-              onPressed: widget.onClose,
-              child: const Text('Close'),
-            ),
+            TextButton(onPressed: widget.onClose, child: const Text('Close')),
           ],
         ),
       ),

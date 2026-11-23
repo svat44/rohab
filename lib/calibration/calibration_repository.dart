@@ -8,7 +8,7 @@ import 'emg_calibrator.dart';
 /// threshold and a timestamp are kept.
 class CalibrationRepository {
   CalibrationRepository(this._prefs, {DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+    : _clock = clock ?? DateTime.now;
 
   static const storageKey = 'rohab.calibration.v1';
 

@@ -43,11 +43,11 @@ class FrameGeometry {
   /// Maps a normalized point in the delivered frame to the same point in the
   /// upright frame (still not mirrored). Clockwise turn of the picture.
   (double, double) toUpright(double x, double y) => switch (quarterTurns) {
-        1 => (1 - y, x),
-        2 => (1 - x, 1 - y),
-        3 => (y, 1 - x),
-        _ => (x, y),
-      };
+    1 => (1 - y, x),
+    2 => (1 - x, 1 - y),
+    3 => (y, 1 - x),
+    _ => (x, y),
+  };
 
   /// Where a landmark's normalized x lands on a mirrored preview, 0-1.
   double previewX(double x) => alreadyMirrored ? x : 1 - x;

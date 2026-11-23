@@ -41,8 +41,7 @@ class StepLayout extends StatelessWidget {
       children: [
         Expanded(
           child: ListView(
-            padding:
-                const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
+            padding: const EdgeInsets.symmetric(horizontal: RohabSpace.s24),
             children: [
               _StepIndicator(step: step),
               const SizedBox(height: RohabSpace.s8),
@@ -50,8 +49,11 @@ class StepLayout extends StatelessWidget {
               const SizedBox(height: RohabSpace.s24),
               Semantics(
                 liveRegion: true,
-                child: Text(instruction,
-                    key: instructionKey, style: t.titleLarge),
+                child: Text(
+                  instruction,
+                  key: instructionKey,
+                  style: t.titleLarge,
+                ),
               ),
               const SizedBox(height: RohabSpace.s24),
               ...children,
@@ -86,9 +88,8 @@ class _StepIndicator extends StatelessWidget {
                   color: i < step
                       ? c.accentSoft
                       : i == step
-                          ? c.accent
-                          : c.divider,
-                  
+                      ? c.accent
+                      : c.divider,
                 ),
               ),
             ),
@@ -107,24 +108,27 @@ class CancelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextButton(
-        key: StepLayout.cancelKey,
-        onPressed: onPressed,
-        child: const Text('Cancel'),
-      );
+    key: StepLayout.cancelKey,
+    onPressed: onPressed,
+    child: const Text('Cancel'),
+  );
 }
 
 /// Full-width primary button for a step.
 class StepPrimaryButton extends StatelessWidget {
-  const StepPrimaryButton(
-      {super.key, required this.label, required this.onPressed});
+  const StepPrimaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
 
   final String label;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => FilledButton(
-        key: StepLayout.primaryKey,
-        onPressed: onPressed,
-        child: Text(label),
-      );
+    key: StepLayout.primaryKey,
+    onPressed: onPressed,
+    child: Text(label),
+  );
 }

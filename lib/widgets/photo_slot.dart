@@ -32,8 +32,10 @@ class PhotoSlot extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: c.surface,
-                  border:
-                      Border.all(color: c.divider, width: RohabShape.border),
+                  border: Border.all(
+                    color: c.divider,
+                    width: RohabShape.border,
+                  ),
                   borderRadius: BorderRadius.circular(RohabShape.radius),
                 ),
                 alignment: Alignment.center,

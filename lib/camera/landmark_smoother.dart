@@ -34,9 +34,9 @@ class LandmarkSmoother {
   Duration? _last;
 
   List<OneEuroFilter> _bank(double beta) => [
-        for (var i = 0; i < HandMetrics.landmarkCount * 3; i++)
-          OneEuroFilter(minCutoff: minCutoff, beta: beta, dCutoff: 1.0),
-      ];
+    for (var i = 0; i < HandMetrics.landmarkCount * 3; i++)
+      OneEuroFilter(minCutoff: minCutoff, beta: beta, dCutoff: 1.0),
+  ];
 
   /// Call once per frame, before [smoothImage] and [smoothWorld].
   void beginFrame(Duration t) {
@@ -68,7 +68,11 @@ class LandmarkSmoother {
       _run(_world, pts, t, worldBeta);
 
   List<Point3> _run(
-      List<OneEuroFilter> bank, List<Point3> pts, Duration t, double beta) {
+    List<OneEuroFilter> bank,
+    List<Point3> pts,
+    Duration t,
+    double beta,
+  ) {
     if (pts.length != HandMetrics.landmarkCount) return pts;
     // Smaller hand: lower cutoff (smoother) and a larger beta per unit of
     // speed; bigger hand the reverse.

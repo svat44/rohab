@@ -7,7 +7,8 @@ import 'step_layout.dart';
 class PrepareStep extends StatelessWidget {
   const PrepareStep({super.key, required this.onReady, required this.onCancel});
 
-  static const instruction = 'Place the sensor on your forearm, '
+  static const instruction =
+      'Place the sensor on your forearm, '
       'about 2 finger-widths below the elbow crease.';
 
   final VoidCallback onReady;

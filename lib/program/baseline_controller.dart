@@ -85,7 +85,8 @@ class BaselineController extends ChangeNotifier {
     return a == Handedness.left ? Handedness.right : Handedness.left;
   }
 
-  static String handName(Handedness h) => h == Handedness.left ? 'left' : 'right';
+  static String handName(Handedness h) =>
+      h == Handedness.left ? 'left' : 'right';
 
   Future<void> chooseHand(Handedness hand) async {
     affectedHand = hand;
@@ -110,7 +111,8 @@ class BaselineController extends ChangeNotifier {
   Future<void> openSettings() => _permission.openSettings();
 
   Future<void> recheckPermission() async {
-    if (step != BaselineStep.permission && step != BaselineStep.permissionDenied) {
+    if (step != BaselineStep.permission &&
+        step != BaselineStep.permissionDenied) {
       return;
     }
     if (await _permission.status() == CameraAccess.granted) await _openCamera();
@@ -175,11 +177,12 @@ class BaselineController extends ChangeNotifier {
     if (!f.isUsable) return;
     _lastSeen = _now;
     // A hint only: the label can be wrong, so measuring goes on.
-    final wrong = f.handedness != Handedness.unknown && f.handedness != currentHand;
+    final wrong =
+        f.handedness != Handedness.unknown && f.handedness != currentHand;
     _wrongHandFrames = wrong ? _wrongHandFrames + 1 : 0;
     final hint = _wrongHandFrames > 20
         ? 'This looks like your ${handName(f.handedness)} hand. '
-            'Use your ${handName(currentHand)} hand.'
+              'Use your ${handName(currentHand)} hand.'
         : null;
     if (hint != handHint) {
       handHint = hint;
@@ -206,7 +209,10 @@ class BaselineController extends ChangeNotifier {
         }
       case BaselineStep.measure:
         final elapsed = _now - _phaseStart;
-        final secs = ((phaseTime - elapsed).inMilliseconds / 1000).ceil().clamp(0, 4);
+        final secs = ((phaseTime - elapsed).inMilliseconds / 1000).ceil().clamp(
+          0,
+          4,
+        );
         if (secs != secondsLeft) {
           secondsLeft = secs;
           notifyListeners();
@@ -231,7 +237,8 @@ class BaselineController extends ChangeNotifier {
 
   void _endHand() {
     if (_open.length < minSamples || _closed.length < minSamples) {
-      errorMessage = "We couldn't see your hand well enough. Try again with "
+      errorMessage =
+          "We couldn't see your hand well enough. Try again with "
           'your whole hand in view and good light.';
       _go(BaselineStep.failed);
       return;

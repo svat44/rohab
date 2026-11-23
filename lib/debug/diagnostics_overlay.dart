@@ -6,8 +6,9 @@ import 'diagnostics.dart';
 
 /// Debug builds only: whether new exercise runs show the overlay. Switched
 /// from the debug menu (long-press the "Rohab" title).
-final diagnosticsEnabledProvider =
-    NotifierProvider<DiagnosticsEnabled, bool>(DiagnosticsEnabled.new);
+final diagnosticsEnabledProvider = NotifierProvider<DiagnosticsEnabled, bool>(
+  DiagnosticsEnabled.new,
+);
 
 class DiagnosticsEnabled extends Notifier<bool> {
   @override

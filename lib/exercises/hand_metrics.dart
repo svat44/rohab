@@ -132,8 +132,10 @@ class HandMetrics {
   /// hand, so callers compare against where they started.
   static double palmFacing(List<Point3> lm) {
     _check(lm);
-    final n = _cross(lm[HandIndex.indexMcp] - lm[HandIndex.wrist],
-        lm[HandIndex.pinkyMcp] - lm[HandIndex.wrist]);
+    final n = _cross(
+      lm[HandIndex.indexMcp] - lm[HandIndex.wrist],
+      lm[HandIndex.pinkyMcp] - lm[HandIndex.wrist],
+    );
     final l = n.length;
     return l == 0 ? 0 : n.z / l;
   }
@@ -143,7 +145,10 @@ class HandMetrics {
   static List<double> palmHeights(List<Point3> lm) {
     _check(lm);
     final wrist = lm[HandIndex.wrist];
-    final n = _cross(lm[HandIndex.indexMcp] - wrist, lm[HandIndex.pinkyMcp] - wrist);
+    final n = _cross(
+      lm[HandIndex.indexMcp] - wrist,
+      lm[HandIndex.pinkyMcp] - wrist,
+    );
     final l = n.length;
     final palm = palmWidth(lm);
     if (l == 0 || palm == 0) return const [0, 0, 0, 0];
@@ -154,10 +159,10 @@ class HandMetrics {
   }
 
   static Point3 _cross(Point3 a, Point3 b) => Point3(
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x,
-      );
+    a.y * b.z - a.z * b.y,
+    a.z * b.x - a.x * b.z,
+    a.x * b.y - a.y * b.x,
+  );
 
   /// Maps [raw] into 0-100 % of the user's calibrated range.
   static double percentOfRange(double raw, double min, double max) {
@@ -169,7 +174,10 @@ class HandMetrics {
   static void _check(List<Point3> lm) {
     if (lm.length != landmarkCount) {
       throw ArgumentError.value(
-          lm.length, 'landmarks', 'expected $landmarkCount');
+        lm.length,
+        'landmarks',
+        'expected $landmarkCount',
+      );
     }
   }
 }
@@ -187,9 +195,8 @@ class MovingAverage {
     return value;
   }
 
-  double get value => _values.isEmpty
-      ? 0
-      : _values.reduce((a, b) => a + b) / _values.length;
+  double get value =>
+      _values.isEmpty ? 0 : _values.reduce((a, b) => a + b) / _values.length;
 
   void reset() => _values.clear();
 }

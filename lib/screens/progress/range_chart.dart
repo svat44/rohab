@@ -24,7 +24,8 @@ class RangeChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Semantics(
-      label: 'Range per session, oldest to newest. '
+      label:
+          'Range per session, oldest to newest. '
           '${[for (final r in sessions) '${shortDate(r.startedAt)}: ${rangeText(r)?.replaceFirst('Range ', '') ?? 'not measured'}'].join('. ')}.',
       excludeSemantics: true,
       child: SizedBox(
@@ -62,22 +63,32 @@ class _RangePainter extends CustomPainter {
     final n = sessions.length;
     final slot = size.width / n;
     final barW = math.min(slot * 0.6, 28.0);
-    double y(double v) => size.height - (v.clamp(0, axisMax) / axisMax) * size.height;
+    double y(double v) =>
+        size.height - (v.clamp(0, axisMax) / axisMax) * size.height;
     const radius = Radius.circular(RohabShape.radius / 3);
     for (var i = 0; i < n; i++) {
       final cx = slot * i + slot / 2;
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            Rect.fromLTRB(cx - barW / 2, 0, cx + barW / 2, size.height), radius),
+          Rect.fromLTRB(cx - barW / 2, 0, cx + barW / 2, size.height),
+          radius,
+        ),
         Paint()..color = track,
       );
       final lo = sessions[i].rangeMin, hi = sessions[i].rangeMax;
       if (lo == null || hi == null) continue;
       final top = y(math.max(lo, hi)), bottom = y(math.min(lo, hi));
       // At least 2 dp tall so a very small range is still visible.
-      final rect = Rect.fromLTRB(cx - barW / 2, top,
-          cx + barW / 2, math.max(bottom, top + 2));
-      canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), Paint()..color = bar);
+      final rect = Rect.fromLTRB(
+        cx - barW / 2,
+        top,
+        cx + barW / 2,
+        math.max(bottom, top + 2),
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, radius),
+        Paint()..color = bar,
+      );
     }
   }
 

@@ -39,18 +39,21 @@ class HandPose {
   /// How big the hand looks: below 1 is far from the camera, above 1 near.
   final double scale;
 
-  HandPose copyWith(
-          {double? curl, bool? rightHand, double? wristPitch, double? scale}) =>
-      HandPose(
-        curl: curl ?? this.curl,
-        spread: spread,
-        thumbOn: thumbOn,
-        rightHand: rightHand ?? this.rightHand,
-        wristPitch: wristPitch ?? this.wristPitch,
-        hook: hook,
-        fingerCurls: fingerCurls,
-        scale: scale ?? this.scale,
-      );
+  HandPose copyWith({
+    double? curl,
+    bool? rightHand,
+    double? wristPitch,
+    double? scale,
+  }) => HandPose(
+    curl: curl ?? this.curl,
+    spread: spread,
+    thumbOn: thumbOn,
+    rightHand: rightHand ?? this.rightHand,
+    wristPitch: wristPitch ?? this.wristPitch,
+    hook: hook,
+    fingerCurls: fingerCurls,
+    scale: scale ?? this.scale,
+  );
 
   static const open = HandPose();
   static const fist = HandPose(curl: 1);
@@ -105,13 +108,14 @@ class MockHandTracker implements HandTracker {
       final p = script == null ? pose : script!(t);
       if (p == null) return;
       var lm = SyntheticHand.pose(
-          curl: p.curl,
-          spread: p.spread,
-          thumbOn: p.thumbOn,
-          hook: p.hook,
-          fingerCurls: p.fingerCurls,
-          wristPitch: p.wristPitch,
-          scale: p.scale);
+        curl: p.curl,
+        spread: p.spread,
+        thumbOn: p.thumbOn,
+        hook: p.hook,
+        fingerCurls: p.fingerCurls,
+        wristPitch: p.wristPitch,
+        scale: p.scale,
+      );
       if (noise > 0) {
         lm = [
           for (final q in lm)
@@ -119,29 +123,36 @@ class MockHandTracker implements HandTracker {
         ];
       }
       var world = SyntheticHand.world(
-          curl: p.curl,
-          spread: p.spread,
-          thumbOn: p.thumbOn,
-          rightHand: p.rightHand,
-          hook: p.hook,
-          fingerCurls: p.fingerCurls,
-          wristPitch: p.wristPitch);
+        curl: p.curl,
+        spread: p.spread,
+        thumbOn: p.thumbOn,
+        rightHand: p.rightHand,
+        hook: p.hook,
+        fingerCurls: p.fingerCurls,
+        wristPitch: p.wristPitch,
+      );
       if (noise > 0) {
         // Same jitter in meters (image unit is about 0.45 m here).
         world = [
           for (final q in world)
-            Point3(q.x + _jitter() * 0.45, q.y + _jitter() * 0.45,
-                q.z + _jitter() * 0.45),
+            Point3(
+              q.x + _jitter() * 0.45,
+              q.y + _jitter() * 0.45,
+              q.z + _jitter() * 0.45,
+            ),
         ];
       }
-      final low = lowConfidenceEvery > 0 && _frameCount % lowConfidenceEvery == 0;
-      _frames.add(HandFrame(
-        landmarks: lm,
-        worldLandmarks: world,
-        handedness: p.rightHand ? Handedness.right : Handedness.left,
-        confidence: low ? 0.3 : 0.95,
-        timestamp: t,
-      ));
+      final low =
+          lowConfidenceEvery > 0 && _frameCount % lowConfidenceEvery == 0;
+      _frames.add(
+        HandFrame(
+          landmarks: lm,
+          worldLandmarks: world,
+          handedness: p.rightHand ? Handedness.right : Handedness.left,
+          confidence: low ? 0.3 : 0.95,
+          timestamp: t,
+        ),
+      );
     });
   }
 
@@ -163,7 +174,10 @@ class MockHandTracker implements HandTracker {
     return ColoredBox(
       color: c.surface,
       child: Center(
-        child: Text('Simulated hand', style: Theme.of(context).textTheme.labelMedium),
+        child: Text(
+          'Simulated hand',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
       ),
     );
   }
@@ -180,8 +194,8 @@ class MockHandTracker implements HandTracker {
           t < dropoutStart + dropoutLength) {
         return null;
       }
-      final phase = (t.inMicroseconds % period.inMicroseconds) /
-          period.inMicroseconds;
+      final phase =
+          (t.inMicroseconds % period.inMicroseconds) / period.inMicroseconds;
       return phase < 0.5 ? HandPose.open : HandPose.fist;
     };
   }

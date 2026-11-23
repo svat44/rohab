@@ -14,12 +14,14 @@ final programRepositoryProvider = Provider<ProgramRepository>((ref) {
   return db == null ? InMemoryProgramRepository() : DriftProgramRepository(db);
 });
 
-final programStoreProvider =
-    Provider<ProgramStore>((ref) => ProgramStore(ref.watch(sharedPreferencesProvider)));
+final programStoreProvider = Provider<ProgramStore>(
+  (ref) => ProgramStore(ref.watch(sharedPreferencesProvider)),
+);
 
 final programSettingsProvider =
     NotifierProvider<ProgramSettingsNotifier, ProgramSettings>(
-        ProgramSettingsNotifier.new);
+      ProgramSettingsNotifier.new,
+    );
 
 class ProgramSettingsNotifier extends Notifier<ProgramSettings> {
   @override
@@ -33,8 +35,9 @@ class ProgramSettingsNotifier extends Notifier<ProgramSettings> {
 
   /// Sets today's goal back to the starting goal.
   Future<void> resetGoal() async {
-    await ref.read(programStoreProvider).saveGoal(
-        state.startingGoal, ref.read(clockProvider)());
+    await ref
+        .read(programStoreProvider)
+        .saveGoal(state.startingGoal, ref.read(clockProvider)());
     ref.invalidate(programOverviewProvider);
   }
 }
@@ -75,7 +78,10 @@ final programOverviewProvider = FutureProvider<ProgramOverview>((ref) async {
   final baseline = await repo.latestBaseline();
   final pain = await repo.painOn(now);
   int? latest(String phase) {
-    final xs = [for (final p in pain) if (p.phase == phase) p.score];
+    final xs = [
+      for (final p in pain)
+        if (p.phase == phase) p.score,
+    ];
     return xs.isEmpty ? null : xs.last;
   }
 
@@ -103,15 +109,22 @@ final programOverviewProvider = FutureProvider<ProgramOverview>((ref) async {
     if (lastDay != null) {
       final rows = await sessions.on(lastDay);
       final dayPain = await repo.painOn(lastDay);
-      final before = [for (final p in dayPain) if (p.phase == 'before') p.score];
-      final after = [for (final p in dayPain) if (p.phase == 'after') p.score];
+      final before = [
+        for (final p in dayPain)
+          if (p.phase == 'before') p.score,
+      ];
+      final after = [
+        for (final p in dayPain)
+          if (p.phase == 'after') p.score,
+      ];
       goal = GoalProgression.next(
         stored.goal,
         DayOutcome(
           goal: stored.goal,
           reps: rows.fold(0, (a, r) => a + r.reps),
           fatigued: rows.any((r) => r.fatigued),
-          painRose: before.isNotEmpty &&
+          painRose:
+              before.isNotEmpty &&
               after.isNotEmpty &&
               PainRules.after(before.first, after.last, settings) ==
                   PainAdvice.painRose,

@@ -10,8 +10,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // The camera frames, the preview and the hand overlay are only worked out
   // for an upright phone, so the app stays in portrait.
-  await SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.portraitUp]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(

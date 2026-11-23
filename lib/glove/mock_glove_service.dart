@@ -13,7 +13,11 @@ enum MockEmgPreset {
   weak('Weak', gripMean: 140, gripSd: 25),
   noSignal('No signal', gripMean: 65, gripSd: 10);
 
-  const MockEmgPreset(this.label, {required this.gripMean, required this.gripSd});
+  const MockEmgPreset(
+    this.label, {
+    required this.gripMean,
+    required this.gripSd,
+  });
 
   final String label;
   final double gripMean;
@@ -34,7 +38,7 @@ enum MockEmgPreset {
 /// inflating or holding during a session.
 class MockGloveService implements GloveService, PatientCueSink {
   MockGloveService({Random? random, this.preset = MockEmgPreset.strong})
-      : _random = random ?? Random();
+    : _random = random ?? Random();
 
   static const tick = Duration(milliseconds: 50);
   static const emgTick = Duration(milliseconds: 20); // 50 Hz
@@ -51,8 +55,9 @@ class MockGloveService implements GloveService, PatientCueSink {
   static const effortRamp = Duration(milliseconds: 300);
 
   final Random _random;
-  final ValueNotifier<GloveSnapshot> _snapshot =
-      ValueNotifier(GloveSnapshot.initial);
+  final ValueNotifier<GloveSnapshot> _snapshot = ValueNotifier(
+    GloveSnapshot.initial,
+  );
   final StreamController<int> _emg = StreamController<int>.broadcast();
 
   MockEmgPreset preset;
@@ -107,8 +112,11 @@ class MockGloveService implements GloveService, PatientCueSink {
     _ticker = null;
     _emgTicker = null;
     // A real glove vents on link loss (firmware rule), so pressure goes to 0.
-    _s = GloveSnapshot.initial
-        .copyWith(mode: _s.mode, targetKpa: _s.targetKpa, reps: _s.reps);
+    _s = GloveSnapshot.initial.copyWith(
+      mode: _s.mode,
+      targetKpa: _s.targetKpa,
+      reps: _s.reps,
+    );
   }
 
   @override
@@ -217,8 +225,9 @@ class MockGloveService implements GloveService, PatientCueSink {
           s = s.copyWith(pressureKpa: p);
         }
       case GloveState.venting:
-        final rate =
-            _emergency ? emergencyVentRateKpaPerSec : ventRateKpaPerSec;
+        final rate = _emergency
+            ? emergencyVentRateKpaPerSec
+            : ventRateKpaPerSec;
         final p = s.pressureKpa - rate * dt;
         if (p <= 0) {
           _phaseTime = Duration.zero;
@@ -243,7 +252,8 @@ class MockGloveService implements GloveService, PatientCueSink {
 
   void _onEmgTick() {
     if (_disposed) return;
-    final working = _s.sessionActive &&
+    final working =
+        _s.sessionActive &&
         (_s.state == GloveState.inflating || _s.state == GloveState.holding);
     final target = (_cue == PatientCue.grip || working) ? 1.0 : 0.0;
     final step = emgTick.inMicroseconds / effortRamp.inMicroseconds;
@@ -251,10 +261,11 @@ class MockGloveService implements GloveService, PatientCueSink {
         ? min(target, _effort + step)
         : max(target, _effort - step);
 
-    final mean = MockEmgPreset.restMean +
+    final mean =
+        MockEmgPreset.restMean +
         _effort * (preset.gripMean - MockEmgPreset.restMean);
-    final sd = MockEmgPreset.restSd +
-        _effort * (preset.gripSd - MockEmgPreset.restSd);
+    final sd =
+        MockEmgPreset.restSd + _effort * (preset.gripSd - MockEmgPreset.restSd);
     _lastEmg = (mean + sd * _gaussian()).round().clamp(0, 1023);
     _emg.add(_lastEmg);
   }

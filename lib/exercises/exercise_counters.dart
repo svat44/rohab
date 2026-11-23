@@ -72,100 +72,105 @@ abstract class ExerciseCounter {
   ///
   /// [high] and [low] set the bands of the open/close style exercises (see
   /// [CameraExercise.repHigh]); without them each kind uses its default.
-  static ExerciseCounter forKind(ExerciseKind kind,
-          {double? high, double? low}) =>
-      switch (kind) {
-        ExerciseKind.openCloseGentle => _Hysteresis(
-            HysteresisRepCounter(high: high ?? 70, low: low ?? 30),
-            openText: 'Open your hand as far as you can.',
-            closeText: 'Now close it gently.'),
-        ExerciseKind.openClose => _Hysteresis(
-            HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
-            openText: 'Open your hand wide.',
-            closeText: 'Now make a fist.'),
-        ExerciseKind.spread => _Hysteresis(
-            HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
-            openText: 'Spread your fingers wide.',
-            closeText: 'Now bring them together.'),
-        ExerciseKind.holdOpen => PostureCycleCounter(
-            inTarget: (s) => s.percent >= 70,
-            closeness: (s) => _lin(s.percent, 0, 70),
-            released: (s) => s.percent <= 40,
-            hold: const Duration(seconds: 3),
-            startHint: 'Open your hand as wide as you can.',
-            holdHint: 'Hold it open.',
-            releaseHint: 'Now relax your hand.',
-          ),
-        ExerciseKind.cylinder => PostureCycleCounter(
-            // Closed around an object: partly, not fully, closed.
-            inTarget: (s) => s.percent >= 15 && s.percent <= 65,
-            closeness: (s) => s.percent > 65
-                ? _lin(s.percent, 100, 65)
-                : _lin(s.percent, 0, 15),
-            released: (s) => s.percent >= 75,
-            hold: const Duration(seconds: 2),
-            startHint: 'Close your hand around the cup.',
-            holdHint: 'Hold the grip.',
-            releaseHint: 'Let go and open your hand.',
-          ),
-        ExerciseKind.hook => PostureCycleCounter(
-            inTarget: isHook,
-            closeness: (s) {
-              final f = s.angles.fingers;
-              final pip = f.map((x) => x.pip).reduce((a, b) => a + b) / f.length;
-              return _lin(pip, 0, 60);
-            },
-            released: (s) => s.percent >= 75,
-            hold: const Duration(seconds: 1),
-            startHint: 'Bend your fingers like holding a bag handle.',
-            holdHint: 'Hold the hook.',
-            releaseHint: 'Open your hand fully.',
-          ),
-        ExerciseKind.pinch => PostureCycleCounter(
-            inTarget: (s) => _pinchGap(s) < 0.35,
-            closeness: (s) => _lin(_pinchGap(s), 1.2, 0.35),
-            released: (s) => _pinchGap(s) > 0.6,
-            hold: const Duration(milliseconds: 300),
-            startHint: 'Touch your thumb to your index fingertip.',
-            holdHint: 'Hold the pinch.',
-            releaseHint: 'Move them apart.',
-          ),
-        ExerciseKind.fingerTouches => _Touches(FingerTouchCounter()),
-        ExerciseKind.fingerLifts => FingerLiftCounter(),
-        ExerciseKind.squeeze => PostureCycleCounter(
-            inTarget: (s) => s.percent <= 30,
-            closeness: (s) => _lin(s.percent, 100, 30),
-            released: (s) => s.percent >= 55,
-            hold: const Duration(seconds: 5),
-            startHint: 'Make a fist and squeeze.',
-            holdHint: 'Keep squeezing.',
-            releaseHint: 'Relax and open your hand.',
-          ),
-        ExerciseKind.assistedExtension => PostureCycleCounter(
-            inTarget: (s) => s.percent >= 60,
-            closeness: (s) => _lin(s.percent, 0, 60),
-            released: (s) => s.percent <= 40,
-            hold: const Duration(seconds: 5),
-            startHint: 'Lift your fingers straight with your other hand.',
-            holdHint: 'Hold the stretch.',
-            releaseHint: 'Let go and relax your hand.',
-          ),
-        ExerciseKind.thumbExtension => PostureCycleCounter(
-            inTarget: (s) => s.angles.thumbAbduction >= 35,
-            closeness: (s) => _lin(s.angles.thumbAbduction, 10, 35),
-            released: (s) => s.angles.thumbAbduction <= 22,
-            hold: const Duration(seconds: 5),
-            startHint: 'Move your thumb away from your fingers.',
-            holdHint: 'Hold your thumb out.',
-            releaseHint: 'Relax your thumb.',
-          ),
-        ExerciseKind.wristStretch => WristBendCounter(),
-        ExerciseKind.wristRotation => PalmRotationCounter(),
-        ExerciseKind.handSlide => SlideCounter(),
-        ExerciseKind.flatFingerLifts => FlatFingerLiftCounter(),
-        ExerciseKind.fingerWalking =>
-          FlatFingerLiftCounter(order: FlatFingerLiftCounter.walkingOrder),
-      };
+  static ExerciseCounter forKind(
+    ExerciseKind kind, {
+    double? high,
+    double? low,
+  }) => switch (kind) {
+    ExerciseKind.openCloseGentle => _Hysteresis(
+      HysteresisRepCounter(high: high ?? 70, low: low ?? 30),
+      openText: 'Open your hand as far as you can.',
+      closeText: 'Now close it gently.',
+    ),
+    ExerciseKind.openClose => _Hysteresis(
+      HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
+      openText: 'Open your hand wide.',
+      closeText: 'Now make a fist.',
+    ),
+    ExerciseKind.spread => _Hysteresis(
+      HysteresisRepCounter(high: high ?? 80, low: low ?? 20),
+      openText: 'Spread your fingers wide.',
+      closeText: 'Now bring them together.',
+    ),
+    ExerciseKind.holdOpen => PostureCycleCounter(
+      inTarget: (s) => s.percent >= 70,
+      closeness: (s) => _lin(s.percent, 0, 70),
+      released: (s) => s.percent <= 40,
+      hold: const Duration(seconds: 3),
+      startHint: 'Open your hand as wide as you can.',
+      holdHint: 'Hold it open.',
+      releaseHint: 'Now relax your hand.',
+    ),
+    ExerciseKind.cylinder => PostureCycleCounter(
+      // Closed around an object: partly, not fully, closed.
+      inTarget: (s) => s.percent >= 15 && s.percent <= 65,
+      closeness: (s) =>
+          s.percent > 65 ? _lin(s.percent, 100, 65) : _lin(s.percent, 0, 15),
+      released: (s) => s.percent >= 75,
+      hold: const Duration(seconds: 2),
+      startHint: 'Close your hand around the cup.',
+      holdHint: 'Hold the grip.',
+      releaseHint: 'Let go and open your hand.',
+    ),
+    ExerciseKind.hook => PostureCycleCounter(
+      inTarget: isHook,
+      closeness: (s) {
+        final f = s.angles.fingers;
+        final pip = f.map((x) => x.pip).reduce((a, b) => a + b) / f.length;
+        return _lin(pip, 0, 60);
+      },
+      released: (s) => s.percent >= 75,
+      hold: const Duration(seconds: 1),
+      startHint: 'Bend your fingers like holding a bag handle.',
+      holdHint: 'Hold the hook.',
+      releaseHint: 'Open your hand fully.',
+    ),
+    ExerciseKind.pinch => PostureCycleCounter(
+      inTarget: (s) => _pinchGap(s) < 0.35,
+      closeness: (s) => _lin(_pinchGap(s), 1.2, 0.35),
+      released: (s) => _pinchGap(s) > 0.6,
+      hold: const Duration(milliseconds: 300),
+      startHint: 'Touch your thumb to your index fingertip.',
+      holdHint: 'Hold the pinch.',
+      releaseHint: 'Move them apart.',
+    ),
+    ExerciseKind.fingerTouches => _Touches(FingerTouchCounter()),
+    ExerciseKind.fingerLifts => FingerLiftCounter(),
+    ExerciseKind.squeeze => PostureCycleCounter(
+      inTarget: (s) => s.percent <= 30,
+      closeness: (s) => _lin(s.percent, 100, 30),
+      released: (s) => s.percent >= 55,
+      hold: const Duration(seconds: 5),
+      startHint: 'Make a fist and squeeze.',
+      holdHint: 'Keep squeezing.',
+      releaseHint: 'Relax and open your hand.',
+    ),
+    ExerciseKind.assistedExtension => PostureCycleCounter(
+      inTarget: (s) => s.percent >= 60,
+      closeness: (s) => _lin(s.percent, 0, 60),
+      released: (s) => s.percent <= 40,
+      hold: const Duration(seconds: 5),
+      startHint: 'Lift your fingers straight with your other hand.',
+      holdHint: 'Hold the stretch.',
+      releaseHint: 'Let go and relax your hand.',
+    ),
+    ExerciseKind.thumbExtension => PostureCycleCounter(
+      inTarget: (s) => s.angles.thumbAbduction >= 35,
+      closeness: (s) => _lin(s.angles.thumbAbduction, 10, 35),
+      released: (s) => s.angles.thumbAbduction <= 22,
+      hold: const Duration(seconds: 5),
+      startHint: 'Move your thumb away from your fingers.',
+      holdHint: 'Hold your thumb out.',
+      releaseHint: 'Relax your thumb.',
+    ),
+    ExerciseKind.wristStretch => WristBendCounter(),
+    ExerciseKind.wristRotation => PalmRotationCounter(),
+    ExerciseKind.handSlide => SlideCounter(),
+    ExerciseKind.flatFingerLifts => FlatFingerLiftCounter(),
+    ExerciseKind.fingerWalking => FlatFingerLiftCounter(
+      order: FlatFingerLiftCounter.walkingOrder,
+    ),
+  };
 
   /// Hook grip: knuckles (MCP) mostly straight, finger joints (PIP) bent.
   static bool isHook(HandSample s) {
@@ -224,7 +229,8 @@ class _Touches extends ExerciseCounter {
   void resetCycle() => _c.resetCycle();
 
   @override
-  String get hint => 'Touch your thumb to your ${names[_c.expectedFinger]} '
+  String get hint =>
+      'Touch your thumb to your ${names[_c.expectedFinger]} '
       'fingertip (${_c.expectedFinger + 1} of 4).';
 
   @override
@@ -289,7 +295,8 @@ class PostureCycleCounter extends ExerciseCounter {
     _since ??= t;
     final held = t - _since!;
     final left = hold - held;
-    _meter = 0.4 + 0.6 * (held.inMilliseconds / hold.inMilliseconds).clamp(0.0, 1.0);
+    _meter =
+        0.4 + 0.6 * (held.inMilliseconds / hold.inMilliseconds).clamp(0.0, 1.0);
     _hint = hold.inSeconds >= 2 && left > Duration.zero
         ? '${holdHint ?? 'Hold.'} ${(left.inMilliseconds / 1000).ceil()} s'
         : holdHint;
@@ -343,7 +350,8 @@ class FingerLiftCounter extends ExerciseCounter {
   int get count => _rounds;
 
   @override
-  String get hint => 'Lift your ${names[order[_next]]} finger '
+  String get hint =>
+      'Lift your ${names[order[_next]]} finger '
       '(${_next + 1} of ${order.length}).';
 
   /// How far each finger (index to little) stands out from the other three,
@@ -353,8 +361,10 @@ class FingerLiftCounter extends ExerciseCounter {
     final totals = [for (final f in s.angles.fingers) f.total];
     return [
       for (var i = 0; i < 4; i++)
-        [for (var j = 0; j < 4; j++) if (j != i) totals[j]]
-                    .reduce((a, b) => a + b) /
+        [
+                  for (var j = 0; j < 4; j++)
+                    if (j != i) totals[j],
+                ].reduce((a, b) => a + b) /
                 3 -
             totals[i],
     ];
@@ -447,8 +457,10 @@ class FlatFingerLiftCounter extends FingerLiftCounter {
     return [
       for (var i = 0; i < 4; i++)
         (h[i] -
-                [for (var j = 0; j < 4; j++) if (j != i) h[j]]
-                        .reduce((a, b) => a + b) /
+                [
+                      for (var j = 0; j < 4; j++)
+                        if (j != i) h[j],
+                    ].reduce((a, b) => a + b) /
                     3)
             .abs(),
     ];
@@ -701,8 +713,9 @@ class WristMonitor {
     }
     final r = _reference!;
     final d = r.length * v.length;
-    _deviation =
-        d == 0 ? 0 : math.acos((r.dot(v) / d).clamp(-1.0, 1.0)) * 180 / math.pi;
+    _deviation = d == 0
+        ? 0
+        : math.acos((r.dot(v) / d).clamp(-1.0, 1.0)) * 180 / math.pi;
     if (_deviation > limitDegrees) {
       _over++;
       _quiet = 0;
@@ -711,8 +724,11 @@ class WristMonitor {
     }
     if (followDrift && _deviation <= limitDegrees) {
       const rate = 0.03;
-      _reference = Point3(r.x + (v.x - r.x) * rate, r.y + (v.y - r.y) * rate,
-          r.z + (v.z - r.z) * rate);
+      _reference = Point3(
+        r.x + (v.x - r.x) * rate,
+        r.y + (v.y - r.y) * rate,
+        r.z + (v.z - r.z) * rate,
+      );
     }
   }
 

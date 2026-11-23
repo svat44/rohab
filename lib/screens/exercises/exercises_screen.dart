@@ -24,82 +24,36 @@ class ExercisesScreen extends ConsumerWidget {
       valueListenable: glove.snapshot,
       builder: (context, s, _) => ListView(
         padding: const EdgeInsets.fromLTRB(
-            RohabSpace.s24, 0, RohabSpace.s24, RohabSpace.s24),
+          RohabSpace.s24,
+          0,
+          RohabSpace.s24,
+          RohabSpace.s24,
+        ),
         children: [
-          _PathRow(
-            key: cameraKey,
-            title: 'Camera',
-            icon: Icons.photo_camera_outlined,
-            description: "Practice with your phone's camera. No glove needed.",
-            onTap: () => context.go(Routes.cameraExercises),
-          ),
-          const SizedBox(height: RohabSpace.s16),
-          _PathRow(
-            key: gloveKey,
-            title: 'With glove',
-            icon: Icons.bluetooth,
-            // Glove exercises are not built yet, so this stays disabled
-            // even when a glove is connected.
-            description: s.isConnected
-                ? 'Not available yet.'
-                : 'Available when your glove is connected.',
+          RohabGroup(
+            dividerInset: RohabRow.textInset,
+            children: [
+              RohabRow(
+                key: cameraKey,
+                icon: Icons.photo_camera_outlined,
+                title: 'Camera',
+                subtitle: "Practice with your phone's camera. No glove needed.",
+                onTap: () => context.go(Routes.cameraExercises),
+              ),
+              // Glove exercises are not built yet, so this stays disabled
+              // even when a glove is connected.
+              RohabRow(
+                key: gloveKey,
+                icon: Icons.bluetooth,
+                title: 'With glove',
+                subtitle: s.isConnected
+                    ? 'Not available yet.'
+                    : 'Available when your glove is connected.',
+                enabled: false,
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PathRow extends StatelessWidget {
-  const _PathRow({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.icon,
-    this.onTap,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final t = Theme.of(context).textTheme;
-    final enabled = onTap != null;
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      child: RohabCard(
-        onTap: onTap,
-        minHeight: RohabSize.touchTarget * 1.5,
-        padding: const EdgeInsets.all(RohabSpace.s16),
-        child: Row(
-          children: [
-            IconBadge(icon, size: 64),
-            const SizedBox(width: RohabSpace.s16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: t.labelLarge
-                        ?.copyWith(color: enabled ? c.text : c.secondary),
-                  ),
-                  const SizedBox(height: RohabSpace.s8 / 2),
-                  Text(
-                    description,
-                    style: t.labelMedium
-                        ?.copyWith(color: enabled ? c.text : c.secondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -114,10 +68,13 @@ class CameraExerciseListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final c = context.colors;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          RohabSpace.s8, 0, RohabSpace.s24, RohabSpace.s24),
+        RohabSpace.s8,
+        0,
+        RohabSpace.s24,
+        RohabSpace.s24,
+      ),
       children: [
         Align(
           alignment: Alignment.centerLeft,
@@ -135,43 +92,28 @@ class CameraExerciseListScreen extends StatelessWidget {
               const SizedBox(height: RohabSpace.s8),
               Text('Practice any exercise', style: t.headlineMedium),
               const SizedBox(height: RohabSpace.s8),
-              Text("Sets of exercises in today's plan count toward it.",
-                  style: t.labelMedium),
+              Text(
+                "Sets of exercises in today's plan count toward it.",
+                style: t.labelMedium,
+              ),
               for (final level in [1, 2, 3]) ...[
                 SectionTitle(
                   'Level $level · ${ProgramScreen.levelNames[level]}',
                 ),
-                for (final e in ExerciseCatalog.forLevel(level)) ...[
-                  RohabCard(
-                    key: rowKey(e.id),
-                    onTap: () => context.go(Routes.cameraExercise(e.id)),
-                    minHeight: RohabSize.touchTarget * 1.5,
-                    child: Row(
-                      children: [
-                        IconBadge(exerciseIcon(e.kind)),
-                        const SizedBox(width: RohabSpace.s16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(e.title, style: t.labelLarge),
-                              const SizedBox(height: RohabSpace.s8 / 2),
-                              Text(e.description,
-                                  style: t.labelMedium
-                                      ?.copyWith(color: c.text)),
-                              if (e.target != null) ...[
-                                const SizedBox(height: RohabSpace.s8),
-                                InfoChip(e.target!,
-                                    icon: Icons.repeat),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: RohabSpace.s16),
-                ],
+                RohabGroup(
+                  dividerInset: RohabRow.textInset,
+                  children: [
+                    for (final e in ExerciseCatalog.forLevel(level))
+                      RohabRow(
+                        key: rowKey(e.id),
+                        icon: exerciseIcon(e.kind),
+                        title: e.title,
+                        subtitle: e.description,
+                        value: e.target,
+                        onTap: () => context.go(Routes.cameraExercise(e.id)),
+                      ),
+                  ],
+                ),
               ],
             ],
           ),

@@ -44,7 +44,8 @@ class CalibrationFlowState {
 
 final calibrationControllerProvider =
     NotifierProvider<CalibrationController, CalibrationFlowState>(
-        CalibrationController.new);
+      CalibrationController.new,
+    );
 
 /// Runs the 4-step calibration. Timing comes from the sample count, so a
 /// 5 s rest is exactly 250 samples at 50 Hz.
@@ -113,12 +114,15 @@ class CalibrationController extends Notifier<CalibrationFlowState> {
         !result.isValid) {
       return;
     }
-    final calibration =
-        Calibration.fromResult(result, ref.read(clockProvider)());
+    final calibration = Calibration.fromResult(
+      result,
+      ref.read(clockProvider)(),
+    );
     await ref.read(savedCalibrationProvider.notifier).save(calibration);
     await _g.setEmgThreshold(calibration.threshold);
     state = CalibrationFlowState(
-        notice: 'Calibration saved. Trigger level ${calibration.threshold}.');
+      notice: 'Calibration saved. Trigger level ${calibration.threshold}.',
+    );
   }
 
   void _startRest() {
@@ -216,8 +220,11 @@ class CalibrationController extends Notifier<CalibrationFlowState> {
     if (!s.isConnected) {
       cancel(notice: 'The glove disconnected. Nothing was saved.');
     } else if (s.sessionActive) {
-      cancel(notice: 'A session started, so calibration stopped. '
-          'Nothing was saved.');
+      cancel(
+        notice:
+            'A session started, so calibration stopped. '
+            'Nothing was saved.',
+      );
     }
   }
 

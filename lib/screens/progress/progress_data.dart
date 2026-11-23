@@ -27,8 +27,10 @@ class ProgressData {
 
 /// Progress for one exercise. Invalidate after a session is saved or the
 /// data is cleared.
-final progressDataProvider =
-    FutureProvider.family<ProgressData, String>((ref, exerciseId) async {
+final progressDataProvider = FutureProvider.family<ProgressData, String>((
+  ref,
+  exerciseId,
+) async {
   final repo = ref.watch(exerciseSessionRepositoryProvider);
   final now = ref.watch(clockProvider)();
   return ProgressData(
@@ -40,8 +42,18 @@ final progressDataProvider =
 // ---- Plain-text formatting, shared by the list, charts and screen readers.
 
 const _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// "Nov 18".

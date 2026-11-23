@@ -37,7 +37,8 @@ class OneEuroFilter {
     if (dt <= 0) return prev;
     final rawDx = (x - prev) / dt;
     _dx = _lowPass(_dx, rawDx, _alpha(dCutoff, dt));
-    final cutoff = (minCutoff ?? this.minCutoff) + (beta ?? this.beta) * _dx.abs();
+    final cutoff =
+        (minCutoff ?? this.minCutoff) + (beta ?? this.beta) * _dx.abs();
     return _x = _lowPass(prev, x, _alpha(cutoff, dt));
   }
 
@@ -52,7 +53,8 @@ class OneEuroFilter {
     return 1 / (1 + tau / dt);
   }
 
-  static double _lowPass(double prev, double x, double a) => prev + a * (x - prev);
+  static double _lowPass(double prev, double x, double a) =>
+      prev + a * (x - prev);
 }
 
 /// SPARC, spectral arc length (Balasubramanian et al. 2012, 2015): the

@@ -41,92 +41,76 @@ class Routes {
 /// calibration survives a tab switch. AppShell wraps every branch, so the
 /// STOP banner is on every screen.
 GoRouter buildRouter(SharedPreferences prefs) => GoRouter(
-      initialLocation: Routes.home,
-      // First run: the guide comes before anything else.
-      redirect: (context, state) {
-        final onWelcome = state.matchedLocation == Routes.welcome;
-        if (!isOnboardingDone(prefs) && !onWelcome) return Routes.welcome;
-        return null;
-      },
-      routes: [
-        GoRoute(
-          path: Routes.welcome,
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: WelcomeScreen()),
-        ),
-        StatefulShellRoute.indexedStack(
-          builder: (context, state, shell) => AppShell(shell: shell),
-          branches: [
-            _branch(Routes.home, const HomeScreen()),
-            _branch(Routes.calibration, const CalibrationScreen()),
-            StatefulShellBranch(
+  initialLocation: Routes.home,
+  // First run: the guide comes before anything else.
+  redirect: (context, state) {
+    final onWelcome = state.matchedLocation == Routes.welcome;
+    if (!isOnboardingDone(prefs) && !onWelcome) return Routes.welcome;
+    return null;
+  },
+  routes: [
+    GoRoute(
+      path: Routes.welcome,
+      pageBuilder: (context, state) =>
+          const NoTransitionPage(child: WelcomeScreen()),
+    ),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, shell) => AppShell(shell: shell),
+      branches: [
+        _branch(Routes.home, const HomeScreen()),
+        _branch(Routes.calibration, const CalibrationScreen()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: Routes.exercises,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: ExercisesScreen()),
               routes: [
                 GoRoute(
-                  path: Routes.exercises,
+                  path: 'camera',
                   pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: ExercisesScreen()),
+                      const NoTransitionPage(child: ProgramScreen()),
                   routes: [
                     GoRoute(
-                      path: 'camera',
-                      pageBuilder: (context, state) =>
-                          const NoTransitionPage(child: ProgramScreen()),
-                      routes: [
-                        GoRoute(
-                          path: 'all',
-                          pageBuilder: (context, state) => const NoTransitionPage(
-                              child: CameraExerciseListScreen()),
-                        ),
-                        // Debug builds only; opened from the debug menu.
-                        if (kDebugMode)
-                          GoRoute(
-                            path: 'test-protocol',
-                            pageBuilder: (context, state) => NoTransitionPage(
-                                key: state.pageKey,
-                                child: const TestProtocolScreen()),
-                          ),
-                        GoRoute(
-                          path: 'baseline',
-                          pageBuilder: (context, state) => NoTransitionPage(
-                              key: state.pageKey, child: const BaselineScreen()),
-                        ),
-                        GoRoute(
-                          path: 'pain',
-                          pageBuilder: (context, state) => NoTransitionPage(
-                            key: state.pageKey,
-                            child: PainCheckScreen(
-                              after: state.uri.queryParameters['phase'] == 'after',
-                              next: state.uri.queryParameters['next'],
-                            ),
-                          ),
-                        ),
-                        GoRoute(
-                          path: ':exerciseId',
-                          pageBuilder: (context, state) => NoTransitionPage(
-                            key: state.pageKey,
-                            child: CameraExerciseFlow(
-                              exerciseId:
-                                  state.pathParameters['exerciseId']!,
-                            ),
-                          ),
-                        ),
-                      ],
+                      path: 'all',
+                      pageBuilder: (context, state) => const NoTransitionPage(
+                        child: CameraExerciseListScreen(),
+                      ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            _branch(Routes.progress, const ProgressScreen()),
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: Routes.settings,
-                  pageBuilder: (context, state) =>
-                      const NoTransitionPage(child: SettingsScreen()),
-                  routes: [
+                    // Debug builds only; opened from the debug menu.
+                    if (kDebugMode)
+                      GoRoute(
+                        path: 'test-protocol',
+                        pageBuilder: (context, state) => NoTransitionPage(
+                          key: state.pageKey,
+                          child: const TestProtocolScreen(),
+                        ),
+                      ),
                     GoRoute(
-                      path: 'therapist',
+                      path: 'baseline',
                       pageBuilder: (context, state) => NoTransitionPage(
-                          key: state.pageKey, child: const TherapistScreen()),
+                        key: state.pageKey,
+                        child: const BaselineScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: 'pain',
+                      pageBuilder: (context, state) => NoTransitionPage(
+                        key: state.pageKey,
+                        child: PainCheckScreen(
+                          after: state.uri.queryParameters['phase'] == 'after',
+                          next: state.uri.queryParameters['next'],
+                        ),
+                      ),
+                    ),
+                    GoRoute(
+                      path: ':exerciseId',
+                      pageBuilder: (context, state) => NoTransitionPage(
+                        key: state.pageKey,
+                        child: CameraExerciseFlow(
+                          exerciseId: state.pathParameters['exerciseId']!,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -134,14 +118,35 @@ GoRouter buildRouter(SharedPreferences prefs) => GoRouter(
             ),
           ],
         ),
-      ],
-    );
-
-StatefulShellBranch _branch(String path, Widget screen) => StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: path,
-          pageBuilder: (context, state) => NoTransitionPage(child: screen),
+        _branch(Routes.progress, const ProgressScreen()),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: Routes.settings,
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: SettingsScreen()),
+              routes: [
+                GoRoute(
+                  path: 'therapist',
+                  pageBuilder: (context, state) => NoTransitionPage(
+                    key: state.pageKey,
+                    child: const TherapistScreen(),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
-    );
+    ),
+  ],
+);
+
+StatefulShellBranch _branch(String path, Widget screen) => StatefulShellBranch(
+  routes: [
+    GoRoute(
+      path: path,
+      pageBuilder: (context, state) => NoTransitionPage(child: screen),
+    ),
+  ],
+);

@@ -15,22 +15,24 @@ enum TextSize {
   final double scale;
 
   static TextSize fromName(String? name) => TextSize.values.firstWhere(
-        (s) => s.name == name,
-        orElse: () => TextSize.normal,
-      );
+    (s) => s.name == name,
+    orElse: () => TextSize.normal,
+  );
 }
 
 const _textSizeKey = 'rohab.settings.textSize.v1';
 
-final textSizeProvider =
-    NotifierProvider<TextSizeNotifier, TextSize>(TextSizeNotifier.new);
+final textSizeProvider = NotifierProvider<TextSizeNotifier, TextSize>(
+  TextSizeNotifier.new,
+);
 
 class TextSizeNotifier extends Notifier<TextSize> {
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
 
   @override
-  TextSize build() =>
-      TextSize.fromName(ref.watch(sharedPreferencesProvider).getString(_textSizeKey));
+  TextSize build() => TextSize.fromName(
+    ref.watch(sharedPreferencesProvider).getString(_textSizeKey),
+  );
 
   Future<void> set(TextSize size) async {
     state = size;
