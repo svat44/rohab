@@ -557,4 +557,54 @@ void main() {
       await close(tester, h);
     });
   });
+
+  group('distance', () {
+    testWidgets('too far: the hand check says so and does not move on',
+        (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      h.tracker.pose = HandPose.open.copyWith(scale: 0.3);
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.text('Move your hand closer to the camera.'), findsOneWidget);
+      expect(find.text('Open your hand as wide as you can.'), findsNothing);
+      await close(tester, h);
+    });
+
+    testWidgets('too close says to move back', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      h.tracker.pose = HandPose.open.copyWith(scale: 1.8);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Move your hand back a little.'), findsOneWidget);
+      await close(tester, h);
+    });
+
+    testWidgets('moving to a good distance carries on', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      h.tracker.pose = HandPose.open.copyWith(scale: 0.3);
+      await tester.pump(const Duration(seconds: 3));
+      h.tracker.pose = HandPose.open;
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Open your hand as wide as you can.'), findsOneWidget);
+      await close(tester, h);
+    });
+
+    testWidgets('after 8 s the distance no longer blocks', (tester) async {
+      final h = await launch(tester);
+      await openFree(tester, 'open_close');
+      await tapPrimary(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      h.tracker.pose = HandPose.open.copyWith(scale: 0.3);
+      await tester.pump(const Duration(seconds: 10));
+      expect(find.text('Open your hand as wide as you can.'), findsOneWidget);
+      await close(tester, h);
+    });
+  });
 }

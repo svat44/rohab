@@ -37,6 +37,16 @@ class HandSample {
 double _lin(double v, double from, double to) =>
     ((v - from) / (to - from)).clamp(0.0, 1.0).toDouble();
 
+/// Thumb tip to index tip, in hand sizes: the smaller of the 3D gap and the
+/// on-screen gap (see [FingerTouchCounter]).
+double _pinchGap(HandSample s) {
+  final world = HandMetrics.touchGap(s.points, HandIndex.indexTip);
+  final img = s.image;
+  return img == null
+      ? world
+      : math.min(world, HandMetrics.touchGap(img, HandIndex.indexTip));
+}
+
 /// Counts reps (or holds, or rounds) of one exercise.
 abstract class ExerciseCounter {
   int get count;
@@ -112,12 +122,9 @@ abstract class ExerciseCounter {
             releaseHint: 'Open your hand fully.',
           ),
         ExerciseKind.pinch => PostureCycleCounter(
-            inTarget: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) < 0.3,
-            closeness: (s) => _lin(
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip), 1.2, 0.3),
-            released: (s) =>
-                HandMetrics.thumbTo(s.points, HandIndex.indexTip) > 0.5,
+            inTarget: (s) => _pinchGap(s) < 0.35,
+            closeness: (s) => _lin(_pinchGap(s), 1.2, 0.35),
+            released: (s) => _pinchGap(s) > 0.6,
             hold: const Duration(milliseconds: 300),
             startHint: 'Touch your thumb to your index fingertip.',
             holdHint: 'Hold the pinch.',
@@ -210,7 +217,8 @@ class _Touches extends ExerciseCounter {
   int get count => _c.rounds;
 
   @override
-  bool update(HandSample s, Duration t) => _c.update(s.points, t);
+  bool update(HandSample s, Duration t) =>
+      _c.update(s.points, t, image: s.image);
 
   @override
   void resetCycle() => _c.resetCycle();

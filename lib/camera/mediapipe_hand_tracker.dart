@@ -9,6 +9,7 @@ import 'package:mediapipe_vision/mediapipe_vision.dart';
 import '../exercises/hand_metrics.dart';
 import 'frame_geometry.dart';
 import 'hand_tracker.dart';
+import 'landmark_smoother.dart';
 
 /// Front camera + Google's MediaPipe Hand Landmarker (package
 /// mediapipe_vision), in live-stream mode.
@@ -28,6 +29,7 @@ class MediaPipeHandTracker implements HandTracker {
   int _lastTimestamp = -1;
   int _sensorOrientation = 0;
   FrameGeometry? _geometry;
+  final _smoother = LandmarkSmoother();
 
   // Stats: results per second, measured over 1 s windows.
   int _windowStart = 0;
@@ -159,24 +161,37 @@ class MediaPipeHandTracker implements HandTracker {
     if (geometry == null) return;
     final category =
         result.handedness.isEmpty ? null : result.handedness.first.firstOrNull;
+    final stamp = Duration(milliseconds: result.timestampMilliseconds ?? now);
+    // Smooth the points so the skeleton and the counting thresholds do not
+    // shake with tracking noise.
+    // Low-confidence frames are ignored downstream, so they must not drag
+    // the filter off the hand: they pass through untouched.
+    final confident = (category?.score ?? 0) >= HandFrame.minConfidence;
+    if (confident) _smoother.beginFrame(stamp);
+    final upright = [
+      for (final p in hand)
+        () {
+          // MediaPipe answers in the delivered (sensor) frame; turn the
+          // points upright so the overlay and every measurement share one
+          // frame.
+          final (x, y) = geometry.toUpright(p.x, p.y);
+          return Point3(x, y, p.z);
+        }(),
+    ];
     _frames.add(HandFrame(
-      // MediaPipe answers in the delivered (sensor) frame; turn the points
-      // upright so the overlay and every measurement share one frame.
-      landmarks: [
-        for (final p in hand)
-          () {
-            final (x, y) = geometry.toUpright(p.x, p.y);
-            return Point3(x, y, p.z);
-          }(),
-      ],
+      landmarks: confident ? _smoother.smoothImage(upright, stamp) : upright,
       handedness:
           _userHand(category?.categoryName, geometry.alreadyMirrored),
       confidence: category?.score ?? 0,
-      timestamp: Duration(milliseconds: result.timestampMilliseconds ?? now),
+      timestamp: stamp,
       aspectRatio: geometry.aspect,
       mirrored: geometry.alreadyMirrored,
-      worldLandmarks:
-          world == null ? null : [for (final p in world) Point3(p.x, p.y, p.z)],
+      worldLandmarks: world == null
+          ? null
+          : confident
+              ? _smoother.smoothWorld(
+                  [for (final p in world) Point3(p.x, p.y, p.z)], stamp)
+              : [for (final p in world) Point3(p.x, p.y, p.z)],
     ));
   }
 

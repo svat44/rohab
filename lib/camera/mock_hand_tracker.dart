@@ -21,6 +21,7 @@ class HandPose {
     this.wristPitch = 0,
     this.hook = false,
     this.fingerCurls,
+    this.scale = 1,
   });
 
   final double curl;
@@ -35,7 +36,11 @@ class HandPose {
   final bool hook;
   final List<double>? fingerCurls;
 
-  HandPose copyWith({double? curl, bool? rightHand, double? wristPitch}) =>
+  /// How big the hand looks: below 1 is far from the camera, above 1 near.
+  final double scale;
+
+  HandPose copyWith(
+          {double? curl, bool? rightHand, double? wristPitch, double? scale}) =>
       HandPose(
         curl: curl ?? this.curl,
         spread: spread,
@@ -44,6 +49,7 @@ class HandPose {
         wristPitch: wristPitch ?? this.wristPitch,
         hook: hook,
         fingerCurls: fingerCurls,
+        scale: scale ?? this.scale,
       );
 
   static const open = HandPose();
@@ -104,7 +110,8 @@ class MockHandTracker implements HandTracker {
           thumbOn: p.thumbOn,
           hook: p.hook,
           fingerCurls: p.fingerCurls,
-          wristPitch: p.wristPitch);
+          wristPitch: p.wristPitch,
+          scale: p.scale);
       if (noise > 0) {
         lm = [
           for (final q in lm)

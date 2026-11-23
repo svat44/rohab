@@ -13,6 +13,7 @@ import '../../debug/diagnostics_overlay.dart';
 import '../../exercises/camera_exercise_controller.dart';
 import '../../exercises/exercise_catalog.dart';
 import '../../exercises/exercise_providers.dart';
+import '../../exercises/hand_distance.dart';
 import '../../program/daily_plan.dart';
 import '../../program/program_providers.dart';
 import '../progress/overview.dart';
@@ -256,7 +257,8 @@ class _CameraExerciseFlowState extends ConsumerState<CameraExerciseFlow>
           stats: () => c.stats,
           action: cancel,
           children: [
-            _Instruction('Hold your hand inside the frame.'),
+            _Instruction(HandDistanceCheck.advice(c.distance) ??
+                'Hold your hand inside the frame.'),
             if (c.needsHandHelp) ...[
               const SizedBox(height: RohabSpace.s8),
               Text(
@@ -513,7 +515,9 @@ class _ExerciseReadout extends StatelessWidget {
         ? 'Hold your hand inside the frame.'
         : c.wristCue
             ? 'Wrist moved. That one did not count.'
-            : c.stuck
+            : c.distance != HandDistance.good
+                ? HandDistanceCheck.advice(c.distance)!
+                : c.stuck
                 ? 'Not counting? Make the movement bigger and slower, with '
                     'your whole hand in view.'
                 : c.suggestRest
@@ -556,7 +560,10 @@ class _ExerciseReadout extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: t.labelLarge?.copyWith(
-                    color: c.handLost || c.wristCue || c.stuck
+                    color: c.handLost ||
+                            c.wristCue ||
+                            c.stuck ||
+                            c.distance != HandDistance.good
                         ? colors.text
                         : colors.accent),
               ),

@@ -8,6 +8,7 @@ import '../debug/diagnostics.dart';
 import '../data/exercise_session_repository.dart';
 import 'exercise_catalog.dart';
 import 'exercise_counters.dart';
+import 'hand_distance.dart';
 import 'hand_metrics.dart';
 import 'joint_angles.dart';
 import 'movement_quality.dart';
@@ -150,6 +151,12 @@ class CameraExerciseController extends ChangeNotifier {
   /// Exercise-specific guidance ("Hold it open.", "Next: ring finger").
   String? hint;
 
+  /// How far the hand is from the camera, smoothed. Too far or too close
+  /// makes tracking worse, so the screen says so and the hand check waits.
+  HandDistance distance = HandDistance.good;
+  double? _palm;
+  static const distanceGiveUp = Duration(seconds: 8);
+
   /// Live progress toward the current move, 0-1, lightly smoothed so the bar
   /// does not flicker with tracking noise. [meterMarker] is the goal line.
   double meter = 0;
@@ -275,6 +282,8 @@ class CameraExerciseController extends ChangeNotifier {
     _lastSeen = null;
     _presentSince = null;
     needsHandHelp = false;
+    distance = HandDistance.good;
+    _palm = null;
     _handCheckStart = _now;
     _go(FlowStep.handCheck);
   }
@@ -375,6 +384,13 @@ class CameraExerciseController extends ChangeNotifier {
     if (!frame.isUsable) return;
     _lastSeen = _now;
     final lm = frame.measurePoints;
+    final palm = HandDistanceCheck.palmLength(frame.points);
+    _palm = _palm == null ? palm : _palm! + (palm - _palm!) * 0.2;
+    final d = HandDistanceCheck.of(_palm!);
+    if (d != distance) {
+      distance = d;
+      notifyListeners();
+    }
 
     switch (step) {
       case FlowStep.calibrate:
@@ -461,7 +477,11 @@ class CameraExerciseController extends ChangeNotifier {
           needsHandHelp = help;
           notifyListeners();
         }
-        if (!seen) {
+        // Seen at a good distance (after 8 s the distance no longer blocks:
+        // some setups cannot do better, and waiting forever is worse).
+        final okDistance = distance == HandDistance.good ||
+            _now - _handCheckStart >= distanceGiveUp;
+        if (!seen || !okDistance) {
           _presentSince = null;
         } else {
           _presentSince ??= _now;

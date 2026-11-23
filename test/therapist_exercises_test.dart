@@ -370,4 +370,44 @@ void main() {
       expect(c.meter, a);
     });
   });
+
+  group('touching with bad depth (the real-phone case)', () {
+    // A pinch that is clearly touching in the picture, but whose 3D points
+    // put the thumb tip 4 cm too far away in depth.
+    List<Point3> badDepth(List<Point3> w) => [
+          for (var i = 0; i < w.length; i++)
+            i == HandIndex.thumbTip ? Point3(w[i].x, w[i].y, w[i].z - 0.04) : w[i],
+        ];
+
+    test('pinch counts from the picture even if depth says it is apart', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.pinch);
+      final world = badDepth(SyntheticHand.world(thumbOn: HandIndex.indexTip));
+      final image = SyntheticHand.pose(thumbOn: HandIndex.indexTip);
+      feed(c, sample(world, image: image), Duration.zero, 1);
+      expect(c.count, 1);
+    });
+
+    test('without the picture, that same bad depth would not count', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.pinch);
+      final world = badDepth(SyntheticHand.world(thumbOn: HandIndex.indexTip));
+      feed(c, sample(world), Duration.zero, 1);
+      expect(c.count, 0);
+    });
+
+    test('the bar fills when the picture shows a touch', () {
+      final c = ExerciseCounter.forKind(ExerciseKind.fingerTouches);
+      final world = badDepth(SyntheticHand.world(thumbOn: HandIndex.indexTip));
+      c.update(
+          sample(world, image: SyntheticHand.pose(thumbOn: HandIndex.indexTip)),
+          Duration.zero);
+      expect(c.meter!, closeTo(1, 0.01));
+    });
+
+    test('a side-on hand (narrow palm) does not inflate the gap', () {
+      final w = SyntheticHand.world(thumbOn: HandIndex.indexTip);
+      // Squash x: the palm looks narrow, as when turned side-on.
+      final narrow = [for (final p in w) Point3(p.x * 0.4, p.y, p.z)];
+      expect(HandMetrics.touchGap(narrow, HandIndex.indexTip), lessThan(0.35));
+    });
+  });
 }

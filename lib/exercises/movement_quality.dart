@@ -24,7 +24,8 @@ class OneEuroFilter {
 
   double? get value => _x;
 
-  double filter(double x, Duration t) {
+  /// [minCutoff] and [beta] override the defaults for this sample only.
+  double filter(double x, Duration t, {double? minCutoff, double? beta}) {
     final prev = _x;
     final prevT = _t;
     _t = t;
@@ -36,7 +37,7 @@ class OneEuroFilter {
     if (dt <= 0) return prev;
     final rawDx = (x - prev) / dt;
     _dx = _lowPass(_dx, rawDx, _alpha(dCutoff, dt));
-    final cutoff = minCutoff + beta * _dx.abs();
+    final cutoff = (minCutoff ?? this.minCutoff) + (beta ?? this.beta) * _dx.abs();
     return _x = _lowPass(prev, x, _alpha(cutoff, dt));
   }
 

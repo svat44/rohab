@@ -1,6 +1,8 @@
 /// Rep counting for camera (and later glove) exercises. Pure Dart.
 library;
 
+import 'dart:math' as math;
+
 import 'hand_metrics.dart';
 
 /// Counts open-close style reps from a 0-100 % signal with hysteresis:
@@ -68,8 +70,8 @@ enum _Phase { waitingForHigh, waitingForLow, waitingForSecondHigh }
 /// of a fingertip for at least [holdTime]. A wrong finger restarts the round.
 class FingerTouchCounter {
   FingerTouchCounter({
-    this.touchDistance = 0.3,
-    this.releaseDistance = 0.5,
+    this.touchDistance = 0.35,
+    this.releaseDistance = 0.6,
     this.holdTime = const Duration(milliseconds: 200),
   }) : assert(releaseDistance >= touchDistance);
 
@@ -98,8 +100,17 @@ class FingerTouchCounter {
   int get expectedFinger => _next;
 
   /// Returns true when a round completes on this frame.
-  bool update(List<Point3> landmarks, Duration t) {
-    final d = [for (final tip in order) HandMetrics.thumbTo(landmarks, tip)];
+  bool update(List<Point3> landmarks, Duration t, {List<Point3>? image}) {
+    // The smaller of the 3D gap and the on-screen gap: MediaPipe's depth is
+    // its noisiest output, and a fingertip pressed to the thumb can read
+    // several centimetres apart in 3D while clearly touching in the picture.
+    final d = [
+      for (final tip in order)
+        math.min(
+          HandMetrics.touchGap(landmarks, tip),
+          image == null ? double.infinity : HandMetrics.touchGap(image, tip),
+        ),
+    ];
     _meter = ((1.2 - d[_next]) / (1.2 - touchDistance)).clamp(0.0, 1.0);
 
     // Release: the registered finger counts again only after the thumb

@@ -104,6 +104,24 @@ class HandMetrics {
     return d.reduce((x, y) => x + y) / d.length;
   }
 
+  /// Hand size for contact tests: the palm width, but never less than 85 %
+  /// of the wrist-to-middle-knuckle length. A hand turned side-on makes the
+  /// palm look narrow, which would inflate every distance; the palm length
+  /// does not shrink the same way.
+  static double handScale(List<Point3> lm) {
+    _check(lm);
+    final width = palmWidth(lm);
+    final length = lm[HandIndex.wrist].distanceTo(lm[HandIndex.middleMcp]);
+    return width > length * 0.85 ? width : length * 0.85;
+  }
+
+  /// Thumb tip to [fingertip], in hand sizes ([handScale]).
+  static double touchGap(List<Point3> lm, int fingertip) {
+    final scale = handScale(lm);
+    if (scale <= 0) return double.infinity;
+    return lm[HandIndex.thumbTip].distanceTo(lm[fingertip]) / scale;
+  }
+
   /// Thumb tip to [fingertip] in palm widths.
   static double thumbTo(List<Point3> lm, int fingertip) =>
       normalizedDistance(lm, HandIndex.thumbTip, fingertip);
